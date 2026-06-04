@@ -23,6 +23,7 @@ export type XApiConnectorConfig = {
   rulesEndpoint?: string;
   spacesSearchEndpoint?: string;
   spacesPollMs?: number;
+  reconnectDelayMs?: number;
 };
 
 export type XApiConnectorOptions = ConnectorRuntimeOptions & {
@@ -33,6 +34,7 @@ const defaultFilteredStreamEndpoint = "https://api.x.com/2/tweets/search/stream"
 const defaultRulesEndpoint = "https://api.x.com/2/tweets/search/stream/rules";
 const defaultSpacesSearchEndpoint = "https://api.x.com/2/spaces/search";
 const defaultSpacesPollMs = 30000;
+const defaultReconnectDelayMs = 1000;
 
 export class XApiConnector implements Connector {
   readonly platform = "x" as const;
@@ -238,7 +240,7 @@ export class XApiConnector implements Connector {
       });
       this.reconnectTimeout = setTimeout(() => {
         void this.startFilteredStream();
-      }, 1000);
+      }, this.config.reconnectDelayMs ?? defaultReconnectDelayMs);
     }
   }
 

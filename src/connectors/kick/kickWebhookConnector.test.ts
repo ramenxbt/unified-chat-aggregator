@@ -232,4 +232,20 @@ describe("KickWebhookConnector", () => {
       })
     );
   });
+
+  it("surfaces Kick subscription rate limits in connector health", async () => {
+    configFetch.mockResolvedValueOnce(new Response(null, { status: 429 }));
+    const connector = createConnector({
+      accessToken: "kick-token",
+      subscribeOnStart: true,
+      subscriptionEndpoint: "https://example.test/events/subscriptions"
+    });
+
+    await connector.start();
+
+    expect(connector.status()).toMatchObject({
+      state: "rate_limited",
+      lastError: "Kick event subscription failed with HTTP 429"
+    });
+  });
 });

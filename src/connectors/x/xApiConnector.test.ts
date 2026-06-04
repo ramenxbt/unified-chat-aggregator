@@ -184,4 +184,41 @@ describe("XApiConnector", () => {
     });
     await connector.stop();
   });
+
+  it("reconnects filtered streams after the response body ends", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: [{ id: "rule-1", value: "Market Bubble" }] }))
+      .mockResolvedValueOnce(streamResponse([]))
+      .mockResolvedValueOnce(streamResponse([]));
+    const connector = new XApiConnector(
+      {
+        bearerToken: "x-token",
+        filterRules: ["Market Bubble"],
+        filteredStreamEndpoint: "https://example.test/stream",
+        rulesEndpoint: "https://example.test/rules",
+        reconnectDelayMs: 5
+      },
+      {
+        fetch: fetcher as unknown as typeof fetch,
+        now: () => new Date("2026-06-04T18:00:00.000Z")
+      }
+    );
+
+    await connector.start();
+    await waitForExpectation(() =>
+      expect(connector.status()).toMatchObject({
+        state: "reconnecting",
+        reconnectCount: 1
+      })
+    );
+    await waitForExpectation(() => expect(fetcher).toHaveBeenCalledTimes(3));
+    await connector.stop();
+
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "https://example.test/rules",
+      expect.stringContaining("https://example.test/stream?"),
+      expect.stringContaining("https://example.test/stream?")
+    ]);
+  });
 });

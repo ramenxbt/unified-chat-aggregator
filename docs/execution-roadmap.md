@@ -55,7 +55,7 @@
 ## Phase 5 - Hardening
 
 - [x] Backpressure tests
-- Reconnect tests
+- [x] Reconnect tests
 - [x] Webhook verification tests
 - [x] Fixture replay tests
 - Browser UI checks
