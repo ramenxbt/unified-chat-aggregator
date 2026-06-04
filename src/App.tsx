@@ -25,7 +25,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "./domain/unifiedEvent";
-import { useFixtureStream } from "./hooks/useFixtureStream";
+import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
 
 const platforms: SourcePlatform[] = ["twitch", "kick", "x"];
 
@@ -48,7 +48,8 @@ export function App() {
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const recordedIdsRef = useRef(new Set<string>());
-  const { events, statuses, paused, setPaused, clear } = useFixtureStream(platformFilter);
+  const { events, statuses, paused, setPaused, clear, transportLabel, transportState } =
+    useUnifiedFeed(platformFilter);
 
   const visibleEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -198,7 +199,9 @@ export function App() {
       <section className="feed-panel" aria-label="Unified feed">
         <header className="topbar">
           <div>
-            <p className="eyeline">{recording ? "Recording fixture stream" : "Fixture stream"}</p>
+            <p className="eyeline">
+              {recording ? `Recording ${transportLabel.toLowerCase()}` : transportLabel}
+            </p>
             <h2>Unified chat aggregator</h2>
           </div>
           <div className="topbar-actions">
@@ -230,6 +233,7 @@ export function App() {
         <div className="feed-toolbar">
           <span>{visibleEvents.length} visible</span>
           <span>{paused ? "Paused" : "Streaming"}</span>
+          <span>{transportState}</span>
           <span>{recordedEvents.length} recorded</span>
           <span>Newest first</span>
         </div>

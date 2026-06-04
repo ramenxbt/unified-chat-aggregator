@@ -24,8 +24,9 @@
 - Kick webhook receiver and subscription helper
 - X filtered stream connector
 - X Spaces lookup/search poller
-- Connector health model
-- Dedupe and replay buffer
+- [x] Connector health model
+- [x] Dedupe and replay buffer
+- [x] Local feed WebSocket fanout
 
 ## Phase 3 - Storage And Sessions
 
@@ -67,8 +68,8 @@
 
 ## Immediate Next Tasks
 
-1. Add server-side connector package boundaries.
-2. Implement Twitch EventSub WebSocket connector.
+1. Wire Twitch EventSub connector into the feed server with real credentials.
+2. Implement X filtered stream connector and Spaces lookup poller.
 3. Implement Kick webhook receiver and signature verification.
-4. Implement X filtered stream connector and Spaces lookup poller.
-5. Add durable storage for captured sessions and exports.
+4. Add durable storage for captured sessions and exports.
+5. Add replay import/viewer for recorded JSON.

@@ -44,6 +44,21 @@ Normalized event bus
 Dashboard
 ```
 
+Current local runtime:
+
+```text
+Fixture generator / connectors
+        |
+        v
+Replay buffer
+        |
+        v
+Feed WebSocket server
+        |
+        v
+Dashboard live transport
+```
+
 ## Normalized Event
 
 ```ts
@@ -157,3 +172,5 @@ Final visual polish should happen after the functional surface exists.
 - Native-feeling row treatment for Twitch, Kick, and X
 - Recording controls and submission mode for clean demo capture
 - Twitch EventSub connector scaffold with mocked protocol tests
+- Local WebSocket feed server with bounded replay snapshot and live event fanout
+- Dashboard transport switch via `VITE_FEED_WS_URL`

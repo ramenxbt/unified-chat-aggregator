@@ -10,13 +10,20 @@ Deadline: June 11
 
 ## Current Phase
 
-Functional skeleton. Platform constraints, scope, and architecture are documented. The app now has a React/Vite dashboard powered by normalized fixture events for Twitch, Kick, and X.
+Functional skeleton. Platform constraints, scope, and architecture are documented. The app now has a React/Vite dashboard powered by normalized fixture events or a local WebSocket feed server.
 
 ## Local Development
 
 ```bash
 npm install
 npm run dev
+```
+
+Live feed server mode:
+
+```bash
+npm run feed
+VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 ```
 
 Verification:

@@ -47,6 +47,13 @@ The app should support a clean recording workflow:
 5. Export recording JSON for proof/replay.
 6. Capture a screen recording for the challenge submission.
 
+Live transport for recording:
+
+```bash
+npm run feed
+VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
+```
+
 ## Real Stream Priority
 
 For a live Market Bubble stream, prioritize connectors in this order:
@@ -56,4 +63,3 @@ For a live Market Bubble stream, prioritize connectors in this order:
 3. Kick webhook receiver, which needs a public tunnel
 
 The app should always remain demoable if one platform lacks credentials.
-
