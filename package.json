@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "archive:export": "tsx src/server/exportFeedArchive.ts",
     "feed": "tsx src/server/feedServer.ts",
     "preflight": "tsx src/server/preflight.ts",
     "build": "tsc -b && vite build",
