@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import {
   Activity,
   Archive,
+  AtSign,
   Ban,
   CheckCircle2,
   Circle,
@@ -125,6 +126,7 @@ export function App() {
     () => (selectedEvent ? buildAuthorProfile(selectedEvent, feedEvents) : null),
     [feedEvents, selectedEvent]
   );
+  const sourceAccountSummaries = useMemo(() => buildSourceAccountSummaries(feedEvents), [feedEvents]);
   const obsPresetLinks = useMemo(buildObsPresetLinks, []);
 
   useEffect(() => {
@@ -296,6 +298,17 @@ export function App() {
     );
   }
 
+  function toggleSourceAccountSummaryFilter(account: SourceAccountSummary) {
+    setSourceAccountFilter((current) =>
+      current?.key === account.key
+        ? null
+        : {
+            key: account.key,
+            label: account.label
+          }
+    );
+  }
+
   return (
     <main
       className="app-shell"
@@ -450,6 +463,15 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
+          <SourceAccountsPanel
+            accounts={sourceAccountSummaries}
+            activeFilter={sourceAccountFilter}
+            onToggle={toggleSourceAccountSummaryFilter}
+          />
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<CheckCircle2 size={15} />} title="Readiness" />
           <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
         </section>
@@ -562,6 +584,13 @@ type AuthorProfile = {
   signalScore: number;
   authorId: string;
   sourceId: string;
+};
+
+type SourceAccountSummary = FeedEntityFilter & {
+  platform: SourcePlatform;
+  eventCount: number;
+  signalCount: number;
+  lastEventAt: string;
 };
 
 type ObsPresetLink = {
@@ -847,6 +876,53 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
   );
 }
 
+function SourceAccountsPanel({
+  accounts,
+  activeFilter,
+  onToggle
+}: {
+  accounts: SourceAccountSummary[];
+  activeFilter: FeedEntityFilter | null;
+  onToggle: (account: SourceAccountSummary) => void;
+}) {
+  if (accounts.length === 0) {
+    return (
+      <div className="empty-detail compact-empty">
+        <span>No account activity yet.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="account-list">
+      {accounts.map((account) => {
+        const active = activeFilter?.key === account.key;
+
+        return (
+          <button
+            aria-label={`${active ? "Clear" : "Filter"} source account ${account.label}`}
+            className="account-button"
+            data-active={active}
+            key={account.key}
+            onClick={() => onToggle(account)}
+            style={{ "--accent": platformAccent[account.platform] } as CSSProperties}
+            type="button"
+          >
+            <span className="account-copy">
+              <strong>{account.label}</strong>
+              <span>{formatRelativeTime(account.lastEventAt)}</span>
+            </span>
+            <span className="account-metrics">
+              <code>{account.eventCount} events</code>
+              <code>{account.signalCount} signals</code>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function SessionArchive({
   eventsDisabled,
   onDelete,
@@ -1097,6 +1173,39 @@ function getSourceAccountKey(event: UnifiedEvent) {
       : event.sourceChannelId ?? event.sourceChannelName ?? event.platform;
 
   return [event.platform, accountKey].join(":");
+}
+
+function buildSourceAccountSummaries(events: UnifiedEvent[]): SourceAccountSummary[] {
+  const accountMap = new Map<string, SourceAccountSummary>();
+
+  for (const event of events) {
+    const key = getSourceAccountKey(event);
+    const current = accountMap.get(key);
+    const lastEventAt =
+      current && new Date(current.lastEventAt).getTime() > new Date(event.receivedAt).getTime()
+        ? current.lastEventAt
+        : event.receivedAt;
+
+    accountMap.set(key, {
+      key,
+      label: current?.label ?? formatPlatformSourceLabel(event),
+      platform: event.platform,
+      eventCount: (current?.eventCount ?? 0) + 1,
+      signalCount: (current?.signalCount ?? 0) + (isSignalEvent(event) ? 1 : 0),
+      lastEventAt
+    });
+  }
+
+  return [...accountMap.values()]
+    .sort((left, right) => {
+      const activityDiff = new Date(right.lastEventAt).getTime() - new Date(left.lastEventAt).getTime();
+
+      if (activityDiff !== 0) return activityDiff;
+      if (right.eventCount !== left.eventCount) return right.eventCount - left.eventCount;
+
+      return left.label.localeCompare(right.label);
+    })
+    .slice(0, 8);
 }
 
 function formatRelativeTime(dateTime: string) {

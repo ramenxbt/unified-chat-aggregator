@@ -582,6 +582,73 @@ button {
   font-size: 13px;
 }
 
+.account-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.account-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.account-button:hover,
+.account-button[data-active="true"] {
+  border-color: color-mix(in srgb, var(--accent), transparent 44%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent), transparent 90%), rgba(255, 255, 255, 0.02));
+}
+
+.account-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.account-copy strong,
+.account-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-copy strong {
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.account-copy span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.account-metrics {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.account-metrics code {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 .readiness-panel {
   margin-top: 12px;
 }
@@ -1003,6 +1070,11 @@ button {
   border-radius: 8px;
   color: var(--muted);
   text-align: center;
+}
+
+.compact-empty {
+  min-height: 78px;
+  margin-top: 12px;
 }
 
 .empty-state {

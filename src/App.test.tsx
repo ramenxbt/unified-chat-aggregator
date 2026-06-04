@@ -78,12 +78,30 @@ describe("App", () => {
     expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
   });
 
+  it("lists active source accounts and filters from the roster", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    expect(screen.getByText("Accounts")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /filter source account twitch \(ansem\)/i }));
+
+    expect(screen.getByText("Source: TWITCH (ANSEM)")).toBeInTheDocument();
+    expect(feed).toHaveTextContent("TWITCH (ANSEM)");
+    expect(feed).not.toHaveTextContent("KICK (MARKETBUBBLE)");
+
+    await userEvent.click(screen.getByRole("button", { name: /clear source account twitch \(ansem\)/i }));
+
+    expect(screen.queryByText("Source: TWITCH (ANSEM)")).not.toBeInTheDocument();
+    expect(feed).toHaveTextContent("KICK (MARKETBUBBLE)");
+  });
+
   it("filters the feed by selected source account", async () => {
     render(<App />);
     const feed = screen.getByRole("log");
 
     await userEvent.click(screen.getAllByText(/Ansem is cooking again/i)[0]);
-    await userEvent.click(screen.getByRole("button", { name: /filter source account/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^filter source account$/i }));
 
     expect(screen.getByText("Source: TWITCH (ANSEM)")).toBeInTheDocument();
     expect(feed).toHaveTextContent("TWITCH (ANSEM)");
@@ -101,13 +119,24 @@ describe("App", () => {
     const feed = screen.getByRole("log");
 
     await userEvent.click(screen.getAllByText(/thanks for the polymarket picks/i)[0]);
-    await userEvent.click(screen.getByRole("button", { name: /filter source account/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^filter source account$/i }));
 
     expect(screen.getByText("Source: X (@USER1337)")).toBeInTheDocument();
     expect(feed).toHaveTextContent("X (@USER1337)");
     expect(feed).toHaveTextContent("thanks for the polymarket picks");
     expect(feed).not.toHaveTextContent("X (@TAPE_READER)");
     expect(feed).not.toHaveTextContent("news flow is getting aggressive around open interest");
+  });
+
+  it("filters X source accounts from the account roster by visible post author", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    await userEvent.click(screen.getByRole("button", { name: /filter source account x \(@user1337\)/i }));
+
+    expect(screen.getByText("Source: X (@USER1337)")).toBeInTheDocument();
+    expect(feed).toHaveTextContent("thanks for the polymarket picks");
+    expect(feed).not.toHaveTextContent("X (@TAPE_READER)");
   });
 
   it("filters the feed by selected author", async () => {

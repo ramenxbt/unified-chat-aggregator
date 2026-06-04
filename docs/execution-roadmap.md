@@ -46,6 +46,7 @@
 - [x] Jump to live
 - [x] Search and keyword highlight
 - [x] Source account and author quick filters
+- [x] Source account activity roster
 - [x] Signal mode scoring
 - [x] Author detail drawer
 - [x] Connector diagnostics
