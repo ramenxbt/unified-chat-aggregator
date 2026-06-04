@@ -33,3 +33,4 @@ npm run build
 - [Platform Research](docs/platform-research.md)
 - [Architecture Plan](docs/architecture-plan.md)
 - [Execution Roadmap](docs/execution-roadmap.md)
+- [Winning Strategy](docs/winning-strategy.md)

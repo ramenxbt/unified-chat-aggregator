@@ -19,7 +19,8 @@
 
 ## Phase 2 - Real Connectors
 
-- Twitch EventSub WebSocket connector
+- [x] Twitch EventSub WebSocket connector scaffold
+- [ ] Twitch EventSub live auth/session run
 - Kick webhook receiver and subscription helper
 - X filtered stream connector
 - X Spaces lookup/search poller
@@ -36,13 +37,16 @@
 
 ## Phase 4 - Operator UX
 
-- Source filter
-- Pause/resume/jump to live
-- Search and keyword highlight
-- Signal mode scoring
+- [x] Source filter
+- [x] Pause/resume
+- [ ] Jump to live
+- [x] Search and keyword highlight
+- [x] Signal mode scoring
 - Author detail drawer
-- Connector diagnostics
+- [x] Connector diagnostics
 - Credential missing states
+- [x] Recording controls
+- [x] Submission mode
 
 ## Phase 5 - Hardening
 

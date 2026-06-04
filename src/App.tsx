@@ -1,16 +1,19 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Activity,
   Ban,
   Circle,
   Download,
   Gauge,
+  Maximize2,
   Pause,
   Play,
   Radio,
   Search,
   Shield,
+  Square,
   Trash2,
+  Video,
   Zap
 } from "lucide-react";
 import {
@@ -40,7 +43,11 @@ export function App() {
   });
   const [query, setQuery] = useState("");
   const [signalOnly, setSignalOnly] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const recordedIdsRef = useRef(new Set<string>());
   const { events, statuses, paused, setPaused, clear } = useFixtureStream(platformFilter);
 
   const visibleEvents = useMemo(() => {
@@ -75,6 +82,23 @@ export function App() {
   const signalCount = events.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
 
+  useEffect(() => {
+    if (!recording) return;
+
+    setRecordedEvents((currentEvents) => {
+      const nextEvents = [...currentEvents];
+
+      for (const event of [...events].reverse()) {
+        if (!recordedIdsRef.current.has(event.id)) {
+          recordedIdsRef.current.add(event.id);
+          nextEvents.push(event);
+        }
+      }
+
+      return nextEvents;
+    });
+  }, [events, recording]);
+
   function togglePlatform(platform: SourcePlatform) {
     setPlatformFilter((current) => ({
       ...current,
@@ -82,8 +106,36 @@ export function App() {
     }));
   }
 
+  function toggleRecording() {
+    if (recording) {
+      setRecording(false);
+      return;
+    }
+
+    recordedIdsRef.current = new Set(events.map((event) => event.id));
+    setRecordedEvents([...events].reverse());
+    setRecording(true);
+  }
+
+  function exportRecording() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: "fixture",
+      eventCount: recordedEvents.length,
+      events: recordedEvents
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-recording={recording} data-submission={submissionMode}>
       <aside className="source-rail" aria-label="Source controls">
         <div className="brand-block">
           <div className="brand-mark">MB</div>
@@ -124,6 +176,15 @@ export function App() {
             <Zap size={15} />
             <span>Signal mode</span>
           </button>
+          <button
+            className="mode-toggle"
+            data-active={submissionMode}
+            onClick={() => setSubmissionMode((enabled) => !enabled)}
+            type="button"
+          >
+            <Maximize2 size={15} />
+            <span>Submission mode</span>
+          </button>
         </section>
 
         <section className="rail-section metrics-grid">
@@ -137,7 +198,7 @@ export function App() {
       <section className="feed-panel" aria-label="Unified feed">
         <header className="topbar">
           <div>
-            <p className="eyeline">Fixture stream</p>
+            <p className="eyeline">{recording ? "Recording fixture stream" : "Fixture stream"}</p>
             <h2>Unified chat aggregator</h2>
           </div>
           <div className="topbar-actions">
@@ -155,6 +216,10 @@ export function App() {
               {paused ? <Play size={17} /> : <Pause size={17} />}
               <span>{paused ? "Resume" : "Pause"}</span>
             </button>
+            <button className="icon-button" data-active={recording} onClick={toggleRecording} type="button">
+              {recording ? <Square size={15} /> : <Video size={17} />}
+              <span>{recording ? "Stop" : "Record"}</span>
+            </button>
             <button className="icon-button" onClick={clear} type="button">
               <Trash2 size={17} />
               <span>Clear</span>
@@ -165,6 +230,7 @@ export function App() {
         <div className="feed-toolbar">
           <span>{visibleEvents.length} visible</span>
           <span>{paused ? "Paused" : "Streaming"}</span>
+          <span>{recordedEvents.length} recorded</span>
           <span>Newest first</span>
         </div>
 
@@ -202,10 +268,12 @@ export function App() {
 
         <section className="detail-section">
           <SectionTitle icon={<Download size={15} />} title="Export" />
-          <button className="wide-button" type="button">
-            Export fixture JSON
+          <button className="wide-button" disabled={recordedEvents.length === 0} onClick={exportRecording} type="button">
+            Export recording JSON
           </button>
-          <p className="detail-note">Storage and real session export are next in the build path.</p>
+          <p className="detail-note">
+            Recording captures the current replay buffer and every new event while active.
+          </p>
         </section>
       </aside>
     </main>
@@ -250,7 +318,7 @@ function EventRow({
 
   return (
     <button
-      className="event-row"
+      className="event-row native-event-row"
       data-platform={event.platform}
       data-selected={selected}
       onClick={onSelect}
@@ -258,11 +326,25 @@ function EventRow({
       type="button"
     >
       <span className="platform-label">{platformLabels[event.platform]}</span>
-      <span className="event-time">{timestamp}</span>
-      <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
-        {event.authorName ?? event.sourceChannelName ?? "system"}
+      <span className="native-event-body">
+        <span className="native-event-head">
+          <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
+            {formatAuthor(event)}
+          </span>
+          <span className="event-source">{formatSourceMeta(event)}</span>
+          <span className="event-time">{timestamp}</span>
+        </span>
+        <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
+        {event.badges.length > 0 ? (
+          <span className="badge-strip">
+            {event.badges.map((badge) => (
+              <span className="native-badge" key={`${badge.type}-${badge.label}`}>
+                {badge.label}
+              </span>
+            ))}
+          </span>
+        ) : null}
       </span>
-      <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
       <span className="signal-score">{signalScore > 0 ? signalScore : ""}</span>
     </button>
   );
@@ -335,6 +417,30 @@ function EmptyDetail() {
       <span>Select an event.</span>
     </div>
   );
+}
+
+function formatAuthor(event: UnifiedEvent) {
+  if (event.platform === "x" && event.authorName) {
+    return `@${event.authorName}`;
+  }
+
+  return event.authorName ?? event.sourceChannelName ?? "system";
+}
+
+function formatSourceMeta(event: UnifiedEvent) {
+  if (event.platform === "twitch") {
+    return event.sourceChannelName ? `#${event.sourceChannelName}` : "chat";
+  }
+
+  if (event.platform === "kick") {
+    return event.sourceChannelName ? `${event.sourceChannelName} chat` : "chat";
+  }
+
+  if (event.kind === "space_metadata") {
+    return "live Space";
+  }
+
+  return "filtered post";
 }
 
 function highlightQuery(text: string, query: string) {

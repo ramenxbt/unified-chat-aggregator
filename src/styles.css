@@ -294,6 +294,18 @@ button {
   font-size: 13px;
 }
 
+.icon-button[data-active="true"] {
+  border-color: rgba(255, 107, 107, 0.56);
+  color: #ff9b9b;
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.icon-button:disabled,
+.wide-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .icon-button:hover,
 .wide-button:hover,
 .mode-toggle:hover,
@@ -321,19 +333,31 @@ button {
 
 .event-row {
   display: grid;
-  grid-template-columns: 84px 76px 148px minmax(0, 1fr) 36px;
-  align-items: center;
+  grid-template-columns: 84px minmax(0, 1fr) 36px;
+  align-items: start;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
+  min-height: 58px;
   margin-bottom: 6px;
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 0 10px;
+  padding: 9px 10px;
   background: rgba(255, 255, 255, 0.022);
   color: var(--text);
   text-align: left;
   cursor: pointer;
+}
+
+.native-event-row[data-platform="twitch"] {
+  background: linear-gradient(90deg, rgba(169, 112, 255, 0.075), rgba(255, 255, 255, 0.018));
+}
+
+.native-event-row[data-platform="kick"] {
+  background: linear-gradient(90deg, rgba(83, 252, 24, 0.055), rgba(255, 255, 255, 0.018));
+}
+
+.native-event-row[data-platform="x"] {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.018));
 }
 
 .event-row:hover,
@@ -354,10 +378,38 @@ button {
   font-weight: 740;
 }
 
+.native-event-row[data-platform="twitch"] .platform-label {
+  border-color: rgba(169, 112, 255, 0.56);
+  background: rgba(169, 112, 255, 0.12);
+}
+
+.native-event-row[data-platform="kick"] .platform-label {
+  border-color: rgba(83, 252, 24, 0.56);
+  background: rgba(83, 252, 24, 0.1);
+}
+
+.native-event-row[data-platform="x"] .platform-label {
+  border-color: rgba(239, 243, 244, 0.42);
+  background: rgba(239, 243, 244, 0.055);
+}
+
 .event-time,
 .signal-score {
   color: var(--muted);
   font-size: 12px;
+}
+
+.native-event-body {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.native-event-head {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 8px;
 }
 
 .event-author {
@@ -368,12 +420,25 @@ button {
   white-space: nowrap;
 }
 
+.event-source {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .event-text {
   overflow: hidden;
   color: #e7ece7;
   font-size: 14px;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.native-event-row[data-platform="x"] .event-text {
+  color: #f7f9f9;
 }
 
 .event-text mark {
@@ -385,6 +450,24 @@ button {
 
 .signal-score {
   text-align: right;
+}
+
+.badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.native-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  border-radius: 4px;
+  padding: 0 5px;
+  background: color-mix(in srgb, var(--accent), transparent 82%);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
 }
 
 .status-list {
@@ -522,6 +605,27 @@ button {
   font-size: 13px;
 }
 
+.app-shell[data-recording="true"] .topbar {
+  border-bottom-color: rgba(255, 107, 107, 0.36);
+}
+
+.app-shell[data-submission="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell[data-submission="true"] .source-rail,
+.app-shell[data-submission="true"] .detail-rail {
+  display: none;
+}
+
+.app-shell[data-submission="true"] .feed-panel {
+  min-height: 100vh;
+}
+
+.app-shell[data-submission="true"] .event-row {
+  min-height: 64px;
+}
+
 .empty-state,
 .empty-detail {
   display: grid;
@@ -552,7 +656,7 @@ button {
   }
 
   .event-row {
-    grid-template-columns: 76px 70px 124px minmax(0, 1fr) 30px;
+    grid-template-columns: 76px minmax(0, 1fr) 30px;
   }
 }
 
@@ -597,20 +701,16 @@ button {
   }
 
   .event-row {
-    grid-template-columns: 74px minmax(0, 1fr) 28px;
+    grid-template-columns: 74px minmax(0, 1fr);
     min-height: 66px;
   }
 
-  .event-time {
-    display: none;
-  }
-
-  .event-author {
-    grid-column: 2;
+  .native-event-head {
+    display: grid;
+    gap: 2px;
   }
 
   .event-text {
-    grid-column: 2 / -1;
     white-space: normal;
   }
 

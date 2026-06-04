@@ -154,3 +154,6 @@ Final visual polish should happen after the functional surface exists.
 - Source toggles, search, pause/resume, clear, signal mode, selected event detail
 - Connector health cards with event counts, drops, latency, and state
 - Unit tests for schema, dedupe, signal scoring, and dashboard controls
+- Native-feeling row treatment for Twitch, Kick, and X
+- Recording controls and submission mode for clean demo capture
+- Twitch EventSub connector scaffold with mocked protocol tests
