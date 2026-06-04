@@ -71,8 +71,9 @@
 
 ## Immediate Next Tasks
 
-1. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
-2. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
-3. Add durable storage for captured sessions and exports.
-4. Add final UI polish pass after live connector proof.
-5. Capture final submission video through OBS mode.
+1. Run `npm run preflight` with real Twitch, Kick, and X stream credentials.
+2. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
+3. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
+4. Add durable storage for captured sessions and exports.
+5. Add final UI polish pass after live connector proof.
+6. Capture final submission video through OBS mode.

@@ -22,11 +22,14 @@ npm run dev
 Live feed server mode:
 
 ```bash
+npm run preflight
 npm run feed
 VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 ```
 
 If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. If `KICK_WEBHOOK_ENABLED=true` or `KICK_WEBHOOK_PUBLIC_URL` is set, it also starts the Kick webhook receiver at `http://127.0.0.1:8788/webhooks/kick` by default. If `X_BEARER_TOKEN` is set with `X_FILTER_RULES` or `X_SPACES_QUERY`, it also runs the X filtered stream or Spaces poller. Without connector credentials it runs fixture mode.
+
+`npm run preflight` checks the live environment for Twitch, Kick, and X before you start the feed server. It exits non-zero until all three platforms are ready. Use `npm run preflight -- --allow-partial` when intentionally testing only one live connector.
 
 Kick live setup:
 
