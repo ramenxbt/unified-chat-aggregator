@@ -6,7 +6,7 @@ import { createFixtureEvent } from "../fixtures/fixtureEvents";
 import { LiveFeedRuntime } from "./liveFeedRuntime";
 
 class MockClient {
-  readyState = WebSocket.OPEN;
+  readyState: WebSocket["readyState"] = WebSocket.OPEN;
   messages: unknown[] = [];
 
   send(data: string) {
@@ -91,6 +91,12 @@ class MockConnector {
   }
 }
 
+function messagesOfType<T extends string>(messages: unknown[], type: T) {
+  return messages.filter((message): message is { type: T } => {
+    return typeof message === "object" && message !== null && "type" in message && message.type === type;
+  });
+}
+
 function findStatus(messages: unknown[]): ConnectorStatus | undefined {
   return messages.find((message): message is { type: "status"; status: ConnectorStatus } => {
     return typeof message === "object" && message !== null && "type" in message && message.type === "status";
@@ -117,6 +123,74 @@ describe("LiveFeedRuntime", () => {
       type: "snapshot"
     });
     expect(client.messages.some((message) => (message as { type?: string }).type === "event")).toBe(true);
+  });
+
+  it("sends bounded replay snapshots to late clients", async () => {
+    const server = new MockServer();
+    const runtime = new LiveFeedRuntime({
+      port: 18803,
+      mode: "fixture",
+      bufferSize: 2,
+      initialEventCount: 0,
+      webSocketServer: server
+    });
+
+    const first = createFixtureEvent(1);
+    const second = createFixtureEvent(2);
+    const third = createFixtureEvent(3);
+
+    await runtime.start();
+    runtime.broadcastEvent(first);
+    runtime.broadcastEvent(second);
+    runtime.broadcastEvent(third);
+    const client = server.connect();
+    await runtime.stop();
+
+    expect(client.messages[0]).toMatchObject({
+      type: "snapshot",
+      events: [third, second]
+    });
+  });
+
+  it("does not rebroadcast duplicate platform events", async () => {
+    const server = new MockServer();
+    const runtime = new LiveFeedRuntime({
+      port: 18804,
+      mode: "fixture",
+      initialEventCount: 0,
+      webSocketServer: server
+    });
+    const event = createFixtureEvent(4);
+
+    await runtime.start();
+    const client = server.connect();
+    runtime.broadcastEvent(event);
+    runtime.broadcastEvent({ ...event, id: "different-local-id" });
+    await runtime.stop();
+
+    expect(messagesOfType(client.messages, "event")).toHaveLength(1);
+  });
+
+  it("skips clients that are not open under fanout pressure", async () => {
+    const server = new MockServer();
+    const runtime = new LiveFeedRuntime({
+      port: 18805,
+      mode: "fixture",
+      initialEventCount: 0,
+      webSocketServer: server
+    });
+    const openClient = new MockClient();
+    const closedClient = new MockClient();
+    closedClient.readyState = WebSocket.CLOSED;
+
+    await runtime.start();
+    server.connect(openClient);
+    server.connect(closedClient);
+    runtime.broadcastEvent(createFixtureEvent(5));
+    await runtime.stop();
+
+    expect(messagesOfType(openClient.messages, "event")).toHaveLength(1);
+    expect(messagesOfType(closedClient.messages, "event")).toHaveLength(0);
   });
 
   it("fans out connector events and statuses in connector mode", async () => {
@@ -147,4 +221,3 @@ describe("LiveFeedRuntime", () => {
     });
   });
 });
-

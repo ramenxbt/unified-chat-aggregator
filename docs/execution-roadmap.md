@@ -54,10 +54,10 @@
 
 ## Phase 5 - Hardening
 
-- Backpressure tests
+- [x] Backpressure tests
 - Reconnect tests
 - [x] Webhook verification tests
-- Fixture replay tests
+- [x] Fixture replay tests
 - Browser UI checks
 - README setup guide
 

@@ -24,5 +24,27 @@ describe("ReplayBuffer", () => {
 
     expect(buffer.snapshot()).toEqual([third, second]);
   });
-});
 
+  it("allows an evicted platform event id to re-enter the bounded buffer", () => {
+    const buffer = new ReplayBuffer(1);
+    const first = createFixtureEvent(1);
+    const second = createFixtureEvent(2);
+
+    expect(buffer.add(first)).toBe(true);
+    expect(buffer.add(second)).toBe(true);
+    expect(buffer.add(first)).toBe(true);
+    expect(buffer.snapshot()).toEqual([first]);
+  });
+
+  it("returns immutable snapshots", () => {
+    const buffer = new ReplayBuffer(3);
+    const event = createFixtureEvent(1);
+
+    buffer.add(event);
+
+    const snapshot = buffer.snapshot();
+    snapshot.length = 0;
+
+    expect(buffer.snapshot()).toEqual([event]);
+  });
+});
