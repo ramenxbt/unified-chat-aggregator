@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type UIEvent } from "react";
 import {
   Activity,
+  Archive,
   Ban,
   CheckCircle2,
   Circle,
   Download,
+  FolderOpen,
   Gauge,
   Maximize2,
   Pause,
@@ -29,6 +31,14 @@ import {
   type UnifiedEvent
 } from "./domain/unifiedEvent";
 import { recordingExportSchema, type RecordingExport } from "./domain/recording";
+import {
+  createSavedSession,
+  deleteArchivedSession,
+  readSessionArchive,
+  savedSessionToRecording,
+  saveSessionArchive,
+  type SavedSession
+} from "./domain/sessionArchive";
 import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
 
 const platforms: SourcePlatform[] = ["twitch", "kick", "x"];
@@ -64,6 +74,8 @@ export function App() {
   const [pinnedToLive, setPinnedToLive] = useState(true);
   const [importedReplay, setImportedReplay] = useState<ImportedReplay | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [savedSessions, setSavedSessions] = useState(() => readSessionArchive());
+  const [sessionArchiveError, setSessionArchiveError] = useState<string | null>(null);
   const { events, statuses, paused, setPaused, clear, transportLabel, transportState } =
     useUnifiedFeed(platformFilter);
   const feedEvents = importedReplay?.events ?? events;
@@ -160,13 +172,7 @@ export function App() {
   }
 
   function exportRecording() {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      source: effectiveTransportLabel,
-      transportState: effectiveTransportState,
-      eventCount: recordedEvents.length,
-      events: recordedEvents
-    };
+    const payload = buildRecordingExport(recordedEvents, effectiveTransportLabel, effectiveTransportState);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -218,6 +224,40 @@ export function App() {
     setImportedReplay(null);
     setImportError(null);
     setPinnedToLive(true);
+  }
+
+  function saveCurrentSession() {
+    setSessionArchiveError(null);
+
+    try {
+      const recording = buildRecordingExport([...feedEvents].reverse(), effectiveTransportLabel, effectiveTransportState);
+      const session = createSavedSession({
+        name: `${effectiveTransportLabel} - ${feedEvents.length} events`,
+        recording
+      });
+
+      setSavedSessions(saveSessionArchive(session));
+    } catch {
+      setSessionArchiveError("Could not save this session.");
+    }
+  }
+
+  function loadSavedSession(session: SavedSession) {
+    const recording = savedSessionToRecording(session);
+
+    setImportedReplay({
+      ...recording,
+      fileName: session.name,
+      events: [...recording.events].reverse()
+    });
+    setPaused(true);
+    setRecording(false);
+    setSelectedEventId(null);
+    setPinnedToLive(true);
+  }
+
+  function deleteSavedSession(id: string) {
+    setSavedSessions(deleteArchivedSession(id));
   }
 
   function clearFeed() {
@@ -396,6 +436,18 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<Archive size={15} />} title="Sessions" />
+          <SessionArchive
+            eventsDisabled={feedEvents.length === 0}
+            onDelete={deleteSavedSession}
+            onLoad={loadSavedSession}
+            onSave={saveCurrentSession}
+            sessions={savedSessions}
+          />
+          {sessionArchiveError ? <p className="detail-error">{sessionArchiveError}</p> : null}
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<Download size={15} />} title="Export" />
           <input
             accept="application/json"
@@ -452,6 +504,20 @@ type AuthorProfile = {
   authorId: string;
   sourceId: string;
 };
+
+function buildRecordingExport(
+  events: UnifiedEvent[],
+  source: string,
+  transportState: AppTransportState
+): RecordingExport {
+  return {
+    exportedAt: new Date().toISOString(),
+    source,
+    transportState,
+    eventCount: events.length,
+    events
+  };
+}
 
 function readObsMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("obs") === "1";
@@ -558,6 +624,53 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
         <Metric label="events" value={status.eventCount} />
         <Metric label="drops" value={status.droppedCount} />
         <Metric label="latency" value={status.latencyMs ? `${Math.round(status.latencyMs)}ms` : "n/a"} />
+      </div>
+    </div>
+  );
+}
+
+function SessionArchive({
+  eventsDisabled,
+  onDelete,
+  onLoad,
+  onSave,
+  sessions
+}: {
+  eventsDisabled: boolean;
+  onDelete: (id: string) => void;
+  onLoad: (session: SavedSession) => void;
+  onSave: () => void;
+  sessions: SavedSession[];
+}) {
+  return (
+    <div className="session-archive">
+      <button className="wide-button" disabled={eventsDisabled} onClick={onSave} type="button">
+        <Archive size={15} />
+        Save current buffer
+      </button>
+      <p className="detail-note">{sessions.length} saved sessions. New saves keep the latest 12 sessions.</p>
+      <div className="session-list">
+        {sessions.map((session) => (
+          <div className="session-card" key={session.id}>
+            <button className="session-load" onClick={() => onLoad(session)} type="button">
+              <FolderOpen size={14} />
+              <span>
+                <strong>{session.name}</strong>
+                <span>
+                  {session.eventCount} events saved {formatRelativeTime(session.savedAt)}
+                </span>
+              </span>
+            </button>
+            <button
+              aria-label={`Delete ${session.name}`}
+              className="session-delete"
+              onClick={() => onDelete(session.id)}
+              type="button"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -705,6 +818,27 @@ function buildAuthorProfile(event: UnifiedEvent, events: UnifiedEvent[]): Author
     authorId: event.authorId ?? "n/a",
     sourceId: event.sourceChannelId ?? "n/a"
   };
+}
+
+function formatRelativeTime(dateTime: string) {
+  const elapsedMs = Date.now() - new Date(dateTime).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60000));
+
+  if (elapsedMinutes < 1) return "just now";
+  if (elapsedMinutes === 1) return "1 min ago";
+  if (elapsedMinutes < 60) return `${elapsedMinutes} min ago`;
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+
+  if (elapsedHours === 1) return "1 hour ago";
+  if (elapsedHours < 24) return `${elapsedHours} hours ago`;
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(dateTime));
 }
 
 function buildReadinessItems(statuses: ConnectorStatus[], transportState: AppTransportState): ReadinessItem[] {

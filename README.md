@@ -54,6 +54,8 @@ Selecting a row opens author/source diagnostics with the platform account, autho
 
 The diagnostics rail includes a `Readiness` panel. In fixture mode it shows the exact connector env vars and public webhook setup still needed for Twitch, Kick, and X before a real stream recording.
 
+Use `Save current buffer` to persist the current in-browser feed buffer to local sessions. The app keeps the latest 12 saved sessions and can load any saved session back into replay mode without needing a JSON file.
+
 Use `Import recording JSON` to load a previous export back into the dashboard as replay mode. This is useful for rehearsing or recording the submission if a live connector is unavailable.
 
 Verification:

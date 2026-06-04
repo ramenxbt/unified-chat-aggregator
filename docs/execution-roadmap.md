@@ -33,10 +33,10 @@
 
 - Add database schema
 - Store sources, sessions, events, connector runs
-- Add session capture/replay
+- [x] Add local session capture/replay
 - Add export to JSON/CSV
 - [x] Add recording JSON import/viewer
-- Add event retention settings
+- [x] Add local session retention cap
 
 ## Phase 4 - Operator UX
 

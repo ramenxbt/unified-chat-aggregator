@@ -178,3 +178,4 @@ Final visual polish should happen after the functional surface exists.
 - X filtered stream and Spaces connector path with health reporting
 - Kick Events webhook receiver with RSA signature verification and optional subscription setup
 - OBS browser source mode at `/?obs=1`
+- Local browser session archive for captured feed buffers with replay loading and 12-session retention

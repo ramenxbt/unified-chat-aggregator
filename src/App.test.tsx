@@ -8,6 +8,7 @@ describe("App", () => {
   afterEach(() => {
     window.history.pushState({}, "", "/");
     document.body.classList.remove("obs-body");
+    window.localStorage.clear();
   });
 
   it("renders the unified feed and filters by search", async () => {
@@ -135,6 +136,26 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /exit replay/i }));
 
     expect(screen.getByText("Fixture stream")).toBeInTheDocument();
+  });
+
+  it("saves the current buffer to local sessions and loads it as replay", async () => {
+    render(<App />);
+    const user = userEvent.setup();
+
+    expect(screen.getByText("0 saved sessions. New saves keep the latest 12 sessions.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /save current buffer/i }));
+
+    expect(screen.getByText("1 saved sessions. New saves keep the latest 12 sessions.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^fixture stream - 24 events/i }));
+
+    expect(screen.getByText("Replay: Fixture stream - 24 events")).toBeInTheDocument();
+    expect(screen.getByText("replay")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /delete fixture stream - 24 events/i }));
+
+    expect(screen.getByText("0 saved sessions. New saves keep the latest 12 sessions.")).toBeInTheDocument();
   });
 
   it("opens the OBS browser-source route in overlay mode", () => {
