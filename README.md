@@ -91,6 +91,14 @@ npm run lint
 npm run build
 ```
 
+Visual QA screenshots:
+
+```bash
+npm run qa:visual
+```
+
+This writes desktop, mobile, and OBS overlay captures to `qa/visual/`.
+
 ## Docs
 
 - [Scope](docs/scope.md)

@@ -67,7 +67,7 @@
 - Hand stable functional app into final UI polish
 - Preserve all functional states
 - Visual QA desktop and mobile
-- Capture final screenshots/GIF
+- [x] Capture final screenshots/GIF
 - [x] Prepare submission notes
 
 ## Immediate Next Tasks
