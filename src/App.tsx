@@ -13,6 +13,7 @@ import {
   Shield,
   Square,
   Trash2,
+  Upload,
   Video,
   Zap
 } from "lucide-react";
@@ -25,6 +26,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "./domain/unifiedEvent";
+import { recordingExportSchema, type RecordingExport } from "./domain/recording";
 import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
 
 const platforms: SourcePlatform[] = ["twitch", "kick", "x"];
@@ -50,14 +52,20 @@ export function App() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const recordedIdsRef = useRef(new Set<string>());
   const eventListRef = useRef<HTMLDivElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [pinnedToLive, setPinnedToLive] = useState(true);
+  const [importedReplay, setImportedReplay] = useState<ImportedReplay | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const { events, statuses, paused, setPaused, clear, transportLabel, transportState } =
     useUnifiedFeed(platformFilter);
+  const feedEvents = importedReplay?.events ?? events;
+  const effectiveTransportLabel = importedReplay ? `Replay: ${importedReplay.fileName}` : transportLabel;
+  const effectiveTransportState = importedReplay ? "replay" : transportState;
 
   const visibleEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return events.filter((event) => {
+    return feedEvents.filter((event) => {
       if (!platformFilter[event.platform]) return false;
       if (signalOnly && !isSignalEvent(event)) return false;
       if (!normalizedQuery) return true;
@@ -75,15 +83,15 @@ export function App() {
 
       return searchTarget.includes(normalizedQuery);
     });
-  }, [events, platformFilter, query, signalOnly]);
+  }, [feedEvents, platformFilter, query, signalOnly]);
 
   const selectedEvent = useMemo(
     () => visibleEvents.find((event) => event.id === selectedEventId) ?? visibleEvents[0],
     [selectedEventId, visibleEvents]
   );
 
-  const totalEvents = events.length;
-  const signalCount = events.filter(isSignalEvent).length;
+  const totalEvents = feedEvents.length;
+  const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
 
   useEffect(() => {
@@ -106,7 +114,7 @@ export function App() {
     setRecordedEvents((currentEvents) => {
       const nextEvents = [...currentEvents];
 
-      for (const event of [...events].reverse()) {
+      for (const event of [...feedEvents].reverse()) {
         if (!recordedIdsRef.current.has(event.id)) {
           recordedIdsRef.current.add(event.id);
           nextEvents.push(event);
@@ -115,7 +123,7 @@ export function App() {
 
       return nextEvents;
     });
-  }, [events, recording]);
+  }, [feedEvents, recording]);
 
   function togglePlatform(platform: SourcePlatform) {
     setPlatformFilter((current) => ({
@@ -130,16 +138,16 @@ export function App() {
       return;
     }
 
-    recordedIdsRef.current = new Set(events.map((event) => event.id));
-    setRecordedEvents([...events].reverse());
+    recordedIdsRef.current = new Set(feedEvents.map((event) => event.id));
+    setRecordedEvents([...feedEvents].reverse());
     setRecording(true);
   }
 
   function exportRecording() {
     const payload = {
       exportedAt: new Date().toISOString(),
-      source: transportLabel,
-      transportState,
+      source: effectiveTransportLabel,
+      transportState: effectiveTransportState,
       eventCount: recordedEvents.length,
       events: recordedEvents
     };
@@ -160,6 +168,49 @@ export function App() {
   function jumpToLive() {
     scrollEventListToTop(eventListRef.current);
     setPinnedToLive(true);
+  }
+
+  async function importRecording(file: File | undefined) {
+    if (!file) return;
+
+    setImportError(null);
+
+    try {
+      const parsedRecording = recordingExportSchema.parse(JSON.parse(await file.text()));
+      const replayEvents = [...parsedRecording.events].reverse();
+
+      setImportedReplay({
+        ...parsedRecording,
+        fileName: file.name,
+        events: replayEvents
+      });
+      setPaused(true);
+      setRecording(false);
+      setSelectedEventId(null);
+      setPinnedToLive(true);
+      recordedIdsRef.current = new Set();
+    } catch {
+      setImportError("Could not import that recording JSON.");
+    } finally {
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
+    }
+  }
+
+  function exitReplay() {
+    setImportedReplay(null);
+    setImportError(null);
+    setPinnedToLive(true);
+  }
+
+  function clearFeed() {
+    if (importedReplay) {
+      exitReplay();
+      return;
+    }
+
+    clear();
   }
 
   return (
@@ -232,7 +283,7 @@ export function App() {
         <header className="topbar">
           <div>
             <p className="eyeline">
-              {recording ? `Recording ${transportLabel.toLowerCase()}` : transportLabel}
+              {recording ? `Recording ${effectiveTransportLabel.toLowerCase()}` : effectiveTransportLabel}
             </p>
             <h2>Unified chat aggregator</h2>
           </div>
@@ -255,9 +306,9 @@ export function App() {
               {recording ? <Square size={15} /> : <Video size={17} />}
               <span>{recording ? "Stop" : "Record"}</span>
             </button>
-            <button className="icon-button" onClick={clear} type="button">
+            <button className="icon-button" onClick={clearFeed} type="button">
               <Trash2 size={17} />
-              <span>Clear</span>
+              <span>{importedReplay ? "Exit replay" : "Clear"}</span>
             </button>
           </div>
         </header>
@@ -275,7 +326,7 @@ export function App() {
             <span>{pinnedToLive ? "Live" : "Jump live"}</span>
           </button>
           <span>{paused ? "Paused" : "Streaming"}</span>
-          <span>{transportState}</span>
+          <span>{effectiveTransportState}</span>
           <span>{recordedEvents.length} recorded</span>
           <span>Newest first</span>
         </div>
@@ -320,17 +371,38 @@ export function App() {
 
         <section className="detail-section">
           <SectionTitle icon={<Download size={15} />} title="Export" />
+          <input
+            accept="application/json"
+            className="file-input"
+            onChange={(event) => {
+              void importRecording(event.target.files?.[0]);
+            }}
+            ref={importInputRef}
+            type="file"
+          />
+          <button className="wide-button" onClick={() => importInputRef.current?.click()} type="button">
+            <Upload size={15} />
+            Import recording JSON
+          </button>
           <button className="wide-button" disabled={recordedEvents.length === 0} onClick={exportRecording} type="button">
             Export recording JSON
           </button>
           <p className="detail-note">
-            Recording captures the current replay buffer and every new event while active.
+            {importedReplay
+              ? `${importedReplay.eventCount} imported events from ${importedReplay.source}.`
+              : "Recording captures the current replay buffer and every new event while active."}
           </p>
+          {importError ? <p className="detail-error">{importError}</p> : null}
         </section>
       </aside>
     </main>
   );
 }
+
+type ImportedReplay = Omit<RecordingExport, "events"> & {
+  fileName: string;
+  events: UnifiedEvent[];
+};
 
 function readObsMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("obs") === "1";

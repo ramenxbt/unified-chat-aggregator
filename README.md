@@ -50,6 +50,8 @@ During a recording, scroll the feed to inspect older messages. The toolbar switc
 
 Feed rows label both platform and account/channel, for example `TWITCH (ANSEM)`, `KICK (MARKETBUBBLE)`, or `X (@USER1337)`.
 
+Use `Import recording JSON` to load a previous export back into the dashboard as replay mode. This is useful for rehearsing or recording the submission if a live connector is unavailable.
+
 Verification:
 
 ```bash

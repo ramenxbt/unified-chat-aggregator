@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { createFixtureEvent } from "./fixtures/fixtureEvents";
 
 describe("App", () => {
   afterEach(() => {
@@ -80,6 +81,39 @@ describe("App", () => {
 
     expect(feed.scrollTop).toBe(0);
     expect(screen.getByRole("button", { name: /^live$/i })).toBeInTheDocument();
+  });
+
+  it("imports an exported recording as a replay", async () => {
+    render(<App />);
+    const user = userEvent.setup();
+    const replayEvent = createFixtureEvent(2, new Date("2026-06-04T18:00:00.000Z"));
+    const replayFile = new File(
+      [
+        JSON.stringify({
+          exportedAt: "2026-06-04T18:00:02.000Z",
+          source: "Live feed server",
+          transportState: "live",
+          eventCount: 1,
+          events: [replayEvent]
+        })
+      ],
+      "market-bubble-feed.json",
+      { type: "application/json" }
+    );
+    const importInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+
+    expect(importInput).not.toBeNull();
+
+    await user.upload(importInput!, replayFile);
+
+    expect(screen.getByText("Replay: market-bubble-feed.json")).toBeInTheDocument();
+    expect(screen.getByText("1 imported events from Live feed server.")).toBeInTheDocument();
+    expect(screen.getByRole("log")).toHaveTextContent("Ansem is cooking again");
+    expect(screen.getByText("replay")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /exit replay/i }));
+
+    expect(screen.getByText("Fixture stream")).toBeInTheDocument();
   });
 
   it("opens the OBS browser-source route in overlay mode", () => {

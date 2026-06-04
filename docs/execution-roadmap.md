@@ -35,6 +35,7 @@
 - Store sources, sessions, events, connector runs
 - Add session capture/replay
 - Add export to JSON/CSV
+- [x] Add recording JSON import/viewer
 - Add event retention settings
 
 ## Phase 4 - Operator UX
@@ -73,5 +74,5 @@
 1. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
 2. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
 3. Add durable storage for captured sessions and exports.
-4. Add replay import/viewer for recorded JSON.
-5. Add final UI polish pass after live connector proof.
+4. Add final UI polish pass after live connector proof.
+5. Capture final submission video through OBS mode.
