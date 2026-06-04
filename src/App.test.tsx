@@ -45,6 +45,28 @@ describe("App", () => {
     expect(screen.getByText("X_BEARER_TOKEN")).toBeInTheDocument();
   });
 
+  it("shows ready-to-open OBS preset links", () => {
+    render(<App />);
+
+    expect(screen.getByText("OBS presets")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /all sources/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("obs=1")
+    );
+    expect(screen.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("sources=twitch")
+    );
+    expect(screen.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("q=ansem")
+    );
+    expect(screen.getByRole("link", { name: /signal only/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("signal=1")
+    );
+  });
+
   it("shows selected author and source details", async () => {
     render(<App />);
 

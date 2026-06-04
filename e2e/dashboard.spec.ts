@@ -18,6 +18,9 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
 
   await expect(page.getByText("Paused")).toBeVisible();
   await expect(page.getByText("Readiness")).toBeVisible();
+  await expect(page.getByText("OBS presets")).toBeVisible();
+  await expect(page.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute("href", /obs=1/);
+  await expect(page.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute("href", /q=ansem/);
   await expect(page.getByText("TWITCH_CLIENT_ID")).toBeVisible();
   await expect(page.getByText("KICK_WEBHOOK_ENABLED=true")).toBeVisible();
   await expect(page.getByText("X_BEARER_TOKEN")).toBeVisible();

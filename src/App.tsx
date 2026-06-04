@@ -8,6 +8,7 @@ import {
   Download,
   FolderOpen,
   Gauge,
+  Link2,
   Maximize2,
   Pause,
   Play,
@@ -120,6 +121,7 @@ export function App() {
     () => (selectedEvent ? buildAuthorProfile(selectedEvent, feedEvents) : null),
     [feedEvents, selectedEvent]
   );
+  const obsPresetLinks = useMemo(buildObsPresetLinks, []);
 
   useEffect(() => {
     document.body.classList.toggle("obs-body", obsMode);
@@ -422,6 +424,11 @@ export function App() {
           <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
         </section>
 
+        <section className="detail-section">
+          <SectionTitle icon={<Link2 size={15} />} title="OBS presets" />
+          <ObsPresetLinks links={obsPresetLinks} />
+        </section>
+
         <section className="detail-section selected-event">
           <SectionTitle icon={<UserRound size={15} />} title="Author" />
           {selectedAuthorProfile ? <AuthorDetail profile={selectedAuthorProfile} /> : <EmptyDetail />}
@@ -508,6 +515,12 @@ type AuthorProfile = {
   signalScore: number;
   authorId: string;
   sourceId: string;
+};
+
+type ObsPresetLink = {
+  title: string;
+  detail: string;
+  href: string;
 };
 
 function buildRecordingExport(
@@ -604,6 +617,81 @@ function parseLimitParam(value: string | null) {
   }
 
   return Math.min(limit, 100);
+}
+
+function buildObsPresetLinks(): ObsPresetLink[] {
+  return [
+    {
+      title: "All sources",
+      detail: "Full overlay for the main submission shot.",
+      href: buildObsPresetHref({
+        sources: ["twitch", "kick", "x"],
+        limit: 14
+      })
+    },
+    {
+      title: "Twitch and Kick",
+      detail: "Chat-native view without X posts.",
+      href: buildObsPresetHref({
+        sources: ["twitch", "kick"],
+        limit: 12
+      })
+    },
+    {
+      title: "Ansem Twitch",
+      detail: "Focused proof shot for a single account.",
+      href: buildObsPresetHref({
+        sources: ["twitch"],
+        limit: 8,
+        query: "ansem"
+      })
+    },
+    {
+      title: "Signal only",
+      detail: "High-signal clip view for fast review.",
+      href: buildObsPresetHref({
+        signal: true,
+        limit: 10
+      })
+    }
+  ];
+}
+
+function buildObsPresetHref({
+  sources,
+  limit,
+  query,
+  signal
+}: {
+  sources?: SourcePlatform[];
+  limit?: number;
+  query?: string;
+  signal?: boolean;
+}) {
+  const baseUrl =
+    typeof window === "undefined"
+      ? new URL("http://127.0.0.1:5173/")
+      : new URL(`${window.location.origin}${window.location.pathname}`);
+
+  baseUrl.searchParams.set("obs", "1");
+
+  if (sources && sources.length > 0) {
+    baseUrl.searchParams.set("sources", sources.join(","));
+  }
+
+  if (limit) {
+    baseUrl.searchParams.set("limit", String(limit));
+  }
+
+  if (query) {
+    baseUrl.searchParams.set("q", query);
+  }
+
+  if (signal) {
+    baseUrl.searchParams.set("signal", "1");
+  }
+
+  return baseUrl.toString();
 }
 
 function scrollEventListToTop(list: HTMLDivElement | null) {
@@ -755,6 +843,22 @@ function SessionArchive({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ObsPresetLinks({ links }: { links: ObsPresetLink[] }) {
+  return (
+    <div className="obs-preset-list">
+      {links.map((link) => (
+        <a className="obs-preset-link" href={link.href} key={link.title} rel="noreferrer" target="_blank">
+          <span>
+            <strong>{link.title}</strong>
+            <span>{link.detail}</span>
+          </span>
+          <code>{new URL(link.href).search}</code>
+        </a>
+      ))}
     </div>
   );
 }

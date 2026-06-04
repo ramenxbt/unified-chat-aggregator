@@ -66,6 +66,8 @@ http://127.0.0.1:5173/?obs=1&sources=twitch&limit=8&q=ansem
 http://127.0.0.1:5173/?obs=1&signal=1&limit=10
 ```
 
+The diagnostics rail also shows ready-to-open OBS preset links while the dashboard is not in submission mode.
+
 During a recording, scroll the feed to inspect older messages. The toolbar switches from `Live` to `Jump live` so you can return to the newest events immediately.
 
 Feed rows label both platform and account/channel, for example `TWITCH (ANSEM)`, `KICK (MARKETBUBBLE)`, or `X (@USER1337)`.

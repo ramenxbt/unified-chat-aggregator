@@ -142,13 +142,15 @@ button {
 .source-toggle,
 .mode-toggle,
 .icon-button,
-.wide-button {
+.wide-button,
+.obs-preset-link {
   display: flex;
   align-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
   cursor: pointer;
+  text-decoration: none;
   transition:
     border-color 140ms ease,
     background 140ms ease,
@@ -315,7 +317,8 @@ button {
 .icon-button:hover,
 .wide-button:hover,
 .mode-toggle:hover,
-.source-toggle:hover {
+.source-toggle:hover,
+.obs-preset-link:hover {
   border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.055);
 }
@@ -724,6 +727,48 @@ button {
 
 .session-archive {
   margin-top: 12px;
+}
+
+.obs-preset-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.obs-preset-link {
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px;
+  color: var(--soft);
+}
+
+.obs-preset-link > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.obs-preset-link strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.obs-preset-link span span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.obs-preset-link code {
+  max-width: 122px;
+  overflow: hidden;
+  color: var(--gold);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-list {
