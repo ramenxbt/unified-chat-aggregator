@@ -79,6 +79,7 @@ export function App() {
   const [pinnedToLive, setPinnedToLive] = useState(true);
   const [importedReplay, setImportedReplay] = useState<ImportedReplay | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [replayLinkStatus, setReplayLinkStatus] = useState<string | null>(null);
   const [savedSessions, setSavedSessions] = useState(() => readSessionArchive());
   const [sessionArchiveError, setSessionArchiveError] = useState<string | null>(null);
   const { events, statuses, paused, setPaused, clear, transportLabel, transportState } =
@@ -150,6 +151,22 @@ export function App() {
   }, [obsMode]);
 
   useEffect(() => {
+    const recording = readReplayLinkRecording();
+    if (!recording) return;
+
+    setImportedReplay({
+      ...recording,
+      fileName: "shared replay link",
+      events: [...recording.events].reverse()
+    });
+    setPaused(true);
+    setRecording(false);
+    setSelectedEventId(null);
+    setPinnedToLive(true);
+    recordedIdsRef.current = new Set();
+  }, [setPaused]);
+
+  useEffect(() => {
     if (!pinnedToLive) return;
 
     scrollEventListToLiveEdge(eventListRef.current, feedOrder);
@@ -200,6 +217,25 @@ export function App() {
     downloadBlob(recordingEventsToCsv(recordedEvents), "text/csv;charset=utf-8", "csv");
   }
 
+  async function copyReplayLink() {
+    setReplayLinkStatus(null);
+
+    try {
+      const recording = buildRecordingExport([...feedEvents].reverse(), effectiveTransportLabel, effectiveTransportState);
+      const href = buildReplayLink(recording);
+
+      if (!navigator.clipboard?.writeText) {
+        setReplayLinkStatus("Clipboard unavailable.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(href);
+      setReplayLinkStatus(`${recording.eventCount} event replay link copied.`);
+    } catch {
+      setReplayLinkStatus("Could not create replay link.");
+    }
+  }
+
   function handleEventListScroll(event: UIEvent<HTMLDivElement>) {
     setPinnedToLive(isAtLiveEdge(event.currentTarget, feedOrder));
   }
@@ -231,6 +267,7 @@ export function App() {
       setPaused(true);
       setRecording(false);
       setSelectedEventId(null);
+      setReplayLinkStatus(null);
       setPinnedToLive(true);
       recordedIdsRef.current = new Set();
     } catch {
@@ -245,6 +282,8 @@ export function App() {
   function exitReplay() {
     setImportedReplay(null);
     setImportError(null);
+    clearReplayLinkHash();
+    setReplayLinkStatus(null);
     setPinnedToLive(true);
   }
 
@@ -586,12 +625,16 @@ export function App() {
           >
             Export recording CSV
           </button>
+          <button className="wide-button" disabled={feedEvents.length === 0} onClick={() => void copyReplayLink()} type="button">
+            Copy replay link
+          </button>
           <p className="detail-note">
             {importedReplay
               ? `${importedReplay.eventCount} imported events from ${importedReplay.source}.`
               : "Recording captures the current replay buffer and every new event while active."}
           </p>
           {importError ? <p className="detail-error">{importError}</p> : null}
+          {replayLinkStatus ? <p className="detail-note">{replayLinkStatus}</p> : null}
         </section>
       </aside>
     </main>
@@ -687,6 +730,50 @@ function downloadBlob(content: string, type: string, extension: "csv" | "json") 
   link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function buildReplayLink(recording: RecordingExport) {
+  const baseUrl = new URL(window.location.href);
+
+  baseUrl.hash = `replay=${encodeReplayPayload(recording)}`;
+
+  return baseUrl.toString();
+}
+
+function readReplayLinkRecording(): RecordingExport | null {
+  if (typeof window === "undefined") return null;
+
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+  const params = new URLSearchParams(hash);
+  const replayPayload = params.get("replay");
+
+  if (!replayPayload) return null;
+
+  try {
+    return recordingExportSchema.parse(JSON.parse(decodeReplayPayload(replayPayload)));
+  } catch {
+    return null;
+  }
+}
+
+function clearReplayLinkHash() {
+  if (typeof window === "undefined" || !window.location.hash.includes("replay=")) return;
+
+  history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+}
+
+function encodeReplayPayload(recording: RecordingExport) {
+  return btoa(encodeURIComponent(JSON.stringify(recording)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function decodeReplayPayload(payload: string) {
+  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+
+  return decodeURIComponent(atob(paddedBase64));
 }
 
 type ViewPreset = {

@@ -15,6 +15,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Pause, resume, clear, order toggle, and jump-live behavior.
 - Recording start/stop, JSON export, and CSV export.
 - Import recording JSON into replay mode and exit replay.
+- Copy replay link and hash-based replay loading.
 - Local session save, load, delete, and 12-session retention.
 - Connector cards with state, event count, drops, latency, label, and source account.
 - Readiness panel with missing env vars and Kick tunnel guidance.

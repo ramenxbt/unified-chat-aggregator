@@ -9,6 +9,10 @@ describe("App", () => {
     window.history.pushState({}, "", "/");
     document.body.classList.remove("obs-body");
     window.localStorage.clear();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined
+    });
   });
 
   it("renders the unified feed and filters by search", async () => {
@@ -197,6 +201,23 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /export recording csv/i })).toBeEnabled();
   });
 
+  it("copies a shareable replay link for the current buffer", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+
+    render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: /copy replay link/i }));
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("#replay=");
+    expect(screen.getByText("24 event replay link copied.")).toBeInTheDocument();
+  });
+
   it("toggles submission mode on the app shell", async () => {
     const { container } = render(<App />);
     const appShell = container.querySelector(".app-shell");
@@ -302,6 +323,28 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /exit replay/i }));
 
     expect(screen.getByText("Fixture stream")).toBeInTheDocument();
+  });
+
+  it("loads a replay from a shared URL hash", () => {
+    const replayEvent = createFixtureEvent(2, new Date("2026-06-04T18:00:00.000Z"));
+    const recording = {
+      exportedAt: "2026-06-04T18:00:02.000Z",
+      source: "Shared proof clip",
+      transportState: "live",
+      eventCount: 1,
+      events: [replayEvent]
+    };
+    const payload = btoa(encodeURIComponent(JSON.stringify(recording)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    window.history.pushState({}, "", `/#replay=${payload}`);
+    render(<App />);
+
+    expect(screen.getByText("Replay: shared replay link")).toBeInTheDocument();
+    expect(screen.getByText("1 imported events from Shared proof clip.")).toBeInTheDocument();
+    expect(screen.getByRole("log")).toHaveTextContent("Ansem is cooking again");
   });
 
   it("saves the current buffer to local sessions and loads it as replay", async () => {

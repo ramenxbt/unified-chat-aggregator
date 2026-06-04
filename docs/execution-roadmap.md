@@ -37,6 +37,7 @@
 - [x] Add local session capture/replay
 - [x] Add export to JSON/CSV
 - [x] Add recording JSON import/viewer
+- [x] Add shareable replay links
 - [x] Add local session retention cap
 
 ## Phase 4 - Operator UX

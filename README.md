@@ -84,6 +84,8 @@ Recordings can be exported as JSON for replay or CSV for spreadsheet review.
 
 Use `Import recording JSON` to load a previous export back into the dashboard as replay mode. This is useful for rehearsing or recording the submission if a live connector is unavailable.
 
+Use `Copy replay link` to create a local read-only replay URL for the current buffer. Opening that URL loads replay mode immediately, which is useful for handing a proof clip to another reviewer on the same app build.
+
 Verification:
 
 ```bash
