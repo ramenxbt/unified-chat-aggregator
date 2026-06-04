@@ -72,3 +72,10 @@ For a live Market Bubble stream, prioritize connectors in this order:
 3. Kick webhook receiver, which needs a public tunnel
 
 The app should always remain demoable if one platform lacks credentials.
+
+Kick setup for recording:
+
+1. Run the feed server with `KICK_WEBHOOK_ENABLED=true`.
+2. Expose `http://127.0.0.1:8788/webhooks/kick` through a tunnel.
+3. Put that public tunnel URL in the Kick Developer app webhook settings.
+4. If `KICK_ACCESS_TOKEN`, `KICK_BROADCASTER_USER_ID`, and `KICK_SUBSCRIBE_ON_START=true` are set, let the feed server request `chat.message.sent` on startup.

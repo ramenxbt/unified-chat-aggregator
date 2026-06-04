@@ -46,6 +46,8 @@ Useful official facts:
 - `chat.message.sent` has version `1` and fires when a message is sent in a stream chat.
 - Subscription limit is 10,000 per event type for a single app, with `chat.message.sent` limited to 1,000 for unverified apps.
 - Kick chat payload includes `message_id`, optional `replies_to`, broadcaster, sender, content, emotes, identity badges, username color, and `created_at`.
+- Kick webhook headers include `Kick-Event-Message-Id`, `Kick-Event-Subscription-Id`, `Kick-Event-Signature`, `Kick-Event-Message-Timestamp`, `Kick-Event-Type`, and `Kick-Event-Version`.
+- Kick webhook signature verification signs `message_id.timestamp.raw_body` and verifies with the Kick RSA public key.
 - Kick OAuth supports App Access Tokens via client credentials and User Access Tokens via authorization code.
 - Required scope for event subscriptions is `events:subscribe`.
 
@@ -56,6 +58,7 @@ Implementation notes:
 - Persist Kick `message_id` for dedupe.
 - Preserve emote positions and badge metadata.
 - Treat Kick as webhook-based rather than WebSocket-based.
+- Start a local webhook receiver in connector mode, then expose it through Cloudflare Tunnel or ngrok for live stream testing.
 
 Sources:
 
@@ -114,4 +117,3 @@ General best practices for this class of app:
 - Broadcast to browser clients via WebSocket or Server-Sent Events.
 - Keep platform credentials server-side only.
 - Build demo fixtures so judges can evaluate without credentials.
-

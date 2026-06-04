@@ -1,3 +1,4 @@
+import { KickWebhookConnector, kickDefaultPublicKey } from "../connectors/kick/kickWebhookConnector";
 import { TwitchEventSubConnector } from "../connectors/twitch/twitchEventSubConnector";
 import type { Connector } from "../connectors/types";
 import { XApiConnector } from "../connectors/x/xApiConnector";
@@ -35,10 +36,12 @@ async function shutdown() {
 }
 
 function buildConnectorsFromEnv(): Connector[] {
+  const kickConnector = buildKickConnectorFromEnv();
   const twitchConnector = buildTwitchConnectorFromEnv();
   const xConnector = buildXConnectorFromEnv();
   const connectors: Connector[] = [];
 
+  if (kickConnector) connectors.push(kickConnector);
   if (twitchConnector) connectors.push(twitchConnector);
   if (xConnector) connectors.push(xConnector);
 
@@ -63,6 +66,24 @@ function buildTwitchConnectorFromEnv() {
     broadcasterLogin: process.env.TWITCH_BROADCASTER_LOGIN,
     endpoint: process.env.TWITCH_EVENTSUB_ENDPOINT,
     subscriptionEndpoint: process.env.TWITCH_EVENTSUB_SUBSCRIPTION_ENDPOINT
+  });
+}
+
+function buildKickConnectorFromEnv() {
+  if (process.env.KICK_WEBHOOK_ENABLED !== "true" && !process.env.KICK_WEBHOOK_PUBLIC_URL) {
+    return null;
+  }
+
+  return new KickWebhookConnector({
+    port: Number(process.env.KICK_WEBHOOK_PORT ?? 8788),
+    path: process.env.KICK_WEBHOOK_PATH,
+    publicKey: process.env.KICK_WEBHOOK_PUBLIC_KEY ?? kickDefaultPublicKey,
+    verifySignatures: process.env.KICK_VERIFY_SIGNATURE !== "false",
+    sourceName: process.env.KICK_BROADCASTER_SLUG ?? process.env.KICK_BROADCASTER_USER_ID,
+    accessToken: process.env.KICK_ACCESS_TOKEN,
+    broadcasterUserId: process.env.KICK_BROADCASTER_USER_ID ? Number(process.env.KICK_BROADCASTER_USER_ID) : undefined,
+    subscribeOnStart: process.env.KICK_SUBSCRIBE_ON_START === "true",
+    subscriptionEndpoint: process.env.KICK_EVENT_SUBSCRIPTION_ENDPOINT
   });
 }
 

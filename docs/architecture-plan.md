@@ -176,4 +176,5 @@ Final visual polish should happen after the functional surface exists.
 - Dashboard transport switch via `VITE_FEED_WS_URL`
 - Feed server automatically switches from fixture mode to connector mode when Twitch or X env credentials are present
 - X filtered stream and Spaces connector path with health reporting
+- Kick Events webhook receiver with RSA signature verification and optional subscription setup
 - OBS browser source mode at `/?obs=1`

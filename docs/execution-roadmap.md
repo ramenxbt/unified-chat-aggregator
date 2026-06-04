@@ -22,7 +22,7 @@
 - [x] Twitch EventSub WebSocket connector scaffold
 - [x] Feed server env path for Twitch EventSub connector
 - [ ] Twitch EventSub live auth/session run
-- Kick webhook receiver and subscription helper
+- [x] Kick webhook receiver and subscription helper
 - [x] X filtered stream connector
 - [x] X Spaces lookup/search poller
 - [x] Connector health model
@@ -55,7 +55,7 @@
 
 - Backpressure tests
 - Reconnect tests
-- Webhook verification tests
+- [x] Webhook verification tests
 - Fixture replay tests
 - Browser UI checks
 - README setup guide
@@ -70,8 +70,8 @@
 
 ## Immediate Next Tasks
 
-1. Run Twitch EventSub and X connector paths with real stream credentials.
-2. Implement Kick webhook receiver and signature verification.
+1. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
+2. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
 3. Add durable storage for captured sessions and exports.
 4. Add replay import/viewer for recorded JSON.
 5. Add final UI polish pass after live connector proof.
