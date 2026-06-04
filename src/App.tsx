@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type UIEvent } from "react";
 import {
   Activity,
   Ban,
@@ -49,6 +49,8 @@ export function App() {
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const recordedIdsRef = useRef(new Set<string>());
+  const eventListRef = useRef<HTMLDivElement | null>(null);
+  const [pinnedToLive, setPinnedToLive] = useState(true);
   const { events, statuses, paused, setPaused, clear, transportLabel, transportState } =
     useUnifiedFeed(platformFilter);
 
@@ -93,6 +95,12 @@ export function App() {
   }, [obsMode]);
 
   useEffect(() => {
+    if (!pinnedToLive) return;
+
+    scrollEventListToTop(eventListRef.current);
+  }, [pinnedToLive, visibleEvents.length]);
+
+  useEffect(() => {
     if (!recording) return;
 
     setRecordedEvents((currentEvents) => {
@@ -130,7 +138,8 @@ export function App() {
   function exportRecording() {
     const payload = {
       exportedAt: new Date().toISOString(),
-      source: "fixture",
+      source: transportLabel,
+      transportState,
       eventCount: recordedEvents.length,
       events: recordedEvents
     };
@@ -142,6 +151,15 @@ export function App() {
     link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function handleEventListScroll(event: UIEvent<HTMLDivElement>) {
+    setPinnedToLive(event.currentTarget.scrollTop <= 12);
+  }
+
+  function jumpToLive() {
+    scrollEventListToTop(eventListRef.current);
+    setPinnedToLive(true);
   }
 
   return (
@@ -246,13 +264,29 @@ export function App() {
 
         <div className="feed-toolbar">
           <span>{visibleEvents.length} visible</span>
+          <button
+            className="live-button"
+            data-active={pinnedToLive}
+            disabled={visibleEvents.length === 0}
+            onClick={jumpToLive}
+            type="button"
+          >
+            <Circle size={8} fill="currentColor" />
+            <span>{pinnedToLive ? "Live" : "Jump live"}</span>
+          </button>
           <span>{paused ? "Paused" : "Streaming"}</span>
           <span>{transportState}</span>
           <span>{recordedEvents.length} recorded</span>
           <span>Newest first</span>
         </div>
 
-        <div className="event-list" role="log" aria-live={paused ? "off" : "polite"}>
+        <div
+          className="event-list"
+          onScroll={handleEventListScroll}
+          ref={eventListRef}
+          role="log"
+          aria-live={paused ? "off" : "polite"}
+        >
           {visibleEvents.length > 0 ? (
             visibleEvents.map((event) => (
               <EventRow
@@ -302,6 +336,17 @@ function readObsMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("obs") === "1";
 }
 
+function scrollEventListToTop(list: HTMLDivElement | null) {
+  if (!list) return;
+
+  if (typeof list.scrollTo === "function") {
+    list.scrollTo({ top: 0 });
+    return;
+  }
+
+  list.scrollTop = 0;
+}
+
 function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="section-title">
@@ -347,7 +392,9 @@ function EventRow({
       style={{ "--accent": platformAccent[event.platform] } as CSSProperties}
       type="button"
     >
-      <span className="platform-label">{platformLabels[event.platform]}</span>
+      <span className="platform-label" title={formatPlatformSourceLabel(event)}>
+        {formatPlatformSourceLabel(event)}
+      </span>
       <span className="native-event-body">
         <span className="native-event-head">
           <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
@@ -447,6 +494,23 @@ function formatAuthor(event: UnifiedEvent) {
   }
 
   return event.authorName ?? event.sourceChannelName ?? "system";
+}
+
+function formatPlatformSourceLabel(event: UnifiedEvent) {
+  const accountName =
+    event.platform === "x" ? event.authorName ?? event.sourceChannelName : event.sourceChannelName ?? event.authorName;
+  const normalizedAccount = accountName?.replace(/^#|^@/, "").trim();
+  const platformName = platformLabels[event.platform].toUpperCase();
+
+  if (!normalizedAccount) {
+    return platformName;
+  }
+
+  if (event.platform === "x" && event.authorName) {
+    return `${platformName} (@${normalizedAccount.toUpperCase()})`;
+  }
+
+  return `${platformName} (${normalizedAccount.toUpperCase()})`;
 }
 
 function formatSourceMeta(event: UnifiedEvent) {

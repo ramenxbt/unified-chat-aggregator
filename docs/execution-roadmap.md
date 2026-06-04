@@ -41,7 +41,7 @@
 
 - [x] Source filter
 - [x] Pause/resume
-- [ ] Jump to live
+- [x] Jump to live
 - [x] Search and keyword highlight
 - [x] Signal mode scoring
 - Author detail drawer

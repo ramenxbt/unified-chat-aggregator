@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 describe("App", () => {
@@ -15,6 +15,9 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: /unified chat aggregator/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Ansem is cooking again/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("KICK (MARKETBUBBLE)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("X (@USER1337)").length).toBeGreaterThan(0);
 
     await userEvent.type(screen.getByLabelText(/search feed/i), "polymarket");
 
@@ -51,6 +54,32 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("button", { name: /submission mode/i }));
 
     expect(appShell).toHaveAttribute("data-submission", "true");
+  });
+
+  it("returns to the newest events with the live control", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    Object.defineProperty(feed, "scrollTo", {
+      configurable: true,
+      value: vi.fn((options: ScrollToOptions) => {
+        feed.scrollTop = options.top ?? 0;
+      })
+    });
+
+    expect(screen.getByRole("button", { name: /^live$/i })).toBeInTheDocument();
+
+    feed.scrollTop = 120;
+    fireEvent.scroll(feed);
+
+    const jumpButton = screen.getByRole("button", { name: /jump live/i });
+
+    expect(jumpButton).toBeInTheDocument();
+
+    await userEvent.click(jumpButton);
+
+    expect(feed.scrollTop).toBe(0);
+    expect(screen.getByRole("button", { name: /^live$/i })).toBeInTheDocument();
   });
 
   it("opens the OBS browser-source route in overlay mode", () => {
