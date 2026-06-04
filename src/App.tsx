@@ -30,7 +30,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "./domain/unifiedEvent";
-import { recordingExportSchema, type RecordingExport } from "./domain/recording";
+import { recordingEventsToCsv, recordingExportSchema, type RecordingExport } from "./domain/recording";
 import {
   createSavedSession,
   deleteArchivedSession,
@@ -173,14 +173,12 @@ export function App() {
 
   function exportRecording() {
     const payload = buildRecordingExport(recordedEvents, effectiveTransportLabel, effectiveTransportState);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
 
-    link.href = url;
-    link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(JSON.stringify(payload, null, 2), "application/json", "json");
+  }
+
+  function exportRecordingCsv() {
+    downloadBlob(recordingEventsToCsv(recordedEvents), "text/csv;charset=utf-8", "csv");
   }
 
   function handleEventListScroll(event: UIEvent<HTMLDivElement>) {
@@ -465,6 +463,14 @@ export function App() {
           <button className="wide-button" disabled={recordedEvents.length === 0} onClick={exportRecording} type="button">
             Export recording JSON
           </button>
+          <button
+            className="wide-button"
+            disabled={recordedEvents.length === 0}
+            onClick={exportRecordingCsv}
+            type="button"
+          >
+            Export recording CSV
+          </button>
           <p className="detail-note">
             {importedReplay
               ? `${importedReplay.eventCount} imported events from ${importedReplay.source}.`
@@ -517,6 +523,17 @@ function buildRecordingExport(
     eventCount: events.length,
     events
   };
+}
+
+function downloadBlob(content: string, type: string, extension: "csv" | "json") {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function readObsMode() {

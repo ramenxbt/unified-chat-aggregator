@@ -34,7 +34,7 @@
 - Add database schema
 - Store sources, sessions, events, connector runs
 - [x] Add local session capture/replay
-- Add export to JSON/CSV
+- [x] Add export to JSON/CSV
 - [x] Add recording JSON import/viewer
 - [x] Add local session retention cap
 

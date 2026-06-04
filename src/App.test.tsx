@@ -66,6 +66,7 @@ describe("App", () => {
     expect(screen.getByText("24 recorded")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /stop/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /export recording json/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /export recording csv/i })).toBeEnabled();
   });
 
   it("toggles submission mode on the app shell", async () => {
