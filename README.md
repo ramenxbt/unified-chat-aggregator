@@ -99,6 +99,14 @@ npm run qa:visual
 
 This writes desktop, mobile, and OBS overlay captures to `qa/visual/`.
 
+Final stack rehearsal:
+
+```bash
+npm run qa:rehearsal
+```
+
+This starts the feed server and dashboard on alternate local ports, verifies the browser is reading from `VITE_FEED_WS_URL`, and confirms server archive output under `qa/rehearsal/`.
+
 ## Docs
 
 - [Scope](docs/scope.md)

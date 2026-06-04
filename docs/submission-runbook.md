@@ -4,6 +4,14 @@ Use this as the final checklist for the Market Bubble stream recording.
 
 ## 1. Live Credential Check
 
+Run the fixture rehearsal once before connecting real credentials:
+
+```bash
+npm run qa:rehearsal
+```
+
+This proves the feed WebSocket, dashboard transport, and server archive path work together.
+
 Run the strict check first:
 
 ```bash
