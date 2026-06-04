@@ -3,7 +3,9 @@ node_modules/
 dist/
 build/
 coverage/
+playwright-report/
 qa/
+test-results/
 .turbo/
 .vercel/
 .env

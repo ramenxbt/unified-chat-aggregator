@@ -58,7 +58,7 @@
 - [x] Reconnect tests
 - [x] Webhook verification tests
 - [x] Fixture replay tests
-- Browser UI checks
+- [x] Browser UI checks
 - README setup guide
 
 ## Phase 6 - Final UI Pass
