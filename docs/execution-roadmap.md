@@ -23,8 +23,8 @@
 - [x] Feed server env path for Twitch EventSub connector
 - [ ] Twitch EventSub live auth/session run
 - Kick webhook receiver and subscription helper
-- X filtered stream connector
-- X Spaces lookup/search poller
+- [x] X filtered stream connector
+- [x] X Spaces lookup/search poller
 - [x] Connector health model
 - [x] Dedupe and replay buffer
 - [x] Local feed WebSocket fanout
@@ -49,6 +49,7 @@
 - Credential missing states
 - [x] Recording controls
 - [x] Submission mode
+- [x] OBS browser source mode
 
 ## Phase 5 - Hardening
 
@@ -69,8 +70,8 @@
 
 ## Immediate Next Tasks
 
-1. Wire Twitch EventSub connector into the feed server with real credentials.
-2. Implement X filtered stream connector and Spaces lookup poller.
-3. Implement Kick webhook receiver and signature verification.
-4. Add durable storage for captured sessions and exports.
-5. Add replay import/viewer for recorded JSON.
+1. Run Twitch EventSub and X connector paths with real stream credentials.
+2. Implement Kick webhook receiver and signature verification.
+3. Add durable storage for captured sessions and exports.
+4. Add replay import/viewer for recorded JSON.
+5. Add final UI polish pass after live connector proof.

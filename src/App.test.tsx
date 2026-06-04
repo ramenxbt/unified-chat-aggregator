@@ -1,9 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
 
 describe("App", () => {
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+    document.body.classList.remove("obs-body");
+  });
+
   it("renders the unified feed and filters by search", async () => {
     render(<App />);
     const feed = screen.getByRole("log");
@@ -46,5 +51,15 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("button", { name: /submission mode/i }));
 
     expect(appShell).toHaveAttribute("data-submission", "true");
+  });
+
+  it("opens the OBS browser-source route in overlay mode", () => {
+    window.history.pushState({}, "", "/?obs=1");
+    const { container } = render(<App />);
+    const appShell = container.querySelector(".app-shell");
+
+    expect(appShell).toHaveAttribute("data-obs", "true");
+    expect(appShell).toHaveAttribute("data-submission", "true");
+    expect(document.body).toHaveClass("obs-body");
   });
 });

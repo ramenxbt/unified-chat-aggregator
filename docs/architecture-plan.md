@@ -174,4 +174,6 @@ Final visual polish should happen after the functional surface exists.
 - Twitch EventSub connector scaffold with mocked protocol tests
 - Local WebSocket feed server with bounded replay snapshot and live event fanout
 - Dashboard transport switch via `VITE_FEED_WS_URL`
-- Feed server automatically switches from fixture mode to Twitch connector mode when Twitch env credentials are present
+- Feed server automatically switches from fixture mode to connector mode when Twitch or X env credentials are present
+- X filtered stream and Spaces connector path with health reporting
+- OBS browser source mode at `/?obs=1`

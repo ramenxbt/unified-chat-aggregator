@@ -40,6 +40,10 @@ body {
     linear-gradient(180deg, #0b0c0b 0%, #060706 100%);
 }
 
+body.obs-body {
+  background: transparent;
+}
+
 button,
 input {
   font: inherit;
@@ -624,6 +628,50 @@ button {
 
 .app-shell[data-submission="true"] .event-row {
   min-height: 64px;
+}
+
+.app-shell[data-obs="true"] {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.app-shell[data-obs="true"] .topbar {
+  min-height: 52px;
+  border: 0;
+  padding: 10px 12px 8px;
+  background: rgba(8, 9, 8, 0.72);
+}
+
+.app-shell[data-obs="true"] .topbar-actions,
+.app-shell[data-obs="true"] .feed-toolbar span:not(:first-child) {
+  display: none;
+}
+
+.app-shell[data-obs="true"] .topbar h2 {
+  font-size: 18px;
+}
+
+.app-shell[data-obs="true"] .eyeline {
+  font-size: 11px;
+}
+
+.app-shell[data-obs="true"] .feed-toolbar {
+  min-height: 28px;
+  border: 0;
+  padding: 0 12px;
+  background: rgba(8, 9, 8, 0.72);
+}
+
+.app-shell[data-obs="true"] .event-list {
+  padding: 6px 8px 10px;
+}
+
+.app-shell[data-obs="true"] .event-row {
+  min-height: 54px;
+  margin-bottom: 5px;
+  border-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(8, 9, 8, 0.78);
+  backdrop-filter: blur(8px);
 }
 
 .empty-state,

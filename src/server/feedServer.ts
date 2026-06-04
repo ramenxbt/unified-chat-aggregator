@@ -1,5 +1,6 @@
 import { TwitchEventSubConnector } from "../connectors/twitch/twitchEventSubConnector";
 import type { Connector } from "../connectors/types";
+import { XApiConnector } from "../connectors/x/xApiConnector";
 import { LiveFeedRuntime } from "./liveFeedRuntime";
 
 const port = Number(process.env.FEED_SERVER_PORT ?? 8787);
@@ -35,8 +36,13 @@ async function shutdown() {
 
 function buildConnectorsFromEnv(): Connector[] {
   const twitchConnector = buildTwitchConnectorFromEnv();
+  const xConnector = buildXConnectorFromEnv();
+  const connectors: Connector[] = [];
 
-  return twitchConnector ? [twitchConnector] : [];
+  if (twitchConnector) connectors.push(twitchConnector);
+  if (xConnector) connectors.push(xConnector);
+
+  return connectors;
 }
 
 function buildTwitchConnectorFromEnv() {
@@ -58,4 +64,33 @@ function buildTwitchConnectorFromEnv() {
     endpoint: process.env.TWITCH_EVENTSUB_ENDPOINT,
     subscriptionEndpoint: process.env.TWITCH_EVENTSUB_SUBSCRIPTION_ENDPOINT
   });
+}
+
+function buildXConnectorFromEnv() {
+  const bearerToken = process.env.X_BEARER_TOKEN;
+  const filterRules = parseEnvList(process.env.X_FILTER_RULES);
+  const spacesQuery = process.env.X_SPACES_QUERY;
+
+  if (!bearerToken || (filterRules.length === 0 && !spacesQuery)) {
+    return null;
+  }
+
+  return new XApiConnector({
+    bearerToken,
+    filterRules,
+    spacesQuery,
+    filteredStreamEndpoint: process.env.X_FILTERED_STREAM_ENDPOINT,
+    rulesEndpoint: process.env.X_RULES_ENDPOINT,
+    spacesSearchEndpoint: process.env.X_SPACES_SEARCH_ENDPOINT,
+    spacesPollMs: process.env.X_SPACES_POLL_MS ? Number(process.env.X_SPACES_POLL_MS) : undefined
+  });
+}
+
+function parseEnvList(value: string | undefined) {
+  return (
+    value
+      ?.split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean) ?? []
+  );
 }

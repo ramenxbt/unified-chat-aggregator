@@ -10,7 +10,7 @@ Deadline: June 11
 
 ## Current Phase
 
-Functional skeleton. Platform constraints, scope, and architecture are documented. The app now has a React/Vite dashboard powered by normalized fixture events or a local WebSocket feed server.
+Functional skeleton. Platform constraints, scope, and architecture are documented. The app now has a React/Vite dashboard powered by normalized fixture events or a local WebSocket feed server with Twitch and X connector paths.
 
 ## Local Development
 
@@ -26,7 +26,15 @@ npm run feed
 VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 ```
 
-If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. Without those values it runs fixture mode.
+If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. If `X_BEARER_TOKEN` is set with `X_FILTER_RULES` or `X_SPACES_QUERY`, it also runs the X filtered stream or Spaces poller. Without connector credentials it runs fixture mode.
+
+OBS browser source mode:
+
+```text
+http://127.0.0.1:5173/?obs=1
+```
+
+Use that URL after starting the dashboard. For live events, start `npm run feed` first, then run the dashboard with `VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev`.
 
 Verification:
 

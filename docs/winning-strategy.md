@@ -11,6 +11,7 @@ The differentiator is:
 - Source labels that remain obvious
 - Real connector health proof
 - Recording/submission mode for a clean demo video
+- OBS browser-source mode for direct stream overlay capture
 
 ## UX Direction
 
@@ -53,6 +54,14 @@ Live transport for recording:
 npm run feed
 VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 ```
+
+OBS browser source URL:
+
+```text
+http://127.0.0.1:5173/?obs=1
+```
+
+This mode starts in submission layout, hides operator controls, and uses a transparent page background so it can sit over the Market Bubble stream recording.
 
 ## Real Stream Priority
 

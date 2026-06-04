@@ -36,6 +36,7 @@ const platformAccent: Record<SourcePlatform, string> = {
 };
 
 export function App() {
+  const [obsMode] = useState(readObsMode);
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>({
     twitch: true,
     kick: true,
@@ -43,7 +44,7 @@ export function App() {
   });
   const [query, setQuery] = useState("");
   const [signalOnly, setSignalOnly] = useState(false);
-  const [submissionMode, setSubmissionMode] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState(obsMode);
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -82,6 +83,14 @@ export function App() {
   const totalEvents = events.length;
   const signalCount = events.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
+
+  useEffect(() => {
+    document.body.classList.toggle("obs-body", obsMode);
+
+    return () => {
+      document.body.classList.remove("obs-body");
+    };
+  }, [obsMode]);
 
   useEffect(() => {
     if (!recording) return;
@@ -136,7 +145,12 @@ export function App() {
   }
 
   return (
-    <main className="app-shell" data-recording={recording} data-submission={submissionMode}>
+    <main
+      className="app-shell"
+      data-obs={obsMode}
+      data-recording={recording}
+      data-submission={submissionMode}
+    >
       <aside className="source-rail" aria-label="Source controls">
         <div className="brand-block">
           <div className="brand-mark">MB</div>
@@ -282,6 +296,10 @@ export function App() {
       </aside>
     </main>
   );
+}
+
+function readObsMode() {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("obs") === "1";
 }
 
 function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
