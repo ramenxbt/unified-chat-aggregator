@@ -670,6 +670,58 @@ button {
   min-height: 292px;
 }
 
+.author-detail {
+  margin-top: 12px;
+}
+
+.author-card {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.author-card strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author-card span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author-platform {
+  color: var(--soft) !important;
+  font-size: 11px !important;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.author-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.author-stats .metric {
+  padding: 8px;
+}
+
+.author-stats .metric strong {
+  font-size: 13px;
+}
+
 .event-detail {
   margin-top: 12px;
 }

@@ -45,7 +45,7 @@
 - [x] Jump to live
 - [x] Search and keyword highlight
 - [x] Signal mode scoring
-- Author detail drawer
+- [x] Author detail drawer
 - [x] Connector diagnostics
 - [x] Credential missing states
 - [x] Recording controls

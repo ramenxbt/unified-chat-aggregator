@@ -44,6 +44,17 @@ describe("App", () => {
     expect(screen.getByText("X_BEARER_TOKEN")).toBeInTheDocument();
   });
 
+  it("shows selected author and source details", async () => {
+    render(<App />);
+
+    await userEvent.click(screen.getAllByText(/Ansem is cooking again/i)[0]);
+
+    expect(screen.getByText("tw_67")).toBeInTheDocument();
+    expect(screen.getByText("twitch_ansem")).toBeInTheDocument();
+    expect(screen.getAllByText("Mod").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
+  });
+
   it("starts a recording from the current replay buffer", async () => {
     render(<App />);
 

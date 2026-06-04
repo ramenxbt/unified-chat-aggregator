@@ -15,6 +15,7 @@ import {
   Square,
   Trash2,
   Upload,
+  UserRound,
   Video,
   Zap
 } from "lucide-react";
@@ -103,6 +104,10 @@ export function App() {
   const readinessItems = useMemo(
     () => buildReadinessItems(statuses, effectiveTransportState),
     [statuses, effectiveTransportState]
+  );
+  const selectedAuthorProfile = useMemo(
+    () => (selectedEvent ? buildAuthorProfile(selectedEvent, feedEvents) : null),
+    [feedEvents, selectedEvent]
   );
 
   useEffect(() => {
@@ -381,6 +386,11 @@ export function App() {
         </section>
 
         <section className="detail-section selected-event">
+          <SectionTitle icon={<UserRound size={15} />} title="Author" />
+          {selectedAuthorProfile ? <AuthorDetail profile={selectedAuthorProfile} /> : <EmptyDetail />}
+        </section>
+
+        <section className="detail-section selected-event">
           <SectionTitle icon={<Activity size={15} />} title="Selected event" />
           {selectedEvent ? <EventDetail event={selectedEvent} /> : <EmptyDetail />}
         </section>
@@ -428,6 +438,19 @@ type ReadinessItem = {
   title: string;
   detail: string;
   requirements: string[];
+};
+
+type AuthorProfile = {
+  platformLabel: string;
+  sourceLabel: string;
+  authorLabel: string;
+  sourceAccount: string;
+  badgeLabels: string[];
+  authorEventCount: number;
+  sourceEventCount: number;
+  signalScore: number;
+  authorId: string;
+  sourceId: string;
 };
 
 function readObsMode() {
@@ -576,6 +599,39 @@ function ReadinessPanel({
   );
 }
 
+function AuthorDetail({ profile }: { profile: AuthorProfile }) {
+  return (
+    <div className="author-detail">
+      <div className="author-card">
+        <span className="author-platform">{profile.platformLabel}</span>
+        <strong>{profile.authorLabel}</strong>
+        <span>{profile.sourceLabel}</span>
+      </div>
+      <div className="author-stats">
+        <Metric label="author events" value={profile.authorEventCount} />
+        <Metric label="source events" value={profile.sourceEventCount} />
+        <Metric label="signal" value={profile.signalScore} />
+      </div>
+      <div className="detail-line">
+        <span>Source account</span>
+        <strong>{profile.sourceAccount}</strong>
+      </div>
+      <div className="detail-line">
+        <span>Badges</span>
+        <strong>{profile.badgeLabels.length > 0 ? profile.badgeLabels.join(", ") : "none"}</strong>
+      </div>
+      <div className="raw-block">
+        <span>Author ID</span>
+        <code>{profile.authorId}</code>
+      </div>
+      <div className="raw-block">
+        <span>Source ID</span>
+        <code>{profile.sourceId}</code>
+      </div>
+    </div>
+  );
+}
+
 function EventDetail({ event }: { event: UnifiedEvent }) {
   return (
     <div className="event-detail">
@@ -620,6 +676,35 @@ function EmptyDetail() {
       <span>Select an event.</span>
     </div>
   );
+}
+
+function buildAuthorProfile(event: UnifiedEvent, events: UnifiedEvent[]): AuthorProfile {
+  const authorKey = event.authorId ?? event.authorName ?? event.sourceChannelName ?? event.platformEventId;
+  const sourceKey = event.sourceChannelId ?? event.sourceChannelName ?? event.platform;
+  const authorEventCount = events.filter(
+    (feedEvent) =>
+      feedEvent.platform === event.platform &&
+      (feedEvent.authorId ?? feedEvent.authorName ?? feedEvent.sourceChannelName ?? feedEvent.platformEventId) ===
+        authorKey
+  ).length;
+  const sourceEventCount = events.filter(
+    (feedEvent) =>
+      feedEvent.platform === event.platform &&
+      (feedEvent.sourceChannelId ?? feedEvent.sourceChannelName ?? feedEvent.platform) === sourceKey
+  ).length;
+
+  return {
+    platformLabel: platformLabels[event.platform],
+    sourceLabel: formatPlatformSourceLabel(event),
+    authorLabel: formatAuthor(event),
+    sourceAccount: event.sourceChannelName ?? "n/a",
+    badgeLabels: event.badges.map((badge) => badge.label),
+    authorEventCount,
+    sourceEventCount,
+    signalScore: scoreEventSignal(event),
+    authorId: event.authorId ?? "n/a",
+    sourceId: event.sourceChannelId ?? "n/a"
+  };
 }
 
 function buildReadinessItems(statuses: ConnectorStatus[], transportState: AppTransportState): ReadinessItem[] {
