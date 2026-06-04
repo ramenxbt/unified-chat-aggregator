@@ -33,7 +33,7 @@
 
 - [x] Add database schema
 - [x] Add server archive for sessions, events, and connector status runs
-- [ ] Store normalized sources in durable database backend
+- [x] Store normalized sources in durable database backend
 - [x] Add local session capture/replay
 - [x] Add export to JSON/CSV
 - [x] Add recording JSON import/viewer
@@ -81,6 +81,6 @@
 1. Run `npm run preflight` with real Twitch, Kick, and X stream credentials.
 2. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
 3. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
-4. Store normalized sources in a durable database backend after live connector proof.
+4. Enable `FEED_DB_PATH=data/feed.sqlite` during the live proof run for durable queryable evidence.
 5. Add final UI polish pass after live connector proof.
 6. Capture final submission video through OBS mode.

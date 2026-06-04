@@ -1,6 +1,12 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ConnectorStatus, UnifiedEvent } from "../domain/unifiedEvent";
+import {
+  platformLabels,
+  scoreEventSignal,
+  type ConnectorStatus,
+  type SourcePlatform,
+  type UnifiedEvent
+} from "../domain/unifiedEvent";
 
 export type FeedArchiveSession = {
   sessionId: string;
@@ -27,6 +33,19 @@ type ArchiveManifest = FeedArchiveSession & {
     events: string;
     statuses: string;
   };
+};
+
+type SQLiteValue = string | number | bigint | Uint8Array | null;
+
+type SQLiteStatement = {
+  run(...values: SQLiteValue[]): unknown;
+  get(...values: SQLiteValue[]): unknown;
+};
+
+type SQLiteDatabase = {
+  exec(sql: string): void;
+  prepare(sql: string): SQLiteStatement;
+  close(): void;
 };
 
 export class FileFeedArchive implements FeedArchive {
@@ -99,14 +118,347 @@ export class FileFeedArchive implements FeedArchive {
   }
 }
 
+export class CompositeFeedArchive implements FeedArchive {
+  constructor(private readonly archives: FeedArchive[]) {}
+
+  get sessionPath() {
+    return this.archives.find((archive) => archive.sessionPath)?.sessionPath;
+  }
+
+  async start(session: FeedArchiveSession) {
+    await Promise.all(this.archives.map((archive) => archive.start(session)));
+  }
+
+  recordEvent(event: UnifiedEvent) {
+    for (const archive of this.archives) {
+      archive.recordEvent(event);
+    }
+  }
+
+  recordStatus(status: ConnectorStatus) {
+    for (const archive of this.archives) {
+      archive.recordStatus(status);
+    }
+  }
+
+  async stop(endedAt: string) {
+    await Promise.all(this.archives.map((archive) => archive.stop(endedAt)));
+  }
+}
+
+export class SQLiteFeedArchive implements FeedArchive {
+  private db: SQLiteDatabase | null = null;
+  private sessionId: string | null = null;
+
+  constructor(private readonly dbPath: string) {}
+
+  get sessionPath() {
+    return this.dbPath;
+  }
+
+  async start(session: FeedArchiveSession) {
+    if (this.dbPath !== ":memory:") {
+      await mkdir(path.dirname(this.dbPath), { recursive: true });
+    }
+
+    this.db = await openSQLiteDatabase(this.dbPath);
+    this.db.exec(sqliteSchema);
+    this.sessionId = session.sessionId;
+    this.db
+      .prepare(
+        `insert or replace into sessions (
+          id,
+          name,
+          mode,
+          started_at,
+          ended_at,
+          ingest_version,
+          metadata_json
+        ) values (?, ?, ?, ?, null, ?, ?)`
+      )
+      .run(
+        session.sessionId,
+        formatSessionName(session),
+        session.mode,
+        session.startedAt,
+        "v1",
+        JSON.stringify({
+          bufferSize: session.bufferSize,
+          fixtureIntervalMs: session.fixtureIntervalMs,
+          connectorPlatforms: session.connectorPlatforms
+        })
+      );
+  }
+
+  recordEvent(event: UnifiedEvent) {
+    if (!this.db || !this.sessionId) return;
+
+    const sourceKey = this.upsertSource({
+      platform: event.platform,
+      sourceChannelId: event.sourceChannelId,
+      sourceName: getEventSourceName(event)
+    });
+
+    this.db
+      .prepare(
+        `insert or ignore into events (
+          id,
+          session_id,
+          source_key,
+          platform,
+          kind,
+          platform_event_id,
+          source_channel_id,
+          source_channel_name,
+          author_id,
+          author_name,
+          text,
+          occurred_at,
+          received_at,
+          signal_score,
+          badges_json,
+          fragments_json,
+          raw_json
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        event.id,
+        this.sessionId,
+        sourceKey,
+        event.platform,
+        event.kind,
+        event.platformEventId,
+        event.sourceChannelId ?? null,
+        event.sourceChannelName ?? null,
+        event.authorId ?? null,
+        event.authorName ?? null,
+        event.text ?? null,
+        event.occurredAt,
+        event.receivedAt,
+        scoreEventSignal(event),
+        JSON.stringify(event.badges),
+        JSON.stringify(event.fragments),
+        JSON.stringify(event.raw)
+      );
+  }
+
+  recordStatus(status: ConnectorStatus) {
+    if (!this.db || !this.sessionId) return;
+
+    const sourceKey = this.upsertSource({
+      platform: status.platform,
+      sourceName: status.sourceName
+    });
+
+    this.db
+      .prepare(
+        `insert into connector_statuses (
+          session_id,
+          source_key,
+          platform,
+          state,
+          label,
+          source_name,
+          recorded_at,
+          last_event_at,
+          event_count,
+          dropped_count,
+          reconnect_count,
+          latency_ms
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        this.sessionId,
+        sourceKey,
+        status.platform,
+        status.state,
+        status.label,
+        status.sourceName,
+        new Date().toISOString(),
+        status.lastEventAt ?? null,
+        status.eventCount,
+        status.droppedCount,
+        status.reconnectCount,
+        status.latencyMs ?? null
+      );
+  }
+
+  async stop(endedAt: string) {
+    if (!this.db || !this.sessionId) return;
+
+    this.db.prepare("update sessions set ended_at = ? where id = ?").run(endedAt, this.sessionId);
+    this.db.close();
+    this.db = null;
+    this.sessionId = null;
+  }
+
+  private upsertSource(source: { platform: SourcePlatform; sourceChannelId?: string; sourceName: string }) {
+    if (!this.db) return null;
+
+    const sourceKey = buildSourceKey(source.platform, source.sourceChannelId, source.sourceName);
+    const now = new Date().toISOString();
+
+    this.db
+      .prepare(
+        `insert into sources (
+          source_key,
+          platform,
+          source_channel_id,
+          source_name,
+          display_label,
+          created_at,
+          updated_at
+        ) values (?, ?, ?, ?, ?, ?, ?)
+        on conflict(source_key) do update set
+          source_channel_id = excluded.source_channel_id,
+          source_name = excluded.source_name,
+          display_label = excluded.display_label,
+          updated_at = excluded.updated_at`
+      )
+      .run(
+        sourceKey,
+        source.platform,
+        source.sourceChannelId ?? null,
+        source.sourceName,
+        formatSourceDisplayLabel(source.platform, source.sourceName),
+        now,
+        now
+      );
+
+    return sourceKey;
+  }
+}
+
 export function createFeedArchiveFromEnv(env: NodeJS.ProcessEnv = process.env): FeedArchive | null {
   if (env.FEED_ARCHIVE_ENABLED === "false") {
     return null;
   }
 
-  return new FileFeedArchive(path.resolve(env.FEED_ARCHIVE_DIR ?? "data/feed-sessions"));
+  const archives: FeedArchive[] = [new FileFeedArchive(path.resolve(env.FEED_ARCHIVE_DIR ?? "data/feed-sessions"))];
+
+  if (env.FEED_DB_PATH) {
+    archives.push(new SQLiteFeedArchive(resolveDatabasePath(env.FEED_DB_PATH)));
+  }
+
+  if (archives.length === 1) {
+    return archives[0];
+  }
+
+  return new CompositeFeedArchive(archives);
 }
 
 export function createFeedSessionId(startedAt: string, mode: FeedArchiveSession["mode"]) {
   return `${startedAt.replace(/[:.]/g, "-")}-${mode}`;
+}
+
+const sqliteSchema = `
+create table if not exists sources (
+  source_key text primary key,
+  platform text not null check (platform in ('twitch', 'kick', 'x')),
+  source_channel_id text,
+  source_name text not null,
+  display_label text not null,
+  created_at text not null,
+  updated_at text not null
+);
+
+create table if not exists sessions (
+  id text primary key,
+  name text not null,
+  mode text not null check (mode in ('fixture', 'connectors', 'replay')),
+  started_at text not null,
+  ended_at text,
+  ingest_version text not null default 'v1',
+  metadata_json text not null default '{}'
+);
+
+create table if not exists connector_statuses (
+  id integer primary key autoincrement,
+  session_id text not null references sessions(id) on delete cascade,
+  source_key text references sources(source_key) on delete set null,
+  platform text not null check (platform in ('twitch', 'kick', 'x')),
+  state text not null,
+  label text not null,
+  source_name text not null,
+  recorded_at text not null,
+  last_event_at text,
+  event_count integer not null default 0,
+  dropped_count integer not null default 0,
+  reconnect_count integer not null default 0,
+  latency_ms integer
+);
+
+create table if not exists events (
+  id text primary key,
+  session_id text not null references sessions(id) on delete cascade,
+  source_key text references sources(source_key) on delete set null,
+  platform text not null check (platform in ('twitch', 'kick', 'x')),
+  kind text not null,
+  platform_event_id text not null,
+  source_channel_id text,
+  source_channel_name text,
+  author_id text,
+  author_name text,
+  text text,
+  occurred_at text not null,
+  received_at text not null,
+  signal_score integer not null default 0,
+  badges_json text not null default '[]',
+  fragments_json text not null default '[]',
+  raw_json text not null,
+  unique (platform, platform_event_id)
+);
+
+create index if not exists events_session_received_at_idx on events (session_id, received_at desc);
+create index if not exists events_platform_received_at_idx on events (platform, received_at desc);
+create index if not exists events_source_channel_idx on events (platform, source_channel_id);
+create index if not exists connector_statuses_session_platform_idx on connector_statuses (session_id, platform);
+`;
+
+function getEventSourceName(event: UnifiedEvent) {
+  return event.sourceChannelName ?? event.authorName ?? event.sourceChannelId ?? event.platform;
+}
+
+function buildSourceKey(platform: SourcePlatform, sourceChannelId: string | undefined, sourceName: string) {
+  return [platform, sourceChannelId ?? sourceName.toLowerCase()].join(":");
+}
+
+function formatSourceDisplayLabel(platform: SourcePlatform, sourceName: string) {
+  const normalizedSource = sourceName.replace(/^#|^@/, "").trim();
+  const platformName = platformLabels[platform].toUpperCase();
+
+  if (!normalizedSource) {
+    return platformName;
+  }
+
+  if (platform === "x" && sourceName.trim().startsWith("@")) {
+    return `${platformName} (@${normalizedSource.toUpperCase()})`;
+  }
+
+  return `${platformName} (${normalizedSource.toUpperCase()})`;
+}
+
+function platformLabelsForSession(platforms: string[]) {
+  return platforms.map((platform) => platform.toUpperCase()).join("+");
+}
+
+function formatSessionName(session: FeedArchiveSession) {
+  if (session.mode === "fixture") {
+    return "Fixture feed run";
+  }
+
+  const platformLabel = platformLabelsForSession(session.connectorPlatforms);
+
+  return platformLabel ? `${platformLabel} connector run` : "Connector feed run";
+}
+
+function resolveDatabasePath(dbPath: string) {
+  return dbPath === ":memory:" ? dbPath : path.resolve(dbPath);
+}
+
+async function openSQLiteDatabase(dbPath: string) {
+  const sqliteModuleName = "node:sqlite";
+  const { DatabaseSync } = await import(sqliteModuleName);
+
+  return new DatabaseSync(dbPath) as SQLiteDatabase;
 }

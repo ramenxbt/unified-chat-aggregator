@@ -10,6 +10,7 @@ const appPort = 5176;
 const feedWsUrl = `ws://127.0.0.1:${feedPort}`;
 const appUrl = `http://127.0.0.1:${appPort}`;
 const archiveDir = path.resolve("qa/rehearsal/feed-sessions");
+const databasePath = path.resolve("qa/rehearsal", `feed-${Date.now()}.sqlite`);
 
 async function main() {
   await mkdir(archiveDir, { recursive: true });
@@ -17,7 +18,8 @@ async function main() {
   const feedServer = startProcess("npm", ["run", "feed"], {
     FEED_SERVER_PORT: String(feedPort),
     FEED_FIXTURE_INTERVAL_MS: "100",
-    FEED_ARCHIVE_DIR: archiveDir
+    FEED_ARCHIVE_DIR: archiveDir,
+    FEED_DB_PATH: databasePath
   });
   const appServer = startProcess("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", String(appPort)], {
     VITE_FEED_WS_URL: feedWsUrl
@@ -39,6 +41,7 @@ async function main() {
     await page.getByRole("log").getByText(/X \(/).first().waitFor({ state: "visible" });
 
     await assertArchive();
+    await assertDatabase();
     await page.close();
 
     console.log("Live-stack rehearsal passed");
@@ -133,6 +136,23 @@ async function assertArchive() {
   }
 
   throw new Error(`No feed archive events found in ${archiveDir}`);
+}
+
+async function assertDatabase() {
+  const sqliteModuleName = "node:sqlite";
+  const { DatabaseSync } = await import(sqliteModuleName);
+  const db = new DatabaseSync(databasePath, { readOnly: true });
+
+  try {
+    const event = db.prepare("select id from events limit 1").get();
+    const source = db.prepare("select display_label from sources where display_label = 'KICK (MARKETBUBBLE)'").get();
+
+    if (!event || !source) {
+      throw new Error(`No durable feed database rows found in ${databasePath}`);
+    }
+  } finally {
+    db.close();
+  }
 }
 
 function stopProcess(child: ChildProcessWithoutNullStreams) {

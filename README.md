@@ -33,6 +33,8 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
 
+Set `FEED_DB_PATH=data/feed.sqlite` to also persist sessions, normalized sources, events, and connector status samples into a queryable SQLite database. Source rows use the same platform/account label shape as the UI, such as `KICK (ANSEM)`, so the final run has durable proof of which account each message came from.
+
 Convert a server archive back into replay JSON or CSV:
 
 ```bash

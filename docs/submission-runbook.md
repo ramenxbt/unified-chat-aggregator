@@ -52,6 +52,8 @@ Confirm the feed server prints:
 - `Feed server mode: connectors`
 - `Feed archive: data/feed-sessions/<session-id>`
 
+For the final evidence run, start the feed server with `FEED_DB_PATH=data/feed.sqlite` as well. This keeps a queryable SQLite copy of sessions, normalized sources, events, and connector status samples next to the JSONL archive.
+
 Terminal 2:
 
 ```bash
@@ -112,4 +114,5 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Exported recording JSON.
 - Exported recording CSV.
 - Server archive folder with `manifest.json`, `events.jsonl`, and `statuses.jsonl`.
+- SQLite database when `FEED_DB_PATH` is enabled.
 - Final repo pushed to `ramenxbt/unified-chat-aggregator`.
