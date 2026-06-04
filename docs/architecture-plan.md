@@ -47,7 +47,7 @@ Dashboard
 Current local runtime:
 
 ```text
-Fixture generator / connectors
+Fixture generator or real connectors
         |
         v
 Replay buffer
@@ -174,3 +174,4 @@ Final visual polish should happen after the functional surface exists.
 - Twitch EventSub connector scaffold with mocked protocol tests
 - Local WebSocket feed server with bounded replay snapshot and live event fanout
 - Dashboard transport switch via `VITE_FEED_WS_URL`
+- Feed server automatically switches from fixture mode to Twitch connector mode when Twitch env credentials are present

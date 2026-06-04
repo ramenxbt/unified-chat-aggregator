@@ -20,6 +20,7 @@
 ## Phase 2 - Real Connectors
 
 - [x] Twitch EventSub WebSocket connector scaffold
+- [x] Feed server env path for Twitch EventSub connector
 - [ ] Twitch EventSub live auth/session run
 - Kick webhook receiver and subscription helper
 - X filtered stream connector

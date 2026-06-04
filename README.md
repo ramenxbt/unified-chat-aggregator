@@ -26,6 +26,8 @@ npm run feed
 VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 ```
 
+If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. Without those values it runs fixture mode.
+
 Verification:
 
 ```bash
