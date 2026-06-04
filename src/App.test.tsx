@@ -78,6 +78,54 @@ describe("App", () => {
     expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
   });
 
+  it("filters the feed by selected source account", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    await userEvent.click(screen.getAllByText(/Ansem is cooking again/i)[0]);
+    await userEvent.click(screen.getByRole("button", { name: /filter source account/i }));
+
+    expect(screen.getByText("Source: TWITCH (ANSEM)")).toBeInTheDocument();
+    expect(feed).toHaveTextContent("TWITCH (ANSEM)");
+    expect(feed).toHaveTextContent("BTC breakout if 72.4k reclaims cleanly");
+    expect(feed).not.toHaveTextContent("KICK (MARKETBUBBLE)");
+    expect(feed).not.toHaveTextContent("X (@USER1337)");
+
+    await userEvent.click(screen.getByRole("button", { name: /clear source filter/i }));
+
+    expect(feed).toHaveTextContent("KICK (MARKETBUBBLE)");
+  });
+
+  it("filters X source accounts by the visible post author", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    await userEvent.click(screen.getAllByText(/thanks for the polymarket picks/i)[0]);
+    await userEvent.click(screen.getByRole("button", { name: /filter source account/i }));
+
+    expect(screen.getByText("Source: X (@USER1337)")).toBeInTheDocument();
+    expect(feed).toHaveTextContent("X (@USER1337)");
+    expect(feed).toHaveTextContent("thanks for the polymarket picks");
+    expect(feed).not.toHaveTextContent("X (@TAPE_READER)");
+    expect(feed).not.toHaveTextContent("news flow is getting aggressive around open interest");
+  });
+
+  it("filters the feed by selected author", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    await userEvent.click(screen.getAllByText(/Ansem is cooking again/i)[0]);
+    await userEvent.click(screen.getByRole("button", { name: /^filter author$/i }));
+
+    expect(screen.getByText("Author: user67")).toBeInTheDocument();
+    expect(feed).toHaveTextContent("Ansem is cooking again");
+    expect(feed).not.toHaveTextContent("BTC breakout if 72.4k reclaims cleanly");
+
+    await userEvent.click(screen.getByRole("button", { name: /clear author filter/i }));
+
+    expect(feed).toHaveTextContent("BTC breakout if 72.4k reclaims cleanly");
+  });
+
   it("starts a recording from the current replay buffer", async () => {
     render(<App />);
 

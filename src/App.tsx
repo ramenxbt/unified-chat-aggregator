@@ -66,6 +66,8 @@ export function App() {
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
+  const [sourceAccountFilter, setSourceAccountFilter] = useState<FeedEntityFilter | null>(null);
   const recordedIdsRef = useRef(new Set<string>());
   const eventListRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -86,6 +88,8 @@ export function App() {
     return feedEvents.filter((event) => {
       if (!platformFilter[event.platform]) return false;
       if (signalOnly && !isSignalEvent(event)) return false;
+      if (authorFilter && getAuthorKey(event) !== authorFilter.key) return false;
+      if (sourceAccountFilter && getSourceAccountKey(event) !== sourceAccountFilter.key) return false;
       if (!normalizedQuery) return true;
 
       const searchTarget = [
@@ -101,7 +105,7 @@ export function App() {
 
       return searchTarget.includes(normalizedQuery);
     });
-  }, [feedEvents, platformFilter, query, signalOnly]);
+  }, [authorFilter, feedEvents, platformFilter, query, signalOnly, sourceAccountFilter]);
 
   const displayedEvents = viewPreset.limit ? visibleEvents.slice(0, viewPreset.limit) : visibleEvents;
 
@@ -266,6 +270,30 @@ export function App() {
     }
 
     clear();
+    setAuthorFilter(null);
+    setSourceAccountFilter(null);
+  }
+
+  function toggleAuthorFilter(profile: AuthorProfile) {
+    setAuthorFilter((current) =>
+      current?.key === profile.authorKey
+        ? null
+        : {
+            key: profile.authorKey,
+            label: profile.authorLabel
+          }
+    );
+  }
+
+  function toggleSourceAccountFilter(profile: AuthorProfile) {
+    setSourceAccountFilter((current) =>
+      current?.key === profile.sourceKey
+        ? null
+        : {
+            key: profile.sourceKey,
+            label: profile.sourceLabel
+          }
+    );
   }
 
   return (
@@ -383,6 +411,8 @@ export function App() {
           <span>{paused ? "Paused" : "Streaming"}</span>
           <span>{effectiveTransportState}</span>
           <span>{recordedEvents.length} recorded</span>
+          {sourceAccountFilter ? <span>Source: {sourceAccountFilter.label}</span> : null}
+          {authorFilter ? <span>Author: {authorFilter.label}</span> : null}
           <span>Newest first</span>
         </div>
 
@@ -431,7 +461,17 @@ export function App() {
 
         <section className="detail-section selected-event">
           <SectionTitle icon={<UserRound size={15} />} title="Author" />
-          {selectedAuthorProfile ? <AuthorDetail profile={selectedAuthorProfile} /> : <EmptyDetail />}
+          {selectedAuthorProfile ? (
+            <AuthorDetail
+              activeAuthorFilter={authorFilter}
+              activeSourceAccountFilter={sourceAccountFilter}
+              onToggleAuthorFilter={toggleAuthorFilter}
+              onToggleSourceAccountFilter={toggleSourceAccountFilter}
+              profile={selectedAuthorProfile}
+            />
+          ) : (
+            <EmptyDetail />
+          )}
         </section>
 
         <section className="detail-section selected-event">
@@ -496,6 +536,11 @@ type ImportedReplay = Omit<RecordingExport, "events"> & {
 
 type AppTransportState = ReturnType<typeof useUnifiedFeed>["transportState"] | "replay";
 
+type FeedEntityFilter = {
+  key: string;
+  label: string;
+};
+
 type ReadinessItem = {
   platform: SourcePlatform;
   state: "ready" | "watching" | "setup" | "attention";
@@ -505,6 +550,8 @@ type ReadinessItem = {
 };
 
 type AuthorProfile = {
+  authorKey: string;
+  sourceKey: string;
   platformLabel: string;
   sourceLabel: string;
   authorLabel: string;
@@ -899,13 +946,46 @@ function ReadinessPanel({
   );
 }
 
-function AuthorDetail({ profile }: { profile: AuthorProfile }) {
+function AuthorDetail({
+  activeAuthorFilter,
+  activeSourceAccountFilter,
+  onToggleAuthorFilter,
+  onToggleSourceAccountFilter,
+  profile
+}: {
+  activeAuthorFilter: FeedEntityFilter | null;
+  activeSourceAccountFilter: FeedEntityFilter | null;
+  onToggleAuthorFilter: (profile: AuthorProfile) => void;
+  onToggleSourceAccountFilter: (profile: AuthorProfile) => void;
+  profile: AuthorProfile;
+}) {
+  const authorFilterActive = activeAuthorFilter?.key === profile.authorKey;
+  const sourceFilterActive = activeSourceAccountFilter?.key === profile.sourceKey;
+
   return (
     <div className="author-detail">
       <div className="author-card">
         <span className="author-platform">{profile.platformLabel}</span>
         <strong>{profile.authorLabel}</strong>
         <span>{profile.sourceLabel}</span>
+      </div>
+      <div className="filter-actions">
+        <button
+          className="wide-button"
+          data-active={sourceFilterActive}
+          onClick={() => onToggleSourceAccountFilter(profile)}
+          type="button"
+        >
+          {sourceFilterActive ? "Clear source filter" : "Filter source account"}
+        </button>
+        <button
+          className="wide-button"
+          data-active={authorFilterActive}
+          onClick={() => onToggleAuthorFilter(profile)}
+          type="button"
+        >
+          {authorFilterActive ? "Clear author filter" : "Filter author"}
+        </button>
       </div>
       <div className="author-stats">
         <Metric label="author events" value={profile.authorEventCount} />
@@ -979,21 +1059,18 @@ function EmptyDetail() {
 }
 
 function buildAuthorProfile(event: UnifiedEvent, events: UnifiedEvent[]): AuthorProfile {
-  const authorKey = event.authorId ?? event.authorName ?? event.sourceChannelName ?? event.platformEventId;
-  const sourceKey = event.sourceChannelId ?? event.sourceChannelName ?? event.platform;
+  const authorKey = getAuthorKey(event);
+  const sourceKey = getSourceAccountKey(event);
   const authorEventCount = events.filter(
-    (feedEvent) =>
-      feedEvent.platform === event.platform &&
-      (feedEvent.authorId ?? feedEvent.authorName ?? feedEvent.sourceChannelName ?? feedEvent.platformEventId) ===
-        authorKey
+    (feedEvent) => feedEvent.platform === event.platform && getAuthorKey(feedEvent) === authorKey
   ).length;
   const sourceEventCount = events.filter(
-    (feedEvent) =>
-      feedEvent.platform === event.platform &&
-      (feedEvent.sourceChannelId ?? feedEvent.sourceChannelName ?? feedEvent.platform) === sourceKey
+    (feedEvent) => feedEvent.platform === event.platform && getSourceAccountKey(feedEvent) === sourceKey
   ).length;
 
   return {
+    authorKey,
+    sourceKey,
     platformLabel: platformLabels[event.platform],
     sourceLabel: formatPlatformSourceLabel(event),
     authorLabel: formatAuthor(event),
@@ -1005,6 +1082,21 @@ function buildAuthorProfile(event: UnifiedEvent, events: UnifiedEvent[]): Author
     authorId: event.authorId ?? "n/a",
     sourceId: event.sourceChannelId ?? "n/a"
   };
+}
+
+function getAuthorKey(event: UnifiedEvent) {
+  return [event.platform, event.authorId ?? event.authorName ?? event.sourceChannelName ?? event.platformEventId].join(
+    ":"
+  );
+}
+
+function getSourceAccountKey(event: UnifiedEvent) {
+  const accountKey =
+    event.platform === "x" && (event.authorId || event.authorName)
+      ? event.authorId ?? event.authorName
+      : event.sourceChannelId ?? event.sourceChannelName ?? event.platform;
+
+  return [event.platform, accountKey].join(":");
 }
 
 function formatRelativeTime(dateTime: string) {

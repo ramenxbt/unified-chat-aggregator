@@ -314,6 +314,12 @@ button {
   opacity: 0.48;
 }
 
+.wide-button[data-active="true"] {
+  border-color: rgba(229, 196, 107, 0.48);
+  color: var(--gold);
+  background: rgba(229, 196, 107, 0.08);
+}
+
 .icon-button:hover,
 .wide-button:hover,
 .mode-toggle:hover,
@@ -328,10 +334,12 @@ button {
   align-items: center;
   gap: 16px;
   min-height: 38px;
+  overflow-x: auto;
   border-bottom: 1px solid var(--border);
   padding: 0 20px;
   color: var(--muted);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .live-button {
@@ -339,7 +347,6 @@ button {
   align-items: center;
   gap: 7px;
   min-height: 26px;
-  margin-left: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0 9px;
@@ -675,6 +682,12 @@ button {
 
 .author-detail {
   margin-top: 12px;
+}
+
+.filter-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .author-card {
@@ -1071,6 +1084,15 @@ button {
     grid-column: 1 / -1;
     width: 100%;
     min-width: 0;
+  }
+
+  .feed-toolbar {
+    gap: 10px;
+    padding: 0 10px;
+  }
+
+  .feed-toolbar > span:last-child {
+    display: none;
   }
 
   .event-row {
