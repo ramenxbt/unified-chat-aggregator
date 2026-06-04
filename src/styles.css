@@ -342,7 +342,8 @@ button {
   white-space: nowrap;
 }
 
-.live-button {
+.live-button,
+.order-button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -359,7 +360,8 @@ button {
   color: #7df276;
 }
 
-.live-button:disabled {
+.live-button:disabled,
+.order-button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
 }
@@ -1087,6 +1089,7 @@ button {
 }
 
 .app-shell[data-obs="true"] .topbar-actions,
+.app-shell[data-obs="true"] .order-button,
 .app-shell[data-obs="true"] .live-button,
 .app-shell[data-obs="true"] .feed-toolbar span:not(:first-child) {
   display: none;
@@ -1222,6 +1225,10 @@ button {
   }
 
   .feed-toolbar > span:last-child {
+    display: none;
+  }
+
+  .feed-toolbar > span:nth-of-type(4) {
     display: none;
   }
 

@@ -4,14 +4,14 @@ Use this contract for the final visual polish pass. The app is functionally stab
 
 ## Must Preserve
 
-- Unified newest-first feed with Twitch, Kick, and X rows.
+- Unified feed with newest-first and oldest-first order controls.
 - Platform plus account labels such as `TWITCH (ANSEM)`, `KICK (MARKETBUBBLE)`, and `X (@USER1337)`.
 - Search across message text, author, source account, platform, and event kind.
 - Source toggles for Twitch, Kick, and X.
 - Source account activity roster with one-click filters.
 - Cross-platform source identity grouping for matching account names.
 - Signal mode.
-- Pause, resume, clear, and jump-live behavior.
+- Pause, resume, clear, order toggle, and jump-live behavior.
 - Recording start/stop, JSON export, and CSV export.
 - Import recording JSON into replay mode and exit replay.
 - Local session save, load, delete, and 12-session retention.

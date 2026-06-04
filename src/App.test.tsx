@@ -222,6 +222,43 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /^live$/i })).toBeInTheDocument();
   });
 
+  it("switches to oldest-first order and jumps to the bottom live edge", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+    const firstLabel = () => feed.querySelector(".platform-label")?.textContent;
+
+    Object.defineProperty(feed, "scrollHeight", {
+      configurable: true,
+      value: 1000
+    });
+    Object.defineProperty(feed, "clientHeight", {
+      configurable: true,
+      value: 400
+    });
+    Object.defineProperty(feed, "scrollTo", {
+      configurable: true,
+      value: vi.fn((options: ScrollToOptions) => {
+        feed.scrollTop = options.top ?? 0;
+      })
+    });
+
+    expect(screen.getByRole("button", { name: /newest first/i })).toBeInTheDocument();
+    expect(firstLabel()).toBe("TWITCH (ANSEM)");
+
+    await userEvent.click(screen.getByRole("button", { name: /newest first/i }));
+
+    expect(screen.getByRole("button", { name: /oldest first/i })).toBeInTheDocument();
+    expect(firstLabel()).toBe("KICK (MARKETBUBBLE)");
+
+    feed.scrollTop = 100;
+    fireEvent.scroll(feed);
+
+    await userEvent.click(screen.getByRole("button", { name: /jump live/i }));
+
+    expect(feed.scrollTop).toBe(1000);
+    expect(screen.getByRole("button", { name: /^live$/i })).toBeInTheDocument();
+  });
+
   it("imports an exported recording as a replay", async () => {
     render(<App />);
     const user = userEvent.setup();

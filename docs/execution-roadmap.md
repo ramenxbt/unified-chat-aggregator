@@ -44,6 +44,7 @@
 - [x] Source filter
 - [x] Pause/resume
 - [x] Jump to live
+- [x] Newest-first and oldest-first feed order
 - [x] Search and keyword highlight
 - [x] Source account and author quick filters
 - [x] Source account activity roster

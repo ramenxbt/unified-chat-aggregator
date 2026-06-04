@@ -16,6 +16,7 @@ import {
   Radio,
   Search,
   Shield,
+  Shuffle,
   Square,
   Target,
   Trash2,
@@ -70,6 +71,7 @@ export function App() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
   const [sourceAccountFilter, setSourceAccountFilter] = useState<FeedEntityFilter | null>(null);
+  const [feedOrder, setFeedOrder] = useState<FeedOrder>("newest");
   const recordedIdsRef = useRef(new Set<string>());
   const eventListRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -87,7 +89,7 @@ export function App() {
   const visibleEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return feedEvents.filter((event) => {
+    const filteredEvents = feedEvents.filter((event) => {
       if (!platformFilter[event.platform]) return false;
       if (signalOnly && !isSignalEvent(event)) return false;
       if (authorFilter && getAuthorKey(event) !== authorFilter.key) return false;
@@ -107,7 +109,13 @@ export function App() {
 
       return searchTarget.includes(normalizedQuery);
     });
-  }, [authorFilter, feedEvents, platformFilter, query, signalOnly, sourceAccountFilter]);
+
+    if (feedOrder === "oldest") {
+      return [...filteredEvents].reverse();
+    }
+
+    return filteredEvents;
+  }, [authorFilter, feedEvents, feedOrder, platformFilter, query, signalOnly, sourceAccountFilter]);
 
   const displayedEvents = viewPreset.limit ? visibleEvents.slice(0, viewPreset.limit) : visibleEvents;
 
@@ -142,8 +150,8 @@ export function App() {
   useEffect(() => {
     if (!pinnedToLive) return;
 
-    scrollEventListToTop(eventListRef.current);
-  }, [displayedEvents.length, pinnedToLive]);
+    scrollEventListToLiveEdge(eventListRef.current, feedOrder);
+  }, [displayedEvents.length, feedOrder, pinnedToLive]);
 
   useEffect(() => {
     if (!recording) return;
@@ -191,11 +199,16 @@ export function App() {
   }
 
   function handleEventListScroll(event: UIEvent<HTMLDivElement>) {
-    setPinnedToLive(event.currentTarget.scrollTop <= 12);
+    setPinnedToLive(isAtLiveEdge(event.currentTarget, feedOrder));
   }
 
   function jumpToLive() {
-    scrollEventListToTop(eventListRef.current);
+    scrollEventListToLiveEdge(eventListRef.current, feedOrder);
+    setPinnedToLive(true);
+  }
+
+  function toggleFeedOrder() {
+    setFeedOrder((currentOrder) => (currentOrder === "newest" ? "oldest" : "newest"));
     setPinnedToLive(true);
   }
 
@@ -419,6 +432,10 @@ export function App() {
 
         <div className="feed-toolbar">
           <span>{displayedEvents.length} visible</span>
+          <button className="order-button" onClick={toggleFeedOrder} type="button">
+            <Shuffle size={12} />
+            <span>{feedOrder === "newest" ? "Newest first" : "Oldest first"}</span>
+          </button>
           <button
             className="live-button"
             data-active={pinnedToLive}
@@ -434,7 +451,7 @@ export function App() {
           <span>{recordedEvents.length} recorded</span>
           {sourceAccountFilter ? <span>Source: {sourceAccountFilter.label}</span> : null}
           {authorFilter ? <span>Author: {authorFilter.label}</span> : null}
-          <span>Newest first</span>
+          <span>{feedOrder === "newest" ? "Live at top" : "Live at bottom"}</span>
         </div>
 
         <div
@@ -575,6 +592,8 @@ type FeedEntityFilter = {
   key: string;
   label: string;
 };
+
+type FeedOrder = "newest" | "oldest";
 
 type ReadinessItem = {
   platform: SourcePlatform;
@@ -792,15 +811,25 @@ function buildObsPresetHref({
   return baseUrl.toString();
 }
 
-function scrollEventListToTop(list: HTMLDivElement | null) {
+function scrollEventListToLiveEdge(list: HTMLDivElement | null, feedOrder: FeedOrder) {
   if (!list) return;
 
+  const top = feedOrder === "newest" ? 0 : list.scrollHeight;
+
   if (typeof list.scrollTo === "function") {
-    list.scrollTo({ top: 0 });
+    list.scrollTo({ top });
     return;
   }
 
-  list.scrollTop = 0;
+  list.scrollTop = top;
+}
+
+function isAtLiveEdge(list: HTMLDivElement, feedOrder: FeedOrder) {
+  if (feedOrder === "newest") {
+    return list.scrollTop <= 12;
+  }
+
+  return list.scrollHeight - list.clientHeight - list.scrollTop <= 12;
 }
 
 function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
