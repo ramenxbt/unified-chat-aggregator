@@ -18,6 +18,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: /unified chat aggregator/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Ansem is cooking again/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("KICK (ANSEM)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("KICK (MARKETBUBBLE)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("X (@USER1337)").length).toBeGreaterThan(0);
 
@@ -94,6 +95,22 @@ describe("App", () => {
 
     expect(screen.queryByText("Source: TWITCH (ANSEM)")).not.toBeInTheDocument();
     expect(feed).toHaveTextContent("KICK (MARKETBUBBLE)");
+  });
+
+  it("groups matching source accounts into a focusable identity", async () => {
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    expect(screen.getByText("Identities")).toBeInTheDocument();
+    expect(screen.getAllByText("ANSEM").length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("button", { name: /focus identity ansem/i }));
+
+    expect(screen.getByLabelText(/search feed/i)).toHaveValue("ansem");
+    expect(feed).toHaveTextContent("TWITCH (ANSEM)");
+    expect(feed).toHaveTextContent("KICK (ANSEM)");
+    expect(feed).not.toHaveTextContent("KICK (MARKETBUBBLE)");
+    expect(feed).not.toHaveTextContent("X (@USER1337)");
   });
 
   it("filters the feed by selected source account", async () => {

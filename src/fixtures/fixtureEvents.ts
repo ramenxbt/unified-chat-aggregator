@@ -88,6 +88,17 @@ const templates: FixtureTemplate[] = [
   {
     platform: "kick",
     kind: "chat_message",
+    sourceChannelId: "kick_ansem",
+    sourceChannelName: "ansem",
+    authorId: "kick_388",
+    authorName: "greenwick",
+    authorColor: "#67e85f",
+    text: "Kick side is locked on the Ansem trade",
+    badges: [{ label: "VIP", type: "vip" }]
+  },
+  {
+    platform: "kick",
+    kind: "chat_message",
     sourceChannelId: "kick_marketbubble",
     sourceChannelName: "marketbubble",
     authorId: "kick_871",

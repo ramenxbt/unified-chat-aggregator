@@ -72,7 +72,7 @@ During a recording, scroll the feed to inspect older messages. The toolbar switc
 
 Feed rows label both platform and account/channel, for example `TWITCH (ANSEM)`, `KICK (MARKETBUBBLE)`, or `X (@USER1337)`.
 
-The diagnostics rail includes an `Accounts` roster with live source-account activity, event counts, signal counts, and one-click filters. Selecting a row opens author/source diagnostics with the platform account, author handle, badge stack, buffer counts, signal score, and platform IDs. From there, the operator can filter to the selected source account or selected author without changing the search box. This makes it easier to prove where a clipped message came from during the final submission recording.
+The diagnostics rail includes an `Accounts` roster with live source-account activity, event counts, signal counts, and one-click filters. The `Identities` panel groups matching source accounts across platforms, such as `TWITCH (ANSEM)` and `KICK (ANSEM)`, into a focused search. Selecting a row opens author/source diagnostics with the platform account, author handle, badge stack, buffer counts, signal score, and platform IDs. From there, the operator can filter to the selected source account or selected author without changing the search box. This makes it easier to prove where a clipped message came from during the final submission recording.
 
 The diagnostics rail includes a `Readiness` panel. In fixture mode it shows the exact connector env vars and public webhook setup still needed for Twitch, Kick, and X before a real stream recording.
 

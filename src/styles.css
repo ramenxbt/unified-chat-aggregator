@@ -649,6 +649,64 @@ button {
   white-space: nowrap;
 }
 
+.identity-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.identity-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.identity-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.identity-heading strong,
+.identity-heading span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-heading strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.identity-heading span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.identity-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.identity-sources code {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 5px;
+  color: var(--soft);
+  font-size: 10px;
+}
+
+.compact-action {
+  min-height: 32px;
+  margin-top: 8px;
+}
+
 .readiness-panel {
   margin-top: 12px;
 }

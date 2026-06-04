@@ -9,6 +9,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Search across message text, author, source account, platform, and event kind.
 - Source toggles for Twitch, Kick, and X.
 - Source account activity roster with one-click filters.
+- Cross-platform source identity grouping for matching account names.
 - Signal mode.
 - Pause, resume, clear, and jump-live behavior.
 - Recording start/stop, JSON export, and CSV export.

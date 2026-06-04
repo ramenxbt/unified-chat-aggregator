@@ -17,6 +17,7 @@ import {
   Search,
   Shield,
   Square,
+  Target,
   Trash2,
   Upload,
   UserRound,
@@ -127,6 +128,7 @@ export function App() {
     [feedEvents, selectedEvent]
   );
   const sourceAccountSummaries = useMemo(() => buildSourceAccountSummaries(feedEvents), [feedEvents]);
+  const sourceIdentityGroups = useMemo(() => buildSourceIdentityGroups(sourceAccountSummaries), [sourceAccountSummaries]);
   const obsPresetLinks = useMemo(buildObsPresetLinks, []);
 
   useEffect(() => {
@@ -309,6 +311,12 @@ export function App() {
     );
   }
 
+  function focusSourceIdentity(group: SourceIdentityGroup) {
+    setQuery(group.query);
+    setAuthorFilter(null);
+    setSourceAccountFilter(null);
+  }
+
   return (
     <main
       className="app-shell"
@@ -472,6 +480,11 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<Target size={15} />} title="Identities" />
+          <SourceIdentitiesPanel groups={sourceIdentityGroups} onFocus={focusSourceIdentity} />
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<CheckCircle2 size={15} />} title="Readiness" />
           <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
         </section>
@@ -591,6 +604,15 @@ type SourceAccountSummary = FeedEntityFilter & {
   eventCount: number;
   signalCount: number;
   lastEventAt: string;
+};
+
+type SourceIdentityGroup = {
+  key: string;
+  label: string;
+  query: string;
+  accounts: SourceAccountSummary[];
+  eventCount: number;
+  signalCount: number;
 };
 
 type ObsPresetLink = {
@@ -923,6 +945,45 @@ function SourceAccountsPanel({
   );
 }
 
+function SourceIdentitiesPanel({
+  groups,
+  onFocus
+}: {
+  groups: SourceIdentityGroup[];
+  onFocus: (group: SourceIdentityGroup) => void;
+}) {
+  if (groups.length === 0) {
+    return (
+      <div className="empty-detail compact-empty">
+        <span>No linked identities yet.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="identity-list">
+      {groups.map((group) => (
+        <div className="identity-card" key={group.key}>
+          <div className="identity-heading">
+            <strong>{group.label}</strong>
+            <span>
+              {group.eventCount} events / {group.signalCount} signals
+            </span>
+          </div>
+          <div className="identity-sources">
+            {group.accounts.map((account) => (
+              <code key={account.key}>{account.label}</code>
+            ))}
+          </div>
+          <button className="wide-button compact-action" onClick={() => onFocus(group)} type="button">
+            Focus identity {group.label}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SessionArchive({
   eventsDisabled,
   onDelete,
@@ -1206,6 +1267,41 @@ function buildSourceAccountSummaries(events: UnifiedEvent[]): SourceAccountSumma
       return left.label.localeCompare(right.label);
     })
     .slice(0, 8);
+}
+
+function buildSourceIdentityGroups(accounts: SourceAccountSummary[]): SourceIdentityGroup[] {
+  const groupMap = new Map<string, SourceIdentityGroup>();
+
+  for (const account of accounts) {
+    const query = getSourceIdentityQuery(account.label);
+    if (!query) continue;
+
+    const current = groupMap.get(query);
+
+    groupMap.set(query, {
+      key: query,
+      label: query.toUpperCase(),
+      query,
+      accounts: [...(current?.accounts ?? []), account],
+      eventCount: (current?.eventCount ?? 0) + account.eventCount,
+      signalCount: (current?.signalCount ?? 0) + account.signalCount
+    });
+  }
+
+  return [...groupMap.values()]
+    .filter((group) => new Set(group.accounts.map((account) => account.platform)).size > 1)
+    .sort((left, right) => {
+      if (right.eventCount !== left.eventCount) return right.eventCount - left.eventCount;
+      return left.label.localeCompare(right.label);
+    })
+    .slice(0, 5);
+}
+
+function getSourceIdentityQuery(label: string) {
+  const accountName = label.match(/\(([^)]+)\)/)?.[1] ?? label;
+  const normalized = accountName.replace(/^@|^#/, "").trim().toLowerCase();
+
+  return normalized.length > 1 ? normalized : "";
 }
 
 function formatRelativeTime(dateTime: string) {
