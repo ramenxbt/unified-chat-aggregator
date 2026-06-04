@@ -47,7 +47,7 @@
 - [x] Signal mode scoring
 - Author detail drawer
 - [x] Connector diagnostics
-- Credential missing states
+- [x] Credential missing states
 - [x] Recording controls
 - [x] Submission mode
 - [x] OBS browser source mode

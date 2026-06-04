@@ -572,6 +572,100 @@ button {
   font-size: 13px;
 }
 
+.readiness-panel {
+  margin-top: 12px;
+}
+
+.readiness-summary {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.readiness-list {
+  display: grid;
+  gap: 8px;
+}
+
+.readiness-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.readiness-item[data-state="ready"] {
+  border-color: rgba(125, 242, 118, 0.32);
+}
+
+.readiness-item[data-state="attention"] {
+  border-color: rgba(229, 196, 107, 0.42);
+}
+
+.readiness-item[data-state="setup"] {
+  border-color: rgba(255, 107, 107, 0.32);
+}
+
+.readiness-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.readiness-heading span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readiness-heading strong {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.readiness-item[data-state="ready"] .readiness-heading strong {
+  color: #7df276;
+}
+
+.readiness-item[data-state="attention"] .readiness-heading strong {
+  color: var(--gold);
+}
+
+.readiness-item[data-state="setup"] .readiness-heading strong {
+  color: #ff9b9b;
+}
+
+.readiness-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.readiness-requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.readiness-requirements code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 5px;
+  background: var(--panel-3);
+  color: var(--soft);
+  font-size: 10px;
+}
+
 .selected-event {
   min-height: 292px;
 }
@@ -746,6 +840,23 @@ button {
 
   .event-row {
     grid-template-columns: 132px minmax(0, 1fr) 30px;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1420px) {
+  .search-box {
+    width: min(27vw, 300px);
+    min-width: 220px;
+  }
+
+  .icon-button {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+
+  .icon-button span {
+    display: none;
   }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import {
   Activity,
   Ban,
+  CheckCircle2,
   Circle,
   Download,
   Gauge,
@@ -35,6 +36,12 @@ const platformAccent: Record<SourcePlatform, string> = {
   twitch: "#a970ff",
   kick: "#67e85f",
   x: "#e8ecef"
+};
+
+const readinessRequirements: Record<SourcePlatform, string[]> = {
+  twitch: ["TWITCH_CLIENT_ID", "TWITCH_ACCESS_TOKEN", "TWITCH_BROADCASTER_USER_ID", "TWITCH_BOT_USER_ID"],
+  kick: ["KICK_WEBHOOK_ENABLED=true", "public /webhooks/kick URL", "KICK_ACCESS_TOKEN for auto subscribe"],
+  x: ["X_BEARER_TOKEN", "X_FILTER_RULES or X_SPACES_QUERY"]
 };
 
 export function App() {
@@ -93,6 +100,10 @@ export function App() {
   const totalEvents = feedEvents.length;
   const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
+  const readinessItems = useMemo(
+    () => buildReadinessItems(statuses, effectiveTransportState),
+    [statuses, effectiveTransportState]
+  );
 
   useEffect(() => {
     document.body.classList.toggle("obs-body", obsMode);
@@ -364,6 +375,11 @@ export function App() {
           </div>
         </section>
 
+        <section className="detail-section">
+          <SectionTitle icon={<CheckCircle2 size={15} />} title="Readiness" />
+          <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
+        </section>
+
         <section className="detail-section selected-event">
           <SectionTitle icon={<Activity size={15} />} title="Selected event" />
           {selectedEvent ? <EventDetail event={selectedEvent} /> : <EmptyDetail />}
@@ -402,6 +418,16 @@ export function App() {
 type ImportedReplay = Omit<RecordingExport, "events"> & {
   fileName: string;
   events: UnifiedEvent[];
+};
+
+type AppTransportState = ReturnType<typeof useUnifiedFeed>["transportState"] | "replay";
+
+type ReadinessItem = {
+  platform: SourcePlatform;
+  state: "ready" | "watching" | "setup" | "attention";
+  title: string;
+  detail: string;
+  requirements: string[];
 };
 
 function readObsMode() {
@@ -514,6 +540,42 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
   );
 }
 
+function ReadinessPanel({
+  items,
+  transportState
+}: {
+  items: ReadinessItem[];
+  transportState: AppTransportState;
+}) {
+  return (
+    <div className="readiness-panel">
+      <p className="readiness-summary">
+        {transportState === "fixture"
+          ? "Fixture mode active. Add live connector credentials before recording the real stream."
+          : transportState === "replay"
+            ? "Replay mode active. Exit replay to reconnect to live sources."
+            : "Live readiness is based on connector state, recent events, and configured sources."}
+      </p>
+      <div className="readiness-list">
+        {items.map((item) => (
+          <div className="readiness-item" data-state={item.state} key={item.platform}>
+            <div className="readiness-heading">
+              <span>{item.title}</span>
+              <strong>{item.state}</strong>
+            </div>
+            <p>{item.detail}</p>
+            <div className="readiness-requirements">
+              {item.requirements.map((requirement) => (
+                <code key={requirement}>{requirement}</code>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EventDetail({ event }: { event: UnifiedEvent }) {
   return (
     <div className="event-detail">
@@ -558,6 +620,85 @@ function EmptyDetail() {
       <span>Select an event.</span>
     </div>
   );
+}
+
+function buildReadinessItems(statuses: ConnectorStatus[], transportState: AppTransportState): ReadinessItem[] {
+  const statusMap = new Map(statuses.map((status) => [status.platform, status]));
+
+  return platforms.map((platform) => {
+    const status = statusMap.get(platform);
+    const platformName = platformLabels[platform];
+    const title = `${platformName} (${status?.sourceName ?? "not selected"})`;
+    const requirements = readinessRequirements[platform];
+
+    if (transportState === "fixture") {
+      return {
+        platform,
+        state: "setup",
+        title,
+        detail: "Currently showing fixture data, not the live platform.",
+        requirements
+      };
+    }
+
+    if (transportState === "replay") {
+      return {
+        platform,
+        state: "watching",
+        title,
+        detail: "Replay is loaded from a recording file.",
+        requirements
+      };
+    }
+
+    if (!status || status.state === "stopped") {
+      return {
+        platform,
+        state: "setup",
+        title,
+        detail: "Connector has not started for this source.",
+        requirements
+      };
+    }
+
+    if (status.state === "unauthorized") {
+      return {
+        platform,
+        state: "attention",
+        title,
+        detail: "Auth failed. Refresh the token or app permissions before the live run.",
+        requirements
+      };
+    }
+
+    if (status.state === "rate_limited" || status.state === "degraded") {
+      return {
+        platform,
+        state: "attention",
+        title,
+        detail: status.label,
+        requirements
+      };
+    }
+
+    if (status.state === "connecting" || status.state === "reconnecting") {
+      return {
+        platform,
+        state: "watching",
+        title,
+        detail: status.label,
+        requirements
+      };
+    }
+
+    return {
+      platform,
+      state: status.eventCount > 0 ? "ready" : "watching",
+      title,
+      detail: status.eventCount > 0 ? `${status.eventCount} events received.` : "Connected, waiting for first event.",
+      requirements
+    };
+  });
 }
 
 function formatAuthor(event: UnifiedEvent) {

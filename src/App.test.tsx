@@ -34,6 +34,16 @@ describe("App", () => {
     expect(screen.getByText("Paused")).toBeInTheDocument();
   });
 
+  it("shows live readiness guidance while fixture mode is active", () => {
+    render(<App />);
+
+    expect(screen.getByText("Readiness")).toBeInTheDocument();
+    expect(screen.getByText(/fixture mode active/i)).toBeInTheDocument();
+    expect(screen.getByText("TWITCH_CLIENT_ID")).toBeInTheDocument();
+    expect(screen.getByText("KICK_WEBHOOK_ENABLED=true")).toBeInTheDocument();
+    expect(screen.getByText("X_BEARER_TOKEN")).toBeInTheDocument();
+  });
+
   it("starts a recording from the current replay buffer", async () => {
     render(<App />);
 
