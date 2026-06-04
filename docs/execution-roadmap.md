@@ -64,9 +64,9 @@
 
 ## Phase 6 - Final UI Pass
 
-- Hand stable functional app into final UI polish
-- Preserve all functional states
-- Visual QA desktop and mobile
+- [x] Hand stable functional app into final UI polish
+- [x] Preserve all functional states
+- [x] Visual QA desktop and mobile
 - [x] Capture final screenshots/GIF
 - [x] Prepare submission notes
 

@@ -113,6 +113,7 @@ This starts the feed server and dashboard on alternate local ports, verifies the
 - [Platform Research](docs/platform-research.md)
 - [Architecture Plan](docs/architecture-plan.md)
 - [Execution Roadmap](docs/execution-roadmap.md)
+- [Final UI Handoff](docs/final-ui-handoff.md)
 - [Storage Schema](docs/storage-schema.sql)
 - [Submission Runbook](docs/submission-runbook.md)
 - [Winning Strategy](docs/winning-strategy.md)

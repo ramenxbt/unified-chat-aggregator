@@ -107,6 +107,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Live dashboard recording with source labels visible.
 - OBS overlay recording with source labels visible.
 - Visual QA screenshots from `npm run qa:visual`.
+- Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Exported recording JSON.
 - Exported recording CSV.
