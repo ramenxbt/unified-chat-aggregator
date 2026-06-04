@@ -98,4 +98,5 @@ npm run build
 - [Architecture Plan](docs/architecture-plan.md)
 - [Execution Roadmap](docs/execution-roadmap.md)
 - [Storage Schema](docs/storage-schema.sql)
+- [Submission Runbook](docs/submission-runbook.md)
 - [Winning Strategy](docs/winning-strategy.md)

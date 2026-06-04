@@ -63,6 +63,8 @@ http://127.0.0.1:5173/?obs=1
 
 This mode starts in submission layout, hides operator controls, and uses a transparent page background so it can sit over the Market Bubble stream recording.
 
+The final recording checklist is in [Submission Runbook](submission-runbook.md).
+
 ## Real Stream Priority
 
 For a live Market Bubble stream, prioritize connectors in this order:

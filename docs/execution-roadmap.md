@@ -68,7 +68,7 @@
 - Preserve all functional states
 - Visual QA desktop and mobile
 - Capture final screenshots/GIF
-- Prepare submission notes
+- [x] Prepare submission notes
 
 ## Immediate Next Tasks
 
