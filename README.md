@@ -74,6 +74,8 @@ Feed rows label both platform and account/channel, for example `TWITCH (ANSEM)`,
 
 The diagnostics rail includes an `Accounts` roster with live source-account activity, event counts, signal counts, and one-click filters. The `Identities` panel groups matching source accounts across platforms, such as `TWITCH (ANSEM)` and `KICK (ANSEM)`, into a focused search. Selecting a row opens author/source diagnostics with the platform account, author handle, badge stack, buffer counts, signal score, and platform IDs. From there, the operator can filter to the selected source account or selected author without changing the search box. This makes it easier to prove where a clipped message came from during the final submission recording.
 
+The `Review queue` flags held, deleted, or spam-risk messages when those signals are present in normalized events. It gives the operator a quick way to inspect questionable chat without mutating the platform.
+
 The diagnostics rail includes a `Readiness` panel. In fixture mode it shows the exact connector env vars and public webhook setup still needed for Twitch, Kick, and X before a real stream recording.
 
 Use `Save current buffer` to persist the current in-browser feed buffer to local sessions. The app keeps the latest 12 saved sessions and can load any saved session back into replay mode without needing a JSON file.

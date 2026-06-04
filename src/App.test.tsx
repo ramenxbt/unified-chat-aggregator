@@ -113,6 +113,18 @@ describe("App", () => {
     expect(feed).not.toHaveTextContent("X (@USER1337)");
   });
 
+  it("surfaces held messages in the moderation review queue", async () => {
+    render(<App />);
+
+    expect(screen.getByText("Review queue")).toBeInTheDocument();
+    expect(screen.getAllByText("Held for review").length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getAllByRole("button", { name: /held for review/i })[0]);
+
+    expect(screen.getAllByText("promo_drop").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Held for review: claim free tokens at sketchy-airdrop.test").length).toBeGreaterThan(0);
+  });
+
   it("filters the feed by selected source account", async () => {
     render(<App />);
     const feed = screen.getByRole("log");

@@ -111,9 +111,9 @@ const templates: FixtureTemplate[] = [
     kind: "chat_notice",
     sourceChannelId: "twitch_ansem",
     sourceChannelName: "ansem",
-    authorId: "tw_system",
-    authorName: "system",
-    text: "slow mode lifted"
+    authorId: "tw_spam_bot",
+    authorName: "promo_drop",
+    text: "Held for review: claim free tokens at sketchy-airdrop.test"
   }
 ];
 

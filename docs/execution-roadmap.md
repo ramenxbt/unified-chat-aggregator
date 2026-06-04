@@ -49,6 +49,7 @@
 - [x] Source account and author quick filters
 - [x] Source account activity roster
 - [x] Cross-platform source identity grouping
+- [x] Moderation review queue
 - [x] Signal mode scoring
 - [x] Author detail drawer
 - [x] Connector diagnostics

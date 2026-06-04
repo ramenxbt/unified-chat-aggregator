@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import {
   Activity,
   Archive,
+  AlertTriangle,
   AtSign,
   Ban,
   CheckCircle2,
@@ -137,6 +138,7 @@ export function App() {
   );
   const sourceAccountSummaries = useMemo(() => buildSourceAccountSummaries(feedEvents), [feedEvents]);
   const sourceIdentityGroups = useMemo(() => buildSourceIdentityGroups(sourceAccountSummaries), [sourceAccountSummaries]);
+  const moderationItems = useMemo(() => buildModerationItems(feedEvents), [feedEvents]);
   const obsPresetLinks = useMemo(buildObsPresetLinks, []);
 
   useEffect(() => {
@@ -330,6 +332,16 @@ export function App() {
     setSourceAccountFilter(null);
   }
 
+  function reviewModerationItem(item: ModerationItem) {
+    setPlatformFilter(defaultViewPreset().platformFilter);
+    setQuery("");
+    setSignalOnly(false);
+    setAuthorFilter(null);
+    setSourceAccountFilter(null);
+    setSelectedEventId(item.event.id);
+    setPinnedToLive(false);
+  }
+
   return (
     <main
       className="app-shell"
@@ -488,6 +500,11 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<AlertTriangle size={15} />} title="Review queue" />
+          <ModerationQueue items={moderationItems} onReview={reviewModerationItem} />
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
           <SourceAccountsPanel
             accounts={sourceAccountSummaries}
@@ -632,6 +649,13 @@ type SourceIdentityGroup = {
   accounts: SourceAccountSummary[];
   eventCount: number;
   signalCount: number;
+};
+
+type ModerationItem = {
+  event: UnifiedEvent;
+  reason: "deleted" | "held" | "spam";
+  title: string;
+  detail: string;
 };
 
 type ObsPresetLink = {
@@ -923,6 +947,42 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
         <Metric label="drops" value={status.droppedCount} />
         <Metric label="latency" value={status.latencyMs ? `${Math.round(status.latencyMs)}ms` : "n/a"} />
       </div>
+    </div>
+  );
+}
+
+function ModerationQueue({
+  items,
+  onReview
+}: {
+  items: ModerationItem[];
+  onReview: (item: ModerationItem) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="empty-detail compact-empty">
+        <span>No review items.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="review-list">
+      {items.map((item) => (
+        <button
+          className="review-item"
+          data-reason={item.reason}
+          key={item.event.id}
+          onClick={() => onReview(item)}
+          type="button"
+        >
+          <span className="review-heading">
+            <strong>{item.title}</strong>
+            <code>{formatPlatformSourceLabel(item.event)}</code>
+          </span>
+          <span className="review-copy">{item.detail}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -1324,6 +1384,47 @@ function buildSourceIdentityGroups(accounts: SourceAccountSummary[]): SourceIden
       return left.label.localeCompare(right.label);
     })
     .slice(0, 5);
+}
+
+function buildModerationItems(events: UnifiedEvent[]): ModerationItem[] {
+  return events
+    .map((event) => buildModerationItem(event))
+    .filter((item): item is ModerationItem => Boolean(item))
+    .slice(0, 6);
+}
+
+function buildModerationItem(event: UnifiedEvent): ModerationItem | null {
+  const text = event.text ?? "";
+  const normalizedText = text.toLowerCase();
+
+  if (event.kind === "chat_delete") {
+    return {
+      event,
+      reason: "deleted",
+      title: "Deleted message",
+      detail: text || `${formatAuthor(event)} had a message removed.`
+    };
+  }
+
+  if (/\b(held for review|held message|review required)\b/.test(normalizedText)) {
+    return {
+      event,
+      reason: "held",
+      title: "Held for review",
+      detail: text
+    };
+  }
+
+  if (/\b(free tokens?|airdrop|giveaway|claim|double your|telegram|whatsapp)\b/.test(normalizedText)) {
+    return {
+      event,
+      reason: "spam",
+      title: "Spam risk",
+      detail: text
+    };
+  }
+
+  return null;
 }
 
 function getSourceIdentityQuery(label: string) {

@@ -584,6 +584,72 @@ button {
   font-size: 13px;
 }
 
+.review-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.review-item {
+  display: grid;
+  width: 100%;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  text-align: left;
+}
+
+.review-item:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.review-item[data-reason="held"],
+.review-item[data-reason="spam"] {
+  border-color: rgba(229, 196, 107, 0.36);
+}
+
+.review-item[data-reason="deleted"] {
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.review-heading strong,
+.review-heading code,
+.review-copy {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-heading strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.review-heading code {
+  max-width: 132px;
+  color: var(--gold);
+  font-size: 10px;
+}
+
+.review-copy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
 .account-list {
   display: grid;
   gap: 8px;
