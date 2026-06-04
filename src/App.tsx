@@ -56,14 +56,11 @@ const readinessRequirements: Record<SourcePlatform, string[]> = {
 };
 
 export function App() {
-  const [obsMode] = useState(readObsMode);
-  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>({
-    twitch: true,
-    kick: true,
-    x: true
-  });
-  const [query, setQuery] = useState("");
-  const [signalOnly, setSignalOnly] = useState(false);
+  const [viewPreset] = useState(readViewPreset);
+  const [obsMode] = useState(viewPreset.obsMode);
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>(viewPreset.platformFilter);
+  const [query, setQuery] = useState(viewPreset.query);
+  const [signalOnly, setSignalOnly] = useState(viewPreset.signalOnly);
   const [submissionMode, setSubmissionMode] = useState(obsMode);
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
@@ -105,9 +102,11 @@ export function App() {
     });
   }, [feedEvents, platformFilter, query, signalOnly]);
 
+  const displayedEvents = viewPreset.limit ? visibleEvents.slice(0, viewPreset.limit) : visibleEvents;
+
   const selectedEvent = useMemo(
-    () => visibleEvents.find((event) => event.id === selectedEventId) ?? visibleEvents[0],
-    [selectedEventId, visibleEvents]
+    () => displayedEvents.find((event) => event.id === selectedEventId) ?? displayedEvents[0],
+    [displayedEvents, selectedEventId]
   );
 
   const totalEvents = feedEvents.length;
@@ -134,7 +133,7 @@ export function App() {
     if (!pinnedToLive) return;
 
     scrollEventListToTop(eventListRef.current);
-  }, [pinnedToLive, visibleEvents.length]);
+  }, [displayedEvents.length, pinnedToLive]);
 
   useEffect(() => {
     if (!recording) return;
@@ -368,11 +367,11 @@ export function App() {
         </header>
 
         <div className="feed-toolbar">
-          <span>{visibleEvents.length} visible</span>
+          <span>{displayedEvents.length} visible</span>
           <button
             className="live-button"
             data-active={pinnedToLive}
-            disabled={visibleEvents.length === 0}
+            disabled={displayedEvents.length === 0}
             onClick={jumpToLive}
             type="button"
           >
@@ -392,8 +391,8 @@ export function App() {
           role="log"
           aria-live={paused ? "off" : "polite"}
         >
-          {visibleEvents.length > 0 ? (
-            visibleEvents.map((event) => (
+          {displayedEvents.length > 0 ? (
+            displayedEvents.map((event) => (
               <EventRow
                 event={event}
                 key={event.id}
@@ -536,8 +535,75 @@ function downloadBlob(content: string, type: string, extension: "csv" | "json") 
   URL.revokeObjectURL(url);
 }
 
-function readObsMode() {
-  return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("obs") === "1";
+type ViewPreset = {
+  obsMode: boolean;
+  platformFilter: PlatformFilter;
+  query: string;
+  signalOnly: boolean;
+  limit: number | null;
+};
+
+function readViewPreset(): ViewPreset {
+  if (typeof window === "undefined") {
+    return defaultViewPreset();
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    obsMode: params.get("obs") === "1",
+    platformFilter: parsePlatformFilter(params.get("sources") ?? params.get("source")),
+    query: params.get("q") ?? params.get("query") ?? "",
+    signalOnly: parseBooleanParam(params.get("signal")),
+    limit: parseLimitParam(params.get("limit"))
+  };
+}
+
+function defaultViewPreset(): ViewPreset {
+  return {
+    obsMode: false,
+    platformFilter: {
+      twitch: true,
+      kick: true,
+      x: true
+    },
+    query: "",
+    signalOnly: false,
+    limit: null
+  };
+}
+
+function parsePlatformFilter(value: string | null): PlatformFilter {
+  const selectedPlatforms = new Set(
+    value
+      ?.split(",")
+      .map((platform) => platform.trim().toLowerCase())
+      .filter((platform): platform is SourcePlatform => platforms.includes(platform as SourcePlatform)) ?? []
+  );
+
+  if (selectedPlatforms.size === 0) {
+    return defaultViewPreset().platformFilter;
+  }
+
+  return {
+    twitch: selectedPlatforms.has("twitch"),
+    kick: selectedPlatforms.has("kick"),
+    x: selectedPlatforms.has("x")
+  };
+}
+
+function parseBooleanParam(value: string | null) {
+  return value === "1" || value === "true";
+}
+
+function parseLimitParam(value: string | null) {
+  const limit = Number(value);
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    return null;
+  }
+
+  return Math.min(limit, 100);
 }
 
 function scrollEventListToTop(list: HTMLDivElement | null) {

@@ -168,4 +168,17 @@ describe("App", () => {
     expect(appShell).toHaveAttribute("data-submission", "true");
     expect(document.body).toHaveClass("obs-body");
   });
+
+  it("applies OBS URL presets for sources, search, and event limit", () => {
+    window.history.pushState({}, "", "/?obs=1&sources=twitch&limit=3&q=ansem");
+    render(<App />);
+    const feed = screen.getByRole("log");
+
+    expect(screen.getByLabelText(/search feed/i)).toHaveValue("ansem");
+    expect(screen.getByText("3 visible")).toBeInTheDocument();
+    expect(feed.querySelectorAll(".platform-label")).toHaveLength(3);
+    expect(feed).toHaveTextContent("TWITCH (ANSEM)");
+    expect(feed).not.toHaveTextContent("KICK (MARKETBUBBLE)");
+    expect(feed).not.toHaveTextContent("X (@USER1337)");
+  });
 });

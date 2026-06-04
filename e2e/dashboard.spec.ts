@@ -46,7 +46,7 @@ test("recording and local replay workflows are browser-ready", async ({ page }) 
 });
 
 test("OBS route opens as a clean transparent browser source", async ({ page }) => {
-  await page.goto("/?obs=1");
+  await page.goto("/?obs=1&sources=twitch&limit=3&q=ansem");
 
   await expect(page.locator(".app-shell")).toHaveAttribute("data-obs", "true");
   await expect(page.locator(".app-shell")).toHaveAttribute("data-submission", "true");
@@ -54,7 +54,8 @@ test("OBS route opens as a clean transparent browser source", async ({ page }) =
   await expect(page.locator(".detail-rail")).toBeHidden();
   await expect(page.locator(".topbar-actions")).toBeHidden();
   await expect(page.locator(".live-button")).toBeHidden();
+  await expect(page.locator(".feed-toolbar > span").first()).toHaveText("3 visible");
   await expect(page.getByRole("log")).toContainText("TWITCH (ANSEM)");
-  await expect(page.getByRole("log")).toContainText("KICK (MARKETBUBBLE)");
-  await expect(page.getByRole("log")).toContainText("X (@USER1337)");
+  await expect(page.getByRole("log")).not.toContainText("KICK (MARKETBUBBLE)");
+  await expect(page.getByRole("log")).not.toContainText("X (@USER1337)");
 });

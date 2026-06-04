@@ -58,6 +58,14 @@ http://127.0.0.1:5173/?obs=1
 
 Use that URL after starting the dashboard. For live events, start `npm run feed` first, then run the dashboard with `VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev`.
 
+OBS URLs can be preset for a source-specific shot:
+
+```text
+http://127.0.0.1:5173/?obs=1&sources=twitch,kick&limit=12
+http://127.0.0.1:5173/?obs=1&sources=twitch&limit=8&q=ansem
+http://127.0.0.1:5173/?obs=1&signal=1&limit=10
+```
+
 During a recording, scroll the feed to inspect older messages. The toolbar switches from `Live` to `Jump live` so you can return to the newest events immediately.
 
 Feed rows label both platform and account/channel, for example `TWITCH (ANSEM)`, `KICK (MARKETBUBBLE)`, or `X (@USER1337)`.
