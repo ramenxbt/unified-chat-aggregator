@@ -10,7 +10,22 @@ Deadline: June 11
 
 ## Current Phase
 
-Research and scope. The first goal is to lock the product, API constraints, architecture, and verification plan before implementation.
+Functional skeleton. Platform constraints, scope, and architecture are documented. The app now has a React/Vite dashboard powered by normalized fixture events for Twitch, Kick, and X.
+
+## Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+Verification:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
 
 ## Docs
 
@@ -18,4 +33,3 @@ Research and scope. The first goal is to lock the product, API constraints, arch
 - [Platform Research](docs/platform-research.md)
 - [Architecture Plan](docs/architecture-plan.md)
 - [Execution Roadmap](docs/execution-roadmap.md)
-

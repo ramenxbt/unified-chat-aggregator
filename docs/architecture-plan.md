@@ -2,11 +2,11 @@
 
 ## Stack Recommendation
 
-Use a TypeScript monorepo.
+Use a TypeScript-first workspace.
 
 Recommended initial stack:
 
-- Next.js app for dashboard and API routes
+- React + Vite app for the first dashboard surface
 - Node worker process for connectors
 - Postgres for durable sessions/messages
 - Redis or in-process queue for MVP fanout
@@ -19,7 +19,7 @@ Why this stack:
 
 - Fast to build before the June 11 deadline
 - Strong TypeScript contracts across connectors and UI
-- Easy demo/deploy path
+- Easy demo path while real connectors are being built
 - Easy handoff for final UI polish
 
 ## System Shape
@@ -144,3 +144,13 @@ The first UI should be clean and functional, not final-polished:
 - Empty, loading, degraded, and credential-missing states
 
 Final visual polish should happen after the functional surface exists.
+
+## Implemented First Slice
+
+- React/Vite/TypeScript dashboard
+- Zod-backed normalized event model
+- Deterministic Twitch, Kick, and X fixture events
+- Fixture live stream with bounded replay buffer
+- Source toggles, search, pause/resume, clear, signal mode, selected event detail
+- Connector health cards with event counts, drops, latency, and state
+- Unit tests for schema, dedupe, signal scoring, and dashboard controls

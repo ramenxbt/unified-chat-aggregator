@@ -2,20 +2,20 @@
 
 ## Phase 0 - Repo And Product Contract
 
-- Create GitHub repo under `ramenxbt`
-- Commit research and scope docs
-- Decide final stack
-- Define env var contract
-- Define normalized event schema
+- [x] Create GitHub repo under `ramenxbt`
+- [x] Commit research and scope docs
+- [x] Decide final stack for first build
+- [x] Define env var contract
+- [x] Define normalized event schema
 
 ## Phase 1 - Skeleton
 
-- Scaffold TypeScript app
-- Add lint, typecheck, test, and formatting scripts
-- Add normalized event package/module
-- Add fixture connector
-- Build local feed transport
-- Render basic dashboard from fixture stream
+- [x] Scaffold TypeScript app
+- [x] Add lint, typecheck, test, and build scripts
+- [x] Add normalized event package/module
+- [x] Add fixture connector
+- [x] Build local fixture feed transport
+- [x] Render basic dashboard from fixture stream
 
 ## Phase 2 - Real Connectors
 
@@ -63,8 +63,8 @@
 
 ## Immediate Next Tasks
 
-1. Resolve GitHub CLI auth for `ramenxbt`.
-2. Create remote repo and push this planning commit.
-3. Scaffold the TypeScript project.
-4. Implement normalized event schema and fixture connector.
-5. Build the first live feed UI against fixtures.
+1. Add server-side connector package boundaries.
+2. Implement Twitch EventSub WebSocket connector.
+3. Implement Kick webhook receiver and signature verification.
+4. Implement X filtered stream connector and Spaces lookup poller.
+5. Add durable storage for captured sessions and exports.

@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 coverage/
+qa/
 .turbo/
 .vercel/
 .env
@@ -10,4 +11,3 @@ coverage/
 !.env.example
 *.log
 .DS_Store
-
