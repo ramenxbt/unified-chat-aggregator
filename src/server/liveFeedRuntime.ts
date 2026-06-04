@@ -8,6 +8,7 @@ import {
 } from "../fixtures/fixtureEvents";
 import type { FeedServerMessage } from "../live/protocol";
 import { ReplayBuffer } from "../live/replayBuffer";
+import { createFeedSessionId, type FeedArchive } from "./feedArchive";
 
 export type LiveFeedRuntimeOptions = {
   port: number;
@@ -17,6 +18,7 @@ export type LiveFeedRuntimeOptions = {
   connectors?: Connector[];
   initialEventCount?: number;
   webSocketServer?: WebSocketServerLike;
+  archive?: FeedArchive | null;
 };
 
 type WebSocketLike = Pick<WebSocket, "readyState" | "send">;
@@ -58,6 +60,24 @@ export class LiveFeedRuntime {
   }
 
   async start() {
+    const startedAt = new Date().toISOString();
+    await this.options.archive?.start({
+      sessionId: createFeedSessionId(startedAt, this.mode),
+      startedAt,
+      mode: this.mode,
+      bufferSize: this.options.bufferSize ?? 250,
+      fixtureIntervalMs: this.fixtureIntervalMs,
+      connectorPlatforms: this.connectors.map((connector) => connector.platform)
+    });
+
+    for (const event of [...this.replayBuffer.snapshot()].reverse()) {
+      this.options.archive?.recordEvent(event);
+    }
+
+    for (const status of this.statuses) {
+      this.options.archive?.recordStatus(status);
+    }
+
     this.wss.on("connection", (client) => {
       this.send(client, this.snapshotMessage());
     });
@@ -95,6 +115,7 @@ export class LiveFeedRuntime {
     }
 
     await Promise.all(this.connectors.map((connector) => connector.stop()));
+    await this.options.archive?.stop(new Date().toISOString());
 
     await new Promise<void>((resolve, reject) => {
       this.wss.close((error) => {
@@ -125,11 +146,13 @@ export class LiveFeedRuntime {
       this.statuses = updateFixtureStatuses(this.statuses, event);
     }
 
+    this.options.archive?.recordEvent(event);
     this.broadcast({ type: "event", event });
 
     for (const status of this.statuses) {
       if (status.platform === event.platform) {
         this.broadcast({ type: "status", status });
+        this.options.archive?.recordStatus(status);
         break;
       }
     }
@@ -147,6 +170,7 @@ export class LiveFeedRuntime {
     }
 
     this.broadcast({ type: "status", status });
+    this.options.archive?.recordStatus(status);
   }
 
   private send(client: WebSocketLike, message: FeedServerMessage) {

@@ -31,6 +31,8 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run preflight` checks the live environment for Twitch, Kick, and X before you start the feed server. It exits non-zero until all three platforms are ready. Use `npm run preflight -- --allow-partial` when intentionally testing only one live connector.
 
+The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
+
 Kick live setup:
 
 ```bash
@@ -78,4 +80,5 @@ npm run build
 - [Platform Research](docs/platform-research.md)
 - [Architecture Plan](docs/architecture-plan.md)
 - [Execution Roadmap](docs/execution-roadmap.md)
+- [Storage Schema](docs/storage-schema.sql)
 - [Winning Strategy](docs/winning-strategy.md)

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ConnectorEventListener, ConnectorStatusListener, ConnectorHealth } from "../connectors/types";
 import type { ConnectorStatus, UnifiedEvent } from "../domain/unifiedEvent";
 import { createFixtureEvent } from "../fixtures/fixtureEvents";
+import type { FeedArchive, FeedArchiveSession } from "./feedArchive";
 import { LiveFeedRuntime } from "./liveFeedRuntime";
 
 class MockClient {
@@ -88,6 +89,29 @@ class MockConnector {
     };
     this.statusListener?.(this.health);
     this.eventListener?.(event);
+  }
+}
+
+class MockArchive implements FeedArchive {
+  readonly sessions: FeedArchiveSession[] = [];
+  readonly events: UnifiedEvent[] = [];
+  readonly statuses: ConnectorStatus[] = [];
+  stoppedAt: string | null = null;
+
+  async start(session: FeedArchiveSession) {
+    this.sessions.push(session);
+  }
+
+  recordEvent(event: UnifiedEvent) {
+    this.events.push(event);
+  }
+
+  recordStatus(status: ConnectorStatus) {
+    this.statuses.push(status);
+  }
+
+  async stop(endedAt: string) {
+    this.stoppedAt = endedAt;
   }
 }
 
@@ -219,5 +243,32 @@ describe("LiveFeedRuntime", () => {
       state: "live",
       eventCount: 1
     });
+  });
+
+  it("archives accepted events and statuses", async () => {
+    const server = new MockServer();
+    const archive = new MockArchive();
+    const runtime = new LiveFeedRuntime({
+      port: 18806,
+      mode: "fixture",
+      initialEventCount: 0,
+      webSocketServer: server,
+      archive
+    });
+    const event = createFixtureEvent(8);
+
+    await runtime.start();
+    runtime.broadcastEvent(event);
+    runtime.broadcastEvent({ ...event, id: "different-local-id" });
+    await runtime.stop();
+
+    expect(archive.sessions).toHaveLength(1);
+    expect(archive.sessions[0]).toMatchObject({
+      mode: "fixture",
+      bufferSize: 250
+    });
+    expect(archive.events).toEqual([event]);
+    expect(archive.statuses.some((status) => status.platform === event.platform)).toBe(true);
+    expect(archive.stoppedAt).not.toBeNull();
   });
 });

@@ -31,8 +31,9 @@
 
 ## Phase 3 - Storage And Sessions
 
-- Add database schema
-- Store sources, sessions, events, connector runs
+- [x] Add database schema
+- [x] Add server archive for sessions, events, and connector status runs
+- [ ] Store normalized sources in durable database backend
 - [x] Add local session capture/replay
 - [x] Add export to JSON/CSV
 - [x] Add recording JSON import/viewer
@@ -59,7 +60,7 @@
 - [x] Webhook verification tests
 - [x] Fixture replay tests
 - [x] Browser UI checks
-- README setup guide
+- [x] README setup guide
 
 ## Phase 6 - Final UI Pass
 
@@ -74,6 +75,6 @@
 1. Run `npm run preflight` with real Twitch, Kick, and X stream credentials.
 2. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
 3. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
-4. Add durable storage for captured sessions and exports.
+4. Store normalized sources in a durable database backend after live connector proof.
 5. Add final UI polish pass after live connector proof.
 6. Capture final submission video through OBS mode.

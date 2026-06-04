@@ -2,6 +2,7 @@ import { KickWebhookConnector, kickDefaultPublicKey } from "../connectors/kick/k
 import { TwitchEventSubConnector } from "../connectors/twitch/twitchEventSubConnector";
 import type { Connector } from "../connectors/types";
 import { XApiConnector } from "../connectors/x/xApiConnector";
+import { createFeedArchiveFromEnv } from "./feedArchive";
 import { LiveFeedRuntime } from "./liveFeedRuntime";
 
 const port = Number(process.env.FEED_SERVER_PORT ?? 8787);
@@ -10,18 +11,23 @@ const fixtureIntervalMs = Number(process.env.FEED_FIXTURE_INTERVAL_MS ?? 1100);
 
 const connectors = buildConnectorsFromEnv();
 const mode = connectors.length > 0 ? "connectors" : "fixture";
+const archive = createFeedArchiveFromEnv();
 const runtime = new LiveFeedRuntime({
   port,
   bufferSize,
   fixtureIntervalMs,
   mode,
-  connectors
+  connectors,
+  archive
 });
 
 await runtime.start();
 
 console.log(`Feed server listening on ws://127.0.0.1:${port}`);
 console.log(`Feed server mode: ${mode}`);
+if (archive?.sessionPath) {
+  console.log(`Feed archive: ${archive.sessionPath}`);
+}
 
 process.on("SIGINT", () => {
   void shutdown();
