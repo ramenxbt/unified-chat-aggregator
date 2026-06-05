@@ -46,6 +46,37 @@ describe("live run plan", () => {
     );
   });
 
+  it("uses configured proof gate thresholds in final run commands", () => {
+    const plan = buildLiveRunPlan(
+      {
+        ...completeEnv,
+        PROOF_MIN_EVENTS: "100",
+        PROOF_MIN_SOURCE_LABELS: "5",
+        PROOF_MAX_P95_LATENCY_MS: "2500"
+      },
+      {
+        archiveDir: "data/final sessions",
+        databasePath: "data/final proof.sqlite"
+      }
+    );
+    const formatted = formatLiveRunPlan(plan);
+
+    expect(plan.proofGate).toEqual({
+      minEvents: 100,
+      minSourceLabels: 5,
+      maxP95LatencyMs: 2500
+    });
+    expect(formatted).toContain(
+      "live proof gate: npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 100 --min-source-labels 5 --max-p95-latency-ms 2500"
+    );
+    expect(formatted).toContain(
+      "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite'"
+    );
+    expect(formatted).toContain(
+      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle"
+    );
+  });
+
   it("surfaces missing strict requirements while still printing setup commands", () => {
     const plan = buildLiveRunPlan({});
     const formatted = formatLiveRunPlan(plan);

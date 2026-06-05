@@ -11,6 +11,11 @@ export type LiveRunPlanOptions = {
 export type LiveRunPlan = {
   ok: boolean;
   report: ReturnType<typeof evaluateLivePreflight>;
+  proofGate: {
+    minEvents: number;
+    minSourceLabels: number;
+    maxP95LatencyMs: number;
+  };
   commands: {
     feed: string;
     dashboard: string;
@@ -39,6 +44,11 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   const appPort = options.appPort ?? Number(env.VITE_DEV_SERVER_PORT ?? 5173);
   const archiveDir = options.archiveDir ?? env.FEED_ARCHIVE_DIR ?? "data/feed-sessions";
   const databasePath = options.databasePath ?? env.FEED_DB_PATH ?? "data/feed.sqlite";
+  const proofGate = {
+    minEvents: parsePositiveNumber(env.PROOF_MIN_EVENTS, 25),
+    minSourceLabels: parsePositiveNumber(env.PROOF_MIN_SOURCE_LABELS, 3),
+    maxP95LatencyMs: parsePositiveNumber(env.PROOF_MAX_P95_LATENCY_MS, 5000)
+  };
   const kickWebhookPort = env.KICK_WEBHOOK_PORT ?? "8788";
   const kickWebhookPath = env.KICK_WEBHOOK_PATH ?? "/webhooks/kick";
   const dashboardUrl = `http://127.0.0.1:${appPort}/`;
@@ -50,6 +60,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   return {
     ok: report.ok,
     report,
+    proofGate,
     commands: {
       feed: `${formatEnvAssignment("FEED_DB_PATH", databasePath)} ${formatEnvAssignment(
         "FEED_ARCHIVE_DIR",
@@ -68,11 +79,18 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
     evidence: {
       archiveDir,
       databasePath,
-      proofGateCommand: `npm run proof:gate -- --archive-dir ${archiveDir} --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000`,
-      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${archiveDir} --db ${databasePath}`,
-      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${archiveDir} --db ${databasePath} --out submission-bundle`,
-      replayJsonCommand: `npm run archive:export -- --archive-dir ${archiveDir} --out replay.json`,
-      replayCsvCommand: `npm run archive:export -- --archive-dir ${archiveDir} --format csv --out replay.csv`
+      proofGateCommand: [
+        "npm run proof:gate --",
+        `--archive-dir ${shellQuote(archiveDir)}`,
+        "--watch",
+        `--min-events ${proofGate.minEvents}`,
+        `--min-source-labels ${proofGate.minSourceLabels}`,
+        `--max-p95-latency-ms ${proofGate.maxP95LatencyMs}`
+      ].join(" "),
+      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle`,
+      replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
+      replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`
     }
   };
 }
@@ -110,6 +128,12 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
 
 function formatEnvAssignment(name: string, value: string) {
   return `${name}=${shellQuote(value)}`;
+}
+
+function parsePositiveNumber(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function shellQuote(value: string) {

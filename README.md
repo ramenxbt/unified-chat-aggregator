@@ -43,7 +43,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run preflight` checks the live environment for Twitch, Kick, and X before you start the feed server. It exits non-zero until all three platforms are ready. Use `npm run preflight -- --allow-partial` when intentionally testing only one live connector.
 
-`npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, and replay export commands. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only.
+`npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, proof gate thresholds, and replay export commands. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only.
 
 The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
 
@@ -62,6 +62,8 @@ npm run archive:export -- --archive-dir data/feed-sessions --format csv --out re
 ```
 
 The proof gate reads the active JSONL archive while the feed server is still running. Use it before the final OBS capture; it waits for enough events, Twitch/Kick/X coverage, connector status samples, account source labels, and acceptable p95 latency.
+
+Set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, and `PROOF_MAX_P95_LATENCY_MS` before `npm run live:prepare` when you want a stricter final capture gate. The printed proof command will use those same values.
 
 The evidence commands use the newest session in `data/feed-sessions` by default. Pass `--archive data/feed-sessions/<session-id>` instead when you need to inspect an older run. The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
 

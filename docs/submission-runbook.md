@@ -38,6 +38,7 @@ npm run live:prepare
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
+If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, or `PROOF_MAX_P95_LATENCY_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds.
 
 For a one-platform dry run, use:
 
