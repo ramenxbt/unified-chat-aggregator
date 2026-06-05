@@ -532,6 +532,11 @@ button {
   gap: 4px;
 }
 
+.native-chat-body {
+  align-content: center;
+  gap: 5px;
+}
+
 .native-event-head {
   display: flex;
   align-items: baseline;
@@ -539,8 +544,23 @@ button {
   gap: 8px;
 }
 
+.native-chat-line {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 7px;
+}
+
+.native-event-meta {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+}
+
 .event-author {
   overflow: hidden;
+  flex: 0 0 auto;
+  max-width: 170px;
   font-size: 13px;
   font-weight: 680;
   text-overflow: ellipsis;
@@ -557,6 +577,7 @@ button {
 
 .event-text {
   overflow: hidden;
+  min-width: 0;
   color: #e7ece7;
   font-size: 14px;
   line-height: 1.35;
@@ -583,6 +604,10 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.badge-strip-inline {
+  flex: 0 0 auto;
 }
 
 .native-badge {

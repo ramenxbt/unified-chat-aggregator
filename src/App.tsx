@@ -1037,6 +1037,8 @@ function EventRow({
   selected: boolean;
 }) {
   const signalScore = scoreEventSignal(event);
+  const platformSourceLabel = formatPlatformSourceLabel(event);
+  const isChatPlatform = event.platform !== "x";
   const timestamp = new Intl.DateTimeFormat("en", {
     hour: "2-digit",
     minute: "2-digit",
@@ -1052,28 +1054,43 @@ function EventRow({
       style={{ "--accent": platformAccent[event.platform] } as CSSProperties}
       type="button"
     >
-      <span className="platform-label" title={formatPlatformSourceLabel(event)}>
-        {formatPlatformSourceLabel(event)}
+      <span className="platform-label" title={platformSourceLabel}>
+        {platformSourceLabel}
       </span>
-      <span className="native-event-body">
-        <span className="native-event-head">
-          <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
-            {formatAuthor(event)}
-          </span>
-          <span className="event-source">{formatSourceMeta(event)}</span>
-          <span className="event-time">{timestamp}</span>
-        </span>
-        <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
-        {event.badges.length > 0 ? (
-          <span className="badge-strip">
-            {event.badges.map((badge) => (
-              <span className="native-badge" key={`${badge.type}-${badge.label}`}>
-                {badge.label}
+      {isChatPlatform ? (
+        <span className="native-event-body native-chat-body">
+          <span className="native-chat-line">
+            <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
+              {formatAuthor(event)}
+            </span>
+            {event.badges.length > 0 ? (
+              <span className="badge-strip badge-strip-inline">
+                {event.badges.map((badge) => (
+                  <span className="native-badge" key={`${badge.type}-${badge.label}`}>
+                    {badge.label}
+                  </span>
+                ))}
               </span>
-            ))}
+            ) : null}
+            <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
           </span>
-        ) : null}
-      </span>
+          <span className="native-event-meta">
+            <span className="event-source">{formatSourceMeta(event)}</span>
+            <span className="event-time">{timestamp}</span>
+          </span>
+        </span>
+      ) : (
+        <span className="native-event-body native-post-body">
+          <span className="native-event-head">
+            <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
+              {formatAuthor(event)}
+            </span>
+            <span className="event-source">{formatSourceMeta(event)}</span>
+            <span className="event-time">{timestamp}</span>
+          </span>
+          <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
+        </span>
+      )}
       <span className="signal-score">{signalScore > 0 ? signalScore : ""}</span>
     </button>
   );
