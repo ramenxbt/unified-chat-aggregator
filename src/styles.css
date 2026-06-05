@@ -160,8 +160,8 @@ button {
 .source-toggle {
   justify-content: space-between;
   width: 100%;
-  min-height: 44px;
-  padding: 0 11px;
+  min-height: 50px;
+  padding: 7px 11px;
   font-size: 13px;
 }
 
@@ -178,13 +178,29 @@ button {
   box-shadow: 0 0 14px color-mix(in srgb, var(--accent), transparent 45%);
 }
 
-.source-toggle span:nth-child(2) {
+.source-label-stack {
+  display: grid;
   flex: 1;
+  gap: 3px;
+  min-width: 0;
   margin-left: 10px;
   text-align: left;
 }
 
-.source-state {
+.source-label-stack strong,
+.source-label-stack small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-label-stack strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.source-label-stack small {
   color: var(--muted);
   font-size: 11px;
 }

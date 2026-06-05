@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
@@ -25,6 +25,11 @@ describe("App", () => {
     expect(screen.getAllByText("KICK (ANSEM)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("KICK (MARKETBUBBLE)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("X (@USER1337)").length).toBeGreaterThan(0);
+    const sourceFilters = within(screen.getByLabelText("Platform source filters"));
+
+    expect(sourceFilters.getByText("TWITCH (ANSEM)")).toBeInTheDocument();
+    expect(sourceFilters.getByText("KICK (MARKETBUBBLE +1)")).toBeInTheDocument();
+    expect(sourceFilters.getByText("X (@USER1337 +2)")).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText(/search feed/i), "polymarket");
 

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import {
   formatPlatformSourceLabel,
+  formatSourceDisplayLabel,
   isSignalEvent,
   platformLabels,
   scoreEventSignal,
@@ -149,6 +150,10 @@ export function App() {
     [feedEvents, selectedEvent]
   );
   const sourceAccountSummaries = useMemo(() => buildSourceAccountSummaries(feedEvents), [feedEvents]);
+  const sourceControlSummaries = useMemo(
+    () => buildSourceControlSummaries(sourceAccountSummaries, statuses),
+    [sourceAccountSummaries, statuses]
+  );
   const sourceIdentityGroups = useMemo(() => buildSourceIdentityGroups(sourceAccountSummaries), [sourceAccountSummaries]);
   const moderationItems = useMemo(() => buildModerationItems(feedEvents), [feedEvents]);
   const obsPresetLinks = useMemo(buildObsPresetLinks, []);
@@ -410,21 +415,30 @@ export function App() {
 
         <section className="rail-section">
           <SectionTitle icon={<Radio size={15} />} title="Sources" />
-          <div className="source-list">
-            {platforms.map((platform) => (
-              <button
-                className="source-toggle"
-                data-active={platformFilter[platform]}
-                key={platform}
-                onClick={() => togglePlatform(platform)}
-                style={{ "--accent": platformAccent[platform] } as CSSProperties}
-                type="button"
-              >
-                <span className="source-dot" />
-                <span>{platformLabels[platform]}</span>
-                <span className="source-state">{platformFilter[platform] ? "Live" : "Muted"}</span>
-              </button>
-            ))}
+          <div aria-label="Platform source filters" className="source-list">
+            {platforms.map((platform) => {
+              const sourceControl = sourceControlSummaries[platform];
+              const sourceState = platformFilter[platform] ? sourceControl.state : "Muted";
+
+              return (
+                <button
+                  className="source-toggle"
+                  data-active={platformFilter[platform]}
+                  key={platform}
+                  onClick={() => togglePlatform(platform)}
+                  style={{ "--accent": platformAccent[platform] } as CSSProperties}
+                  type="button"
+                >
+                  <span className="source-dot" />
+                  <span className="source-label-stack">
+                    <strong>{sourceControl.label}</strong>
+                    <small>
+                      {sourceState} / {sourceControl.detail}
+                    </small>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -727,6 +741,12 @@ type SourceAccountSummary = FeedEntityFilter & {
   eventCount: number;
   signalCount: number;
   lastEventAt: string;
+};
+
+type SourceControlSummary = {
+  label: string;
+  detail: string;
+  state: string;
 };
 
 type SourceIdentityGroup = {
@@ -1539,6 +1559,62 @@ function buildSourceAccountSummaries(events: UnifiedEvent[]): SourceAccountSumma
       return left.label.localeCompare(right.label);
     })
     .slice(0, 8);
+}
+
+function buildSourceControlSummaries(
+  accounts: SourceAccountSummary[],
+  statuses: ConnectorStatus[]
+): Record<SourcePlatform, SourceControlSummary> {
+  const statusMap = new Map(statuses.map((status) => [status.platform, status]));
+
+  return platforms.reduce(
+    (summaries, platform) => {
+      const platformAccounts = accounts.filter((account) => account.platform === platform);
+      const status = statusMap.get(platform);
+
+      if (platformAccounts.length === 0) {
+        summaries[platform] = {
+          label: status ? formatSourceDisplayLabel(platform, status.sourceName) : platformLabels[platform].toUpperCase(),
+          detail: status ? status.label : "No account selected",
+          state: formatConnectorState(status?.state)
+        };
+        return summaries;
+      }
+
+      if (platformAccounts.length === 1) {
+        const [account] = platformAccounts;
+        summaries[platform] = {
+          label: account.label,
+          detail: `${account.eventCount} events / ${account.signalCount} signals`,
+          state: formatConnectorState(status?.state)
+        };
+        return summaries;
+      }
+
+      const eventCount = platformAccounts.reduce((total, account) => total + account.eventCount, 0);
+      const leadingAccount = getAccountNameFromSourceLabel(platformAccounts[0].label);
+
+      summaries[platform] = {
+        label: `${platformLabels[platform].toUpperCase()} (${leadingAccount} +${platformAccounts.length - 1})`,
+        detail: `${platformAccounts.length} accounts / ${eventCount} events`,
+        state: formatConnectorState(status?.state)
+      };
+
+      return summaries;
+    },
+    {} as Record<SourcePlatform, SourceControlSummary>
+  );
+}
+
+function getAccountNameFromSourceLabel(label: string) {
+  return label.match(/\(([^)]+)\)/)?.[1] ?? label;
+}
+
+function formatConnectorState(state: ConnectorStatus["state"] | undefined) {
+  if (!state) return "Setup";
+  if (state === "rate_limited") return "Rate limit";
+
+  return state.charAt(0).toUpperCase() + state.slice(1);
 }
 
 function buildSourceIdentityGroups(accounts: SourceAccountSummary[]): SourceIdentityGroup[] {
