@@ -46,7 +46,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, proof gate thresholds, and replay export commands. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only.
 
-`npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only.
+`npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only. Add `--with-proof-gate` to launch the live proof gate alongside the feed and dashboard; when the gate reports ready, the capture stack keeps running.
 
 The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
 

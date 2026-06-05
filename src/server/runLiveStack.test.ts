@@ -44,6 +44,24 @@ describe("live stack runner", () => {
         VITE_FEED_WS_URL: "ws://127.0.0.1:8787"
       }
     });
+    expect(plan.processes.proofGate).toMatchObject({
+      command: "npm",
+      args: [
+        "run",
+        "proof:gate",
+        "--",
+        "--archive-dir",
+        "data/feed-sessions",
+        "--watch",
+        "--min-events",
+        "25",
+        "--min-source-labels",
+        "3",
+        "--max-p95-latency-ms",
+        "5000"
+      ],
+      env: {}
+    });
   });
 
   it("dry-runs without spawning long-lived processes", async () => {
@@ -57,6 +75,23 @@ describe("live stack runner", () => {
 
     expect(exitCode).toBe(0);
     expect(log.mock.calls.flat().join("\n")).toContain("Live stack dry run: ready");
+
+    log.mockRestore();
+  });
+
+  it("can include the proof gate in the dry-run launch plan", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    const exitCode = await runLiveStack(completeEnv, {
+      dryRun: true,
+      withProofGate: true,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+    const output = log.mock.calls.flat().join("\n");
+
+    expect(exitCode).toBe(0);
+    expect(output).toContain("proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch");
 
     log.mockRestore();
   });

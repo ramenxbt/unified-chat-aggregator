@@ -65,10 +65,10 @@ If `KICK_SUBSCRIBE_ON_START=true`, also set `KICK_ACCESS_TOKEN` and `KICK_BROADC
 Lowest-mistake path:
 
 ```bash
-npm run live:stack
+npm run live:stack -- --with-proof-gate
 ```
 
-This runs the same doctor checks, then starts the feed server and dashboard with the planned archive, database, ports, and WebSocket URL. Keep it running during capture. Stop it with `Ctrl-C` after exporting evidence.
+This runs the same doctor checks, then starts the feed server, dashboard, and live proof gate with the planned archive, database, ports, and WebSocket URL. When the proof gate reports ready, the feed and dashboard keep running for capture. Stop the stack with `Ctrl-C` after exporting evidence.
 
 Manual fallback:
 

@@ -18,11 +18,13 @@ export type LiveStackLaunchPlan = {
   processes: {
     feed: LiveStackProcessPlan;
     dashboard: LiveStackProcessPlan;
+    proofGate: LiveStackProcessPlan;
   };
 };
 
 type RunLiveStackOptions = LiveDoctorOptions & {
   dryRun?: boolean;
+  withProofGate?: boolean;
   spawnProcess?: typeof spawn;
 };
 
@@ -55,6 +57,25 @@ export async function buildLiveStackLaunchPlan(
         env: {
           VITE_FEED_WS_URL: feedWsUrl
         }
+      },
+      proofGate: {
+        name: "proof",
+        command: "npm",
+        args: [
+          "run",
+          "proof:gate",
+          "--",
+          "--archive-dir",
+          doctor.plan.evidence.archiveDir,
+          "--watch",
+          "--min-events",
+          String(doctor.plan.proofGate.minEvents),
+          "--min-source-labels",
+          String(doctor.plan.proofGate.minSourceLabels),
+          "--max-p95-latency-ms",
+          String(doctor.plan.proofGate.maxP95LatencyMs)
+        ],
+        env: {}
       }
     }
   };
@@ -73,7 +94,7 @@ export async function runLiveStack(env: LivePreflightEnv, options: RunLiveStackO
   console.log("Live stack launch:");
   console.log(`  feed: ${formatProcessPlan(launchPlan.processes.feed)}`);
   console.log(`  dashboard: ${formatProcessPlan(launchPlan.processes.dashboard)}`);
-  console.log(`  proof gate: ${launchPlan.doctor.plan.evidence.proofGateCommand}`);
+  console.log(`  proof gate: ${formatProcessPlan(launchPlan.processes.proofGate)}`);
 
   if (options.dryRun) {
     console.log("");
@@ -82,12 +103,13 @@ export async function runLiveStack(env: LivePreflightEnv, options: RunLiveStackO
   }
 
   const spawnProcess = options.spawnProcess ?? spawn;
-  const children = [
+  const persistentChildren = [
     startProcess(launchPlan.processes.feed, spawnProcess),
     startProcess(launchPlan.processes.dashboard, spawnProcess)
   ];
+  const proofGate = options.withProofGate ? startProcess(launchPlan.processes.proofGate, spawnProcess) : undefined;
 
-  return waitForStackExit(children);
+  return waitForStackExit(persistentChildren, proofGate);
 }
 
 function startProcess(plan: LiveStackProcessPlan, spawnProcess: typeof spawn) {
@@ -109,14 +131,18 @@ function startProcess(plan: LiveStackProcessPlan, spawnProcess: typeof spawn) {
   return child;
 }
 
-function waitForStackExit(children: ReturnType<typeof startProcess>[]) {
+function waitForStackExit(
+  persistentChildren: ReturnType<typeof startProcess>[],
+  proofGate: ReturnType<typeof startProcess> | undefined
+) {
   return new Promise<number>((resolve) => {
     let settled = false;
+    const allChildren = proofGate ? [...persistentChildren, proofGate] : persistentChildren;
     const shutdown = (exitCode: number) => {
       if (settled) return;
       settled = true;
 
-      for (const child of children) {
+      for (const child of allChildren) {
         if (!child.killed && child.exitCode === null) {
           child.kill("SIGTERM");
         }
@@ -125,11 +151,20 @@ function waitForStackExit(children: ReturnType<typeof startProcess>[]) {
       resolve(exitCode);
     };
 
-    for (const child of children) {
+    for (const child of persistentChildren) {
       child.once("exit", (code) => {
         shutdown(code ?? 0);
       });
     }
+
+    proofGate?.once("exit", (code) => {
+      if (code && code !== 0) {
+        shutdown(code);
+        return;
+      }
+
+      console.log("[proof] Live proof gate is ready. Feed and dashboard remain running.");
+    });
 
     process.once("SIGINT", () => shutdown(130));
     process.once("SIGTERM", () => shutdown(143));
@@ -153,7 +188,8 @@ function shellQuote(value: string) {
 function parseArgs(args: string[]) {
   return {
     allowPartial: args.includes("--allow-partial"),
-    dryRun: args.includes("--dry-run")
+    dryRun: args.includes("--dry-run"),
+    withProofGate: args.includes("--with-proof-gate")
   };
 }
 
