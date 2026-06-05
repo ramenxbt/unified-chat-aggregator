@@ -19,6 +19,7 @@ export type SubmissionBundleResult = {
     evidenceReport: string;
     replayJson: string;
     replayCsv: string;
+    submissionNotes: string;
     summary: string;
   };
   evidence: EvidenceReport;
@@ -36,6 +37,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
     replayCsv: path.join(bundleDir, "replay.csv"),
+    submissionNotes: path.join(bundleDir, "submission-notes.md"),
     summary: path.join(bundleDir, "summary.json")
   };
 
@@ -44,6 +46,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     writeFile(files.evidenceReport, `${formatEvidenceReport(evidence)}\n`, "utf8"),
     writeFile(files.replayJson, `${JSON.stringify(recording, null, 2)}\n`, "utf8"),
     writeFile(files.replayCsv, archiveRecordingToCsv(recording), "utf8"),
+    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence)}\n`, "utf8"),
     writeFile(
       files.summary,
       `${JSON.stringify(
@@ -84,6 +87,7 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     `Evidence report: ${result.files.evidenceReport}`,
     `Replay JSON: ${result.files.replayJson}`,
     `Replay CSV: ${result.files.replayCsv}`,
+    `Submission notes: ${result.files.submissionNotes}`,
     `Summary: ${result.files.summary}`
   ];
 
@@ -92,6 +96,50 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
   }
 
   return lines.join("\n");
+}
+
+export function formatSubmissionNotes(evidence: EvidenceReport) {
+  const lines = [
+    "# Unified Chat Aggregator Submission Notes",
+    "",
+    `Status: ${evidence.ok ? "ready" : "needs attention"}`,
+    `Session: ${evidence.sessionId}`,
+    `Mode: ${evidence.mode}`,
+    "",
+    "## Proof Metrics",
+    "",
+    `- Events captured: ${evidence.eventCount}`,
+    `- Connector status samples: ${evidence.statusCount}`,
+    `- Duration: ${formatNumber(evidence.performance.durationSeconds)}s`,
+    `- Throughput: ${formatNumber(evidence.performance.eventsPerSecond)} events/s`,
+    `- Average latency: ${formatNumber(evidence.performance.averageLatencyMs)}ms`,
+    `- P95 latency: ${formatNumber(evidence.performance.p95LatencyMs)}ms`,
+    "",
+    "## Platform Coverage",
+    "",
+    ...(["twitch", "kick", "x"] as const).map((platform) => `- ${platform}: ${evidence.platforms[platform]} events`),
+    "",
+    "## Source Labels",
+    "",
+    ...(evidence.sourceLabels.length > 0
+      ? evidence.sourceLabels.map((label) => `- ${label}`)
+      : ["- No source labels captured"]),
+    "",
+    "## Evidence Files",
+    "",
+    `- Archive: ${evidence.archivePath}`,
+    evidence.databasePath ? `- Database: ${evidence.databasePath}` : "- Database: not provided"
+  ];
+
+  if (evidence.issues.length > 0) {
+    lines.push("", "## Issues", "", ...evidence.issues.map((issue) => `- ${issue}`));
+  }
+
+  return lines.join("\n");
+}
+
+function formatNumber(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2);
 }
 
 async function runCli() {

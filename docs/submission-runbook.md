@@ -131,7 +131,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
-- `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, and `summary.json`.
+- `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, and `summary.json`.
 - Exported recording JSON.
 - Exported recording CSV.
 - Server archive folder with `manifest.json`, `events.jsonl`, and `statuses.jsonl`.

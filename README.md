@@ -54,7 +54,7 @@ The proof gate reads the active JSONL archive while the feed server is still run
 
 The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
 
-The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, and `summary.json` into one folder for the final handoff. The summary includes platform counts, source labels, throughput, and latency metrics from the recorded run.
+The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, and `summary.json` into one folder for the final handoff. The notes file gives a human-readable proof summary, while the JSON summary keeps platform counts, source labels, throughput, and latency metrics from the recorded run.
 
 Kick live setup:
 

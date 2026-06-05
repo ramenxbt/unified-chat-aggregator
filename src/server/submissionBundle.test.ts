@@ -22,12 +22,17 @@ describe("submission bundle", () => {
     const evidenceReport = await readFile(result.files.evidenceReport, "utf8");
     const replayJson = JSON.parse(await readFile(result.files.replayJson, "utf8"));
     const replayCsv = await readFile(result.files.replayCsv, "utf8");
+    const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
     expect(evidenceReport).toContain("Evidence check: ready");
     expect(evidenceReport).toContain("KICK (MARKETBUBBLE)");
     expect(replayJson.eventCount).toBe(3);
     expect(replayCsv).toContain("occurred_at,received_at,platform,platform_label,kind");
+    expect(submissionNotes).toContain("# Unified Chat Aggregator Submission Notes");
+    expect(submissionNotes).toContain("Status: ready");
+    expect(submissionNotes).toContain("- kick: 1 events");
+    expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(summary).toMatchObject({
       evidenceOk: true,
       eventCount: 3,
