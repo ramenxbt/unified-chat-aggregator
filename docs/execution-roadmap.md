@@ -55,6 +55,7 @@
 - [x] Author detail drawer
 - [x] Connector diagnostics
 - [x] Credential missing states
+- [x] Final live-run preparation command
 - [x] Recording controls
 - [x] Submission mode
 - [x] OBS browser source mode

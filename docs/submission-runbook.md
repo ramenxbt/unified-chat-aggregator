@@ -16,6 +16,7 @@ Run the strict check first:
 
 ```bash
 npm run preflight
+npm run live:prepare
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
@@ -24,6 +25,7 @@ For a one-platform dry run, use:
 
 ```bash
 npm run preflight -- --allow-partial
+npm run live:prepare -- --allow-partial
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing.
@@ -44,7 +46,7 @@ If `KICK_SUBSCRIBE_ON_START=true`, also set `KICK_ACCESS_TOKEN` and `KICK_BROADC
 Terminal 1:
 
 ```bash
-npm run feed
+FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed
 ```
 
 Confirm the feed server prints:
