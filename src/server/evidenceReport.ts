@@ -55,6 +55,12 @@ export type EvidenceReport = {
   platforms: Record<SourcePlatform, number>;
   statusPlatforms: Record<SourcePlatform, number>;
   sourceLabels: string[];
+  performance: {
+    durationSeconds: number;
+    eventsPerSecond: number;
+    averageLatencyMs: number;
+    p95LatencyMs: number;
+  };
   database?: {
     sessionFound: boolean;
     eventCount: number;
@@ -87,6 +93,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
   const platforms = countEventPlatforms(events);
   const statusPlatforms = countStatusPlatforms(statuses);
   const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))].sort();
+  const performance = calculatePerformanceMetrics(events);
   const issues: string[] = [];
 
   if (events.length !== manifest.eventCount) {
@@ -127,6 +134,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
     platforms,
     statusPlatforms,
     sourceLabels,
+    performance,
     database,
     issues
   };
@@ -140,6 +148,10 @@ export function formatEvidenceReport(report: EvidenceReport) {
     `Archive: ${report.archivePath}`,
     `Events: ${report.eventCount}`,
     `Statuses: ${report.statusCount}`,
+    `Duration: ${formatNumber(report.performance.durationSeconds)}s`,
+    `Throughput: ${formatNumber(report.performance.eventsPerSecond)} events/s`,
+    `Average latency: ${formatNumber(report.performance.averageLatencyMs)}ms`,
+    `P95 latency: ${formatNumber(report.performance.p95LatencyMs)}ms`,
     "",
     "Event platforms:",
     ...requiredPlatforms.map((platform) => `  ${platform}: ${report.platforms[platform]}`),
@@ -241,6 +253,40 @@ function addPlatformIssues(
   if (requiredPlatforms.every((platform) => counts[platform] === 0)) {
     issues.push(`missing live ${label}`);
   }
+}
+
+function calculatePerformanceMetrics(events: UnifiedEvent[]) {
+  const eventTimes = events.map((event) => new Date(event.receivedAt).getTime()).sort((left, right) => left - right);
+  const latencies = events
+    .map((event) => new Date(event.receivedAt).getTime() - new Date(event.occurredAt).getTime())
+    .filter((latency) => Number.isFinite(latency) && latency >= 0)
+    .sort((left, right) => left - right);
+  const durationMs =
+    eventTimes.length > 1 ? Math.max(0, eventTimes[eventTimes.length - 1] - eventTimes[0]) : 0;
+  const durationSeconds = durationMs / 1000;
+  const eventsPerSecond = durationSeconds > 0 ? events.length / durationSeconds : events.length;
+  const averageLatencyMs =
+    latencies.length > 0 ? latencies.reduce((total, latency) => total + latency, 0) / latencies.length : 0;
+
+  return {
+    durationSeconds,
+    eventsPerSecond,
+    averageLatencyMs,
+    p95LatencyMs: percentile(latencies, 0.95)
+  };
+}
+
+function percentile(values: number[], percentileRank: number) {
+  if (values.length === 0) return 0;
+  if (values.length === 1) return values[0];
+
+  const index = Math.ceil(values.length * percentileRank) - 1;
+
+  return values[Math.min(values.length - 1, Math.max(0, index))];
+}
+
+function formatNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 async function readDatabaseEvidence(databasePath: string, sessionId: string) {

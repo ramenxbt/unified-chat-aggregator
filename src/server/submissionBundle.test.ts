@@ -31,6 +31,12 @@ describe("submission bundle", () => {
     expect(summary).toMatchObject({
       evidenceOk: true,
       eventCount: 3,
+      performance: {
+        durationSeconds: expect.any(Number),
+        eventsPerSecond: expect.any(Number),
+        averageLatencyMs: expect.any(Number),
+        p95LatencyMs: expect.any(Number)
+      },
       platforms: {
         twitch: 1,
         kick: 1,

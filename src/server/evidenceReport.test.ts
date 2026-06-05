@@ -25,10 +25,19 @@ describe("evidence report", () => {
       sessionFound: true,
       eventCount: 4
     });
+    expect(report.performance).toMatchObject({
+      durationSeconds: expect.any(Number),
+      eventsPerSecond: expect.any(Number),
+      averageLatencyMs: expect.any(Number),
+      p95LatencyMs: expect.any(Number)
+    });
+    expect(report.performance.eventsPerSecond).toBeGreaterThan(0);
     expect(report.sourceLabels).toContain("KICK (MARKETBUBBLE)");
     expect(report.sourceLabels).toContain("X (@TAPE_READER)");
     expect(report.sourceLabels).toContain("X (@USER1337)");
     expect(formatted).toContain("Evidence check: ready");
+    expect(formatted).toContain("Throughput:");
+    expect(formatted).toContain("P95 latency:");
     expect(formatted).toContain("Database:");
   });
 

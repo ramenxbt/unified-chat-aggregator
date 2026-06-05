@@ -59,6 +59,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
           platforms: evidence.platforms,
           statusPlatforms: evidence.statusPlatforms,
           sourceLabels: evidence.sourceLabels,
+          performance: evidence.performance,
           files
         },
         null,

@@ -47,9 +47,9 @@ npm run archive:export -- data/feed-sessions/<session-id> --out replay.json
 npm run archive:export -- data/feed-sessions/<session-id> --format csv --out replay.csv
 ```
 
-The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, and optional SQLite database rows before you package the final submission.
+The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
 
-The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, and `summary.json` into one folder for the final handoff.
+The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, and `summary.json` into one folder for the final handoff. The summary includes platform counts, source labels, throughput, and latency metrics from the recorded run.
 
 Kick live setup:
 
