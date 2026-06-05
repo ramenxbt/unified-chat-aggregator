@@ -19,6 +19,16 @@ npm install
 npm run dev
 ```
 
+For a live run, copy `.env.example` to `.env`, fill in the platform credentials, then export it in each terminal that runs server-side commands:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+Vite reads `VITE_*` values from `.env` for the dashboard, but `npm run feed`, `npm run preflight`, `npm run live:prepare`, and `npm run proof:gate` need the shell export above or inline env assignments.
+
 Live feed server mode:
 
 ```bash

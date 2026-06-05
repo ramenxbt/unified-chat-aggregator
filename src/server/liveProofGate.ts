@@ -288,7 +288,7 @@ function delay(ms: number) {
 }
 
 async function runCli() {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseArgs(process.argv.slice(2), process.env);
   const report = args.watch ? await watchLiveProofGate(args) : await buildLiveProofGateReport(args);
 
   console.log(formatLiveProofGateReport(report));
@@ -298,8 +298,12 @@ async function runCli() {
   }
 }
 
-function parseArgs(args: string[]): LiveProofGateOptions {
-  const parsed: LiveProofGateOptions = {};
+function parseArgs(args: string[], env: NodeJS.ProcessEnv = process.env): LiveProofGateOptions {
+  const parsed: LiveProofGateOptions = {
+    minEvents: parseOptionalNumber(env.PROOF_MIN_EVENTS),
+    minSourceLabels: parseOptionalNumber(env.PROOF_MIN_SOURCE_LABELS),
+    maxP95LatencyMs: parseOptionalNumber(env.PROOF_MAX_P95_LATENCY_MS)
+  };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -358,6 +362,14 @@ function parseArgs(args: string[]): LiveProofGateOptions {
   }
 
   return parsed;
+}
+
+function parseOptionalNumber(value: string | undefined) {
+  if (!value) return undefined;
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : undefined;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

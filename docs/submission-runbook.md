@@ -4,6 +4,22 @@ Use this as the final checklist for the Market Bubble stream recording.
 
 ## 1. Live Credential Check
 
+Copy the template and fill in the real stream credentials:
+
+```bash
+cp .env.example .env
+```
+
+Export `.env` in each terminal that runs server-side commands:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `feed`, `preflight`, `live:prepare`, and `proof:gate` need the shell export above or inline env assignments.
+
 Run the fixture rehearsal once before connecting real credentials:
 
 ```bash
