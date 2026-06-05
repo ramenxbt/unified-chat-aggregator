@@ -19,7 +19,7 @@ export type LiveDoctorReport = {
   plan: ReturnType<typeof buildLiveRunPlan>;
 };
 
-type LiveDoctorOptions = LiveRunPlanOptions & {
+export type LiveDoctorOptions = LiveRunPlanOptions & {
   checkPort?: (label: string, port: number) => Promise<LiveDoctorCheck>;
   checkWritableDirectory?: (label: string, directoryPath: string) => Promise<LiveDoctorCheck>;
 };

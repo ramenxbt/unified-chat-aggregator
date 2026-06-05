@@ -33,6 +33,7 @@ Run the strict connector check next:
 ```bash
 npm run preflight
 npm run live:prepare
+npm run live:stack -- --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
@@ -60,6 +61,16 @@ Kick needs a public URL for webhook delivery.
 If `KICK_SUBSCRIBE_ON_START=true`, also set `KICK_ACCESS_TOKEN` and `KICK_BROADCASTER_USER_ID`.
 
 ## 3. Start The Capture Stack
+
+Lowest-mistake path:
+
+```bash
+npm run live:stack
+```
+
+This runs the same doctor checks, then starts the feed server and dashboard with the planned archive, database, ports, and WebSocket URL. Keep it running during capture. Stop it with `Ctrl-C` after exporting evidence.
+
+Manual fallback:
 
 Terminal 1:
 
