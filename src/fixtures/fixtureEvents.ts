@@ -14,6 +14,7 @@ type FixtureTemplate = {
   authorName?: string;
   authorColor?: string;
   text: string;
+  fragments?: UnifiedEvent["fragments"];
   badges?: UnifiedEvent["badges"];
 };
 
@@ -26,7 +27,11 @@ const templates: FixtureTemplate[] = [
     authorId: "kick_91",
     authorName: "user91",
     authorColor: "#79f15e",
-    text: "HYPE just different",
+    text: "HYPE just different HYPERCLAP",
+    fragments: [
+      { type: "text", text: "HYPE just different " },
+      { type: "emote", id: "4148074", text: "HYPERCLAP" }
+    ],
     badges: [{ label: "Sub", type: "subscriber", count: 3 }]
   },
   {
@@ -104,7 +109,11 @@ const templates: FixtureTemplate[] = [
     authorId: "kick_871",
     authorName: "liquiditymaps",
     authorColor: "#ff6b6b",
-    text: "@marketbubble support is still holding"
+    text: "@marketbubble support is still holding",
+    fragments: [
+      { type: "mention", id: "marketbubble", text: "@marketbubble" },
+      { type: "text", text: " support is still holding" }
+    ]
   },
   {
     platform: "twitch",
@@ -166,7 +175,7 @@ export function createFixtureEvent(sequence: number, receivedAt = new Date()): U
     authorName: template.authorName,
     authorColor: template.authorColor,
     text: template.text,
-    fragments: [{ type: "text", text: template.text }],
+    fragments: template.fragments ?? [{ type: "text", text: template.text }],
     badges: template.badges ?? [],
     occurredAt,
     receivedAt: receivedAt.toISOString(),

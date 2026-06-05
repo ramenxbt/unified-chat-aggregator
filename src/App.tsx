@@ -35,7 +35,8 @@ import {
   type ConnectorStatus,
   type PlatformFilter,
   type SourcePlatform,
-  type UnifiedEvent
+  type UnifiedEvent,
+  type UnifiedFragment
 } from "./domain/unifiedEvent";
 import { recordingEventsToCsv, recordingExportSchema, type RecordingExport } from "./domain/recording";
 import {
@@ -1072,7 +1073,7 @@ function EventRow({
                 ))}
               </span>
             ) : null}
-            <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
+            <EventText event={event} query={query} />
           </span>
           <span className="native-event-meta">
             <span className="event-source">{formatSourceMeta(event)}</span>
@@ -1088,11 +1089,36 @@ function EventRow({
             <span className="event-source">{formatSourceMeta(event)}</span>
             <span className="event-time">{timestamp}</span>
           </span>
-          <span className="event-text">{highlightQuery(event.text ?? event.kind, query)}</span>
+          <EventText event={event} query={query} />
         </span>
       )}
       <span className="signal-score">{signalScore > 0 ? signalScore : ""}</span>
     </button>
+  );
+}
+
+function EventText({ event, query }: { event: UnifiedEvent; query: string }) {
+  const fallbackFragment: UnifiedFragment = { type: "text", text: event.text ?? event.kind };
+  const fragments = event.fragments.length > 0 ? event.fragments : [fallbackFragment];
+
+  return (
+    <span className="event-text">
+      {fragments.map((fragment, index) => (
+        <EventFragment
+          fragment={fragment}
+          key={`${fragment.type}-${fragment.id ?? index}-${fragment.text}`}
+          query={query}
+        />
+      ))}
+    </span>
+  );
+}
+
+function EventFragment({ fragment, query }: { fragment: UnifiedFragment; query: string }) {
+  return (
+    <span className={`event-fragment event-fragment-${fragment.type}`} title={fragment.id}>
+      {highlightQuery(fragment.text, query)}
+    </span>
   );
 }
 

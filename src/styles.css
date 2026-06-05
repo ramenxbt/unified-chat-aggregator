@@ -576,6 +576,9 @@ button {
 }
 
 .event-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
   overflow: hidden;
   min-width: 0;
   color: #e7ece7;
@@ -587,6 +590,31 @@ button {
 
 .native-event-row[data-platform="x"] .event-text {
   color: #f7f9f9;
+}
+
+.event-fragment {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.event-fragment-emote,
+.event-fragment-cheermote {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent), transparent 62%);
+  border-radius: 5px;
+  padding: 0 5px;
+  background: color-mix(in srgb, var(--accent), transparent 88%);
+  color: color-mix(in srgb, var(--accent), white 14%);
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: 0;
+}
+
+.event-fragment-mention,
+.event-fragment-link {
+  color: color-mix(in srgb, var(--accent), white 12%);
+  font-weight: 720;
 }
 
 .event-text mark {

@@ -37,6 +37,15 @@ describe("App", () => {
     expect(feed).not.toHaveTextContent(/Ansem is cooking again/i);
   });
 
+  it("renders native message fragments for emotes and mentions", () => {
+    const { container } = render(<App />);
+
+    expect(screen.getAllByText("HYPERCLAP").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("@marketbubble").length).toBeGreaterThan(0);
+    expect(container.querySelector(".event-fragment-emote")).toHaveTextContent("HYPERCLAP");
+    expect(container.querySelector(".event-fragment-mention")).toHaveTextContent("@marketbubble");
+  });
+
   it("can pause the fixture stream", async () => {
     render(<App />);
 
