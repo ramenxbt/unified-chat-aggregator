@@ -31,6 +31,9 @@ describe("submission bundle", () => {
     expect(replayCsv).toContain("occurred_at,received_at,platform,platform_label,kind");
     expect(submissionNotes).toContain("# Unified Chat Aggregator Submission Notes");
     expect(submissionNotes).toContain("Status: ready");
+    expect(submissionNotes).toContain("Repo commit:");
+    expect(submissionNotes).toContain("## External Artifacts To Attach");
+    expect(submissionNotes).toContain("OBS overlay recording with Twitch, Kick, and X source labels visible");
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(summary.archivePath).toBe(archivePath);
@@ -47,7 +50,18 @@ describe("submission bundle", () => {
         twitch: 1,
         kick: 1,
         x: 1
-      }
+      },
+      repo: {
+        commit: expect.any(String),
+        branch: expect.any(String),
+        remote: expect.any(String)
+      },
+      externalArtifacts: [
+        "OBS overlay recording with Twitch, Kick, and X source labels visible",
+        "Dashboard recording or screenshot showing connector diagnostics and run proof",
+        "Exported dashboard recording JSON and CSV, if captured from the browser",
+        "Final local rehearsal output from npm run qa:final"
+      ]
     });
   });
 });

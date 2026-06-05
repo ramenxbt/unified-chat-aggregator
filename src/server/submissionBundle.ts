@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -35,6 +36,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     requireAllPlatforms: options.requireAllPlatforms
   });
   const recording = await readArchiveRecording(archivePath);
+  const repo = collectRepoMetadata();
+  const externalArtifacts = buildExternalArtifactChecklist();
   const bundleDir = path.resolve(options.outputDir);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
@@ -49,7 +52,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     writeFile(files.evidenceReport, `${formatEvidenceReport(evidence)}\n`, "utf8"),
     writeFile(files.replayJson, `${JSON.stringify(recording, null, 2)}\n`, "utf8"),
     writeFile(files.replayCsv, archiveRecordingToCsv(recording), "utf8"),
-    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence)}\n`, "utf8"),
+    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence, repo, externalArtifacts)}\n`, "utf8"),
     writeFile(
       files.summary,
       `${JSON.stringify(
@@ -57,6 +60,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
           generatedAt: new Date().toISOString(),
           archivePath,
           databasePath: options.databasePath,
+          repo,
           evidenceOk: evidence.ok,
           sessionId: evidence.sessionId,
           mode: evidence.mode,
@@ -66,6 +70,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
           statusPlatforms: evidence.statusPlatforms,
           sourceLabels: evidence.sourceLabels,
           performance: evidence.performance,
+          externalArtifacts,
           files
         },
         null,
@@ -101,13 +106,19 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
   return lines.join("\n");
 }
 
-export function formatSubmissionNotes(evidence: EvidenceReport) {
+export function formatSubmissionNotes(
+  evidence: EvidenceReport,
+  repo = collectRepoMetadata(),
+  externalArtifacts = buildExternalArtifactChecklist()
+) {
   const lines = [
     "# Unified Chat Aggregator Submission Notes",
     "",
     `Status: ${evidence.ok ? "ready" : "needs attention"}`,
     `Session: ${evidence.sessionId}`,
     `Mode: ${evidence.mode}`,
+    `Repo commit: ${repo.commit ?? "unknown"}`,
+    `Repo remote: ${repo.remote ?? "unknown"}`,
     "",
     "## Proof Metrics",
     "",
@@ -131,7 +142,11 @@ export function formatSubmissionNotes(evidence: EvidenceReport) {
     "## Evidence Files",
     "",
     `- Archive: ${evidence.archivePath}`,
-    evidence.databasePath ? `- Database: ${evidence.databasePath}` : "- Database: not provided"
+    evidence.databasePath ? `- Database: ${evidence.databasePath}` : "- Database: not provided",
+    "",
+    "## External Artifacts To Attach",
+    "",
+    ...externalArtifacts.map((artifact) => `- [ ] ${artifact}`)
   ];
 
   if (evidence.issues.length > 0) {
@@ -139,6 +154,35 @@ export function formatSubmissionNotes(evidence: EvidenceReport) {
   }
 
   return lines.join("\n");
+}
+
+function collectRepoMetadata() {
+  return {
+    commit: runGit(["rev-parse", "--short", "HEAD"]),
+    branch: runGit(["branch", "--show-current"]),
+    remote: runGit(["remote", "get-url", "origin"])
+  };
+}
+
+function runGit(args: string[]) {
+  try {
+    return execFileSync("git", args, {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function buildExternalArtifactChecklist() {
+  return [
+    "OBS overlay recording with Twitch, Kick, and X source labels visible",
+    "Dashboard recording or screenshot showing connector diagnostics and run proof",
+    "Exported dashboard recording JSON and CSV, if captured from the browser",
+    "Final local rehearsal output from npm run qa:final"
+  ];
 }
 
 function formatNumber(value: number) {
