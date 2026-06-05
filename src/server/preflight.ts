@@ -1,4 +1,7 @@
 import { evaluateLivePreflight, formatLivePreflightReport } from "./livePreflight";
+import { loadLocalEnv } from "./loadLocalEnv";
+
+loadLocalEnv();
 
 const allowPartial = process.argv.includes("--allow-partial");
 const report = evaluateLivePreflight(process.env, {

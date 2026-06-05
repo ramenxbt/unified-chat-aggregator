@@ -10,15 +10,7 @@ Copy the template and fill in the real stream credentials:
 cp .env.example .env
 ```
 
-Export `.env` in each terminal that runs server-side commands:
-
-```bash
-set -a
-source .env
-set +a
-```
-
-The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `feed`, `preflight`, `live:prepare`, and `proof:gate` need the shell export above or inline env assignments.
+The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `feed`, `preflight`, `live:prepare`, and `proof:gate` also load `.env` automatically without overriding values already exported in your shell.
 
 Run the fixture rehearsal once before connecting real credentials:
 

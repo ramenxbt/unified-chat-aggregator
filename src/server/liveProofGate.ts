@@ -10,6 +10,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "../domain/unifiedEvent";
+import { loadLocalEnv } from "./loadLocalEnv";
 
 const archivedStatusSchema = z.object({
   recordedAt: z.string().datetime(),
@@ -288,6 +289,8 @@ function delay(ms: number) {
 }
 
 async function runCli() {
+  loadLocalEnv();
+
   const args = parseArgs(process.argv.slice(2), process.env);
   const report = args.watch ? await watchLiveProofGate(args) : await buildLiveProofGateReport(args);
 

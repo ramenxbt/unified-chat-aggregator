@@ -3,7 +3,10 @@ import { TwitchEventSubConnector } from "../connectors/twitch/twitchEventSubConn
 import type { Connector } from "../connectors/types";
 import { XApiConnector } from "../connectors/x/xApiConnector";
 import { createFeedArchiveFromEnv } from "./feedArchive";
+import { loadLocalEnv } from "./loadLocalEnv";
 import { LiveFeedRuntime } from "./liveFeedRuntime";
+
+loadLocalEnv();
 
 const port = Number(process.env.FEED_SERVER_PORT ?? 8787);
 const bufferSize = Number(process.env.FEED_REPLAY_BUFFER_SIZE ?? 250);
