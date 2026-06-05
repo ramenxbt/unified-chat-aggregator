@@ -213,8 +213,25 @@ export class KickWebhookConnector implements Connector {
       return;
     }
 
+    if (request.method === "GET" || request.method === "HEAD") {
+      const body = JSON.stringify({
+        ok: true,
+        platform: "kick",
+        receiver: "ready",
+        path: this.config.path ?? defaultPath
+      });
+
+      response
+        .writeHead(200, {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/json"
+        })
+        .end(request.method === "HEAD" ? undefined : body);
+      return;
+    }
+
     if (request.method !== "POST") {
-      response.writeHead(405, { Allow: "POST" }).end();
+      response.writeHead(405, { Allow: "GET, HEAD, POST" }).end();
       return;
     }
 

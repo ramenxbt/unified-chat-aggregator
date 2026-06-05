@@ -143,6 +143,57 @@ function createMockServerFactory() {
   });
 }
 
+function createCapturingServerFactory() {
+  let capturedListener: ((request: IncomingMessage, response: ServerResponse) => void) | null = null;
+
+  return {
+    serverFactory: (listener: (request: IncomingMessage, response: ServerResponse) => void) => {
+      capturedListener = listener;
+
+      return {
+        address: () => ({ address: "127.0.0.1", family: "IPv4", port: 4321 }),
+        close: (callback: (error?: Error) => void) => callback(),
+        listen: (_port: number, _host: string, callback: () => void) => callback(),
+        off: () => undefined,
+        once: () => undefined
+      };
+    },
+    request: async (request: Partial<IncomingMessage>) => {
+      if (!capturedListener) {
+        throw new Error("No listener captured");
+      }
+
+      const response = createMockResponse();
+
+      capturedListener(request as IncomingMessage, response as unknown as ServerResponse);
+      await flush();
+
+      return response;
+    }
+  };
+}
+
+function createMockResponse() {
+  return {
+    body: undefined as unknown,
+    headers: undefined as unknown,
+    statusCode: 0,
+    writeHead(statusCode: number, headers?: unknown) {
+      this.statusCode = statusCode;
+      this.headers = headers;
+      return this;
+    },
+    end(body?: unknown) {
+      this.body = body;
+      return this;
+    }
+  };
+}
+
+async function flush() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe("KickWebhookConnector", () => {
   it("verifies Kick webhook signatures", () => {
     const rawBody = Buffer.from(JSON.stringify(chatPayload()));
@@ -184,6 +235,46 @@ describe("KickWebhookConnector", () => {
       ]
     });
     expect(connector.status().eventCount).toBe(1);
+  });
+
+  it("serves a safe receiver health check for tunnel validation", async () => {
+    const server = createCapturingServerFactory();
+    const connector = new KickWebhookConnector(
+      {
+        port: 0,
+        publicKey: keyPair.publicKey,
+        sourceName: "marketbubble"
+      },
+      {
+        now: () => new Date("2026-06-04T18:00:01.000Z"),
+        fetch: configFetch,
+        serverFactory: server.serverFactory
+      }
+    );
+    activeConnectors.push(connector);
+
+    await connector.start();
+
+    const response = await server.request({
+      method: "GET",
+      url: "/webhooks/kick"
+    });
+    const headResponse = await server.request({
+      method: "HEAD",
+      url: "/webhooks/kick"
+    });
+    const body = JSON.parse(String(response.body));
+
+    expect(response.statusCode).toBe(200);
+    expect(body).toMatchObject({
+      ok: true,
+      platform: "kick",
+      receiver: "ready",
+      path: "/webhooks/kick"
+    });
+    expect(headResponse.statusCode).toBe(200);
+    expect(headResponse.body).toBeUndefined();
+    expect(connector.status().droppedCount).toBe(0);
   });
 
   it("rejects unsigned or forged webhook requests", async () => {

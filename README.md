@@ -80,6 +80,7 @@ KICK_WEBHOOK_ENABLED=true npm run feed
 ```
 
 Expose `http://127.0.0.1:8788/webhooks/kick` through Cloudflare Tunnel, ngrok, or another public tunnel, then use that public URL in the Kick Developer app webhook settings. To have the feed server request a chat subscription on startup, set `KICK_ACCESS_TOKEN`, `KICK_BROADCASTER_USER_ID`, and `KICK_SUBSCRIBE_ON_START=true`.
+When the feed server is running, the Kick webhook path responds to `GET` and `HEAD` with a safe receiver health check. Use the `tunnel health check` command from `npm run live:prepare` to verify the public tunnel reaches the local receiver before the final recording.
 
 Kick signature verification is on by default. Only set `KICK_VERIFY_SIGNATURE=false` for local smoke testing with manually posted payloads.
 

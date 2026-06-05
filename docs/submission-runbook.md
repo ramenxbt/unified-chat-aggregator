@@ -57,6 +57,7 @@ Kick needs a public URL for webhook delivery.
 2. Set `KICK_WEBHOOK_PUBLIC_URL` to the public HTTPS `/webhooks/kick` URL.
 3. Put the same public URL in the Kick Developer app webhook settings.
 4. Run `npm run preflight` again.
+5. After the capture stack is running, run the `tunnel health check` command printed by `npm run live:prepare`.
 
 If `KICK_SUBSCRIBE_ON_START=true`, also set `KICK_ACCESS_TOKEN` and `KICK_BROADCASTER_USER_ID`.
 
