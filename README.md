@@ -139,11 +139,12 @@ This writes desktop, mobile, and OBS overlay captures to `qa/visual/`.
 Final stack rehearsal:
 
 ```bash
+npm run qa:connectors
 npm run qa:rehearsal
 npm run qa:stress
 ```
 
-The rehearsal starts the feed server and dashboard on alternate local ports, verifies the browser is reading from `VITE_FEED_WS_URL`, and confirms server archive output under `qa/rehearsal/`. The stress run records high-volume proof under `qa/stress/` and fails if throughput or p95 latency miss the configured thresholds.
+The connector rehearsal runs the real feed server against local Twitch EventSub, Kick webhook, and X API mocks, then validates unified feed output and durable archive evidence under `qa/connectors/`. The live-stack rehearsal starts the feed server and dashboard on alternate local ports, verifies the browser is reading from `VITE_FEED_WS_URL`, and confirms server archive output under `qa/rehearsal/`. The stress run records high-volume proof under `qa/stress/` and fails if throughput or p95 latency miss the configured thresholds.
 
 ## Docs
 

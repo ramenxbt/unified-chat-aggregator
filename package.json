@@ -16,6 +16,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "qa:rehearsal": "tsx scripts/rehearseLiveStack.ts",
+    "qa:connectors": "tsx scripts/rehearseConnectorStack.ts",
     "qa:stress": "tsx scripts/stressLiveStack.ts",
     "qa:visual": "tsx scripts/captureVisualQa.ts",
     "test": "vitest run",

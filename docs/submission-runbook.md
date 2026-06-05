@@ -15,11 +15,12 @@ The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `f
 Run the fixture rehearsal once before connecting real credentials:
 
 ```bash
+npm run qa:connectors
 npm run qa:rehearsal
 npm run qa:stress
 ```
 
-This proves the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
+This proves the real connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
 
 Run the local doctor first:
 
