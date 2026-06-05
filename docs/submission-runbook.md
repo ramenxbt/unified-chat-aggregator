@@ -52,7 +52,7 @@ Do not treat partial mode as final proof. It is only for connector smoke testing
 Kick needs a public URL for webhook delivery.
 
 1. Start a tunnel to `http://127.0.0.1:8788`.
-2. Set `KICK_WEBHOOK_PUBLIC_URL` to the public `/webhooks/kick` URL.
+2. Set `KICK_WEBHOOK_PUBLIC_URL` to the public HTTPS `/webhooks/kick` URL.
 3. Put the same public URL in the Kick Developer app webhook settings.
 4. Run `npm run preflight` again.
 

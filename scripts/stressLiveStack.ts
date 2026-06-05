@@ -191,7 +191,7 @@ async function stopProcess(child: ChildProcessWithoutNullStreams) {
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
       finish();
-    }, 5000);
+    }, 20_000);
 
     child.once("exit", () => {
       finish();

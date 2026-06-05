@@ -26,9 +26,7 @@ export function evaluateLivePreflight(
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
   const checks = [checkTwitch(env), checkKick(env), checkX(env)];
   const mode = checks.some((check) => check.willStart) ? "connectors" : "fixture";
-  const ok = requireAllPlatforms
-    ? checks.every((check) => check.ready)
-    : checks.some((check) => check.ready || check.willStart);
+  const ok = requireAllPlatforms ? checks.every((check) => check.ready) : checks.some((check) => check.ready);
 
   return {
     ok,
@@ -93,9 +91,16 @@ function checkKick(env: LivePreflightEnv): PlatformPreflight {
   const warnings: string[] = [];
   const port = env.KICK_WEBHOOK_PORT ?? "8788";
   const path = env.KICK_WEBHOOK_PATH ?? "/webhooks/kick";
+  const publicUrlIssue = env.KICK_WEBHOOK_PUBLIC_URL
+    ? validateKickWebhookPublicUrl(env.KICK_WEBHOOK_PUBLIC_URL, path)
+    : null;
 
   if (webhookEnabled && !env.KICK_WEBHOOK_PUBLIC_URL) {
     warnings.push(`expose http://127.0.0.1:${port}${path} through a public tunnel for Kick delivery`);
+  }
+
+  if (publicUrlIssue) {
+    missing.push(publicUrlIssue);
   }
 
   if (subscribeOnStart) {
@@ -141,6 +146,40 @@ function checkX(env: LivePreflightEnv): PlatformPreflight {
       env.X_SPACES_QUERY ? `Spaces query: ${env.X_SPACES_QUERY}` : "Spaces query: none"
     ]
   };
+}
+
+function validateKickWebhookPublicUrl(publicUrl: string, webhookPath: string) {
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl = new URL(publicUrl);
+  } catch {
+    return "valid KICK_WEBHOOK_PUBLIC_URL";
+  }
+
+  if (parsedUrl.protocol !== "https:") {
+    return "HTTPS KICK_WEBHOOK_PUBLIC_URL";
+  }
+
+  if (isLocalHost(parsedUrl.hostname)) {
+    return "public KICK_WEBHOOK_PUBLIC_URL host";
+  }
+
+  if (parsedUrl.pathname.replace(/\/+$/, "") !== normalizePath(webhookPath)) {
+    return `KICK_WEBHOOK_PUBLIC_URL ending in ${normalizePath(webhookPath)}`;
+  }
+
+  return null;
+}
+
+function normalizePath(value: string) {
+  const path = value.startsWith("/") ? value : `/${value}`;
+
+  return path.replace(/\/+$/, "");
+}
+
+function isLocalHost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
 function parseEnvList(value: string | undefined) {

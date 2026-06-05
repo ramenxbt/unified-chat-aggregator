@@ -1,4 +1,5 @@
-import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { createWriteStream, type WriteStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   formatPlatformSourceLabel,
@@ -53,6 +54,8 @@ type SQLiteDatabase = {
 export class FileFeedArchive implements FeedArchive {
   private manifest: ArchiveManifest | null = null;
   private archivePath: string | null = null;
+  private eventStream: WriteStream | null = null;
+  private statusStream: WriteStream | null = null;
   private writes = Promise.resolve();
 
   constructor(private readonly baseDir: string) {}
@@ -74,6 +77,8 @@ export class FileFeedArchive implements FeedArchive {
     };
 
     await mkdir(this.archivePath, { recursive: true });
+    this.eventStream = createWriteStream(path.join(this.archivePath, "events.jsonl"), { flags: "w" });
+    this.statusStream = createWriteStream(path.join(this.archivePath, "statuses.jsonl"), { flags: "w" });
     await this.writeManifest();
   }
 
@@ -81,14 +86,14 @@ export class FileFeedArchive implements FeedArchive {
     if (!this.archivePath || !this.manifest) return;
 
     this.manifest.eventCount += 1;
-    this.enqueueAppend("events.jsonl", event);
+    this.enqueueWrite(this.eventStream, event);
   }
 
   recordStatus(status: ConnectorStatus) {
     if (!this.archivePath || !this.manifest) return;
 
     this.manifest.statusCount += 1;
-    this.enqueueAppend("statuses.jsonl", {
+    this.enqueueWrite(this.statusStream, {
       recordedAt: new Date().toISOString(),
       status
     });
@@ -99,14 +104,17 @@ export class FileFeedArchive implements FeedArchive {
 
     this.manifest.endedAt = endedAt;
     await this.writes;
+    await Promise.all([closeStream(this.eventStream), closeStream(this.statusStream)]);
+    this.eventStream = null;
+    this.statusStream = null;
     await this.writeManifest();
   }
 
-  private enqueueAppend(fileName: string, payload: unknown) {
+  private enqueueWrite(stream: WriteStream | null, payload: unknown) {
     this.writes = this.writes
       .then(async () => {
-        if (!this.archivePath) return;
-        await appendFile(path.join(this.archivePath, fileName), `${JSON.stringify(payload)}\n`, "utf8");
+        if (!stream) return;
+        await writeStreamLine(stream, `${JSON.stringify(payload)}\n`);
       })
       .catch((error: unknown) => {
         console.error("Feed archive write failed", error);
@@ -118,6 +126,38 @@ export class FileFeedArchive implements FeedArchive {
 
     await writeFile(path.join(this.archivePath, "manifest.json"), `${JSON.stringify(this.manifest, null, 2)}\n`, "utf8");
   }
+}
+
+function writeStreamLine(stream: WriteStream, line: string) {
+  return new Promise<void>((resolve, reject) => {
+    stream.write(line, "utf8", (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
+function closeStream(stream: WriteStream | null) {
+  if (!stream) return Promise.resolve();
+
+  return new Promise<void>((resolve, reject) => {
+    const onError = (error: Error) => {
+      stream.off("finish", onFinish);
+      reject(error);
+    };
+    const onFinish = () => {
+      stream.off("error", onError);
+      resolve();
+    };
+
+    stream.once("error", onError);
+    stream.once("finish", onFinish);
+    stream.end();
+  });
 }
 
 export class CompositeFeedArchive implements FeedArchive {

@@ -83,4 +83,41 @@ describe("live preflight", () => {
       warnings: ["expose http://127.0.0.1:8788/webhooks/kick through a public tunnel for Kick delivery"]
     });
   });
+
+  it("fails Kick readiness when the public webhook URL is not an HTTPS tunnel URL", () => {
+    const report = evaluateLivePreflight(
+      {
+        KICK_WEBHOOK_PUBLIC_URL: "http://127.0.0.1:8788/webhooks/kick"
+      },
+      {
+        requireAllPlatforms: false
+      }
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.checks.find((check) => check.platform === "kick")).toMatchObject({
+      ready: false,
+      willStart: true,
+      missing: ["HTTPS KICK_WEBHOOK_PUBLIC_URL"]
+    });
+  });
+
+  it("fails Kick readiness when the public webhook URL does not point at the configured receiver path", () => {
+    const report = evaluateLivePreflight(
+      {
+        KICK_WEBHOOK_PUBLIC_URL: "https://market-bubble-tunnel.example/wrong",
+        KICK_WEBHOOK_PATH: "/webhooks/kick"
+      },
+      {
+        requireAllPlatforms: false
+      }
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.checks.find((check) => check.platform === "kick")).toMatchObject({
+      ready: false,
+      willStart: true,
+      missing: ["KICK_WEBHOOK_PUBLIC_URL ending in /webhooks/kick"]
+    });
+  });
 });
