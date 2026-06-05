@@ -13,7 +13,9 @@ import {
 } from "../fixtures/fixtureEvents";
 
 const maxBufferSize = 250;
-const feedWsUrl = import.meta.env.VITE_FEED_WS_URL as string | undefined;
+const defaultFeedWsUrl = import.meta.env.VITE_FEED_WS_URL as string | undefined;
+const reconnectBaseDelayMs = 500;
+const reconnectMaxDelayMs = 5000;
 
 export type UnifiedFeedState = {
   events: UnifiedEvent[];
@@ -25,14 +27,15 @@ export type UnifiedFeedState = {
   transportState: "fixture" | "connecting" | "live" | "degraded";
 };
 
-export function useUnifiedFeed(platformFilter: PlatformFilter): UnifiedFeedState {
-  const [stream, setStream] = useState(() => createInitialFixtureState());
+export function useUnifiedFeed(platformFilter: PlatformFilter, feedUrl = defaultFeedWsUrl): UnifiedFeedState {
+  const [stream, setStream] = useState(() => (feedUrl ? { events: [], statuses: [] } : createInitialFixtureState()));
   const [paused, setPaused] = useState(false);
   const [transportState, setTransportState] = useState<UnifiedFeedState["transportState"]>(
-    feedWsUrl ? "connecting" : "fixture"
+    feedUrl ? "connecting" : "fixture"
   );
   const sequenceRef = useRef(24);
   const pausedRef = useRef(paused);
+  const activePlatformsRef = useRef(new Set<string>());
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -44,7 +47,11 @@ export function useUnifiedFeed(platformFilter: PlatformFilter): UnifiedFeedState
   );
 
   useEffect(() => {
-    if (feedWsUrl) return;
+    activePlatformsRef.current = activePlatforms;
+  }, [activePlatforms]);
+
+  useEffect(() => {
+    if (feedUrl) return;
     if (paused) return;
 
     const interval = window.setInterval(() => {
@@ -55,21 +62,46 @@ export function useUnifiedFeed(platformFilter: PlatformFilter): UnifiedFeedState
         return;
       }
 
-      setStream((currentStream) => addEventToStream(currentStream, event));
+      setStream((currentStream) => addEventToStream(currentStream, event, true));
     }, 1100);
 
     return () => window.clearInterval(interval);
-  }, [activePlatforms, paused]);
+  }, [activePlatforms, feedUrl, paused]);
 
   useEffect(() => {
-    if (!feedWsUrl) return;
+    if (!feedUrl) {
+      setTransportState("fixture");
+      return;
+    }
 
-    const socket = new WebSocket(feedWsUrl);
+    let closedByEffect = false;
+    let reconnectAttempt = 0;
+    let reconnectTimeout: number | null = null;
+    let socket: WebSocket | null = null;
 
-    socket.onopen = () => setTransportState("live");
-    socket.onerror = () => setTransportState("degraded");
-    socket.onclose = () => setTransportState("degraded");
-    socket.onmessage = (message) => {
+    function connect() {
+      if (closedByEffect || !feedUrl) return;
+
+      setTransportState((currentState) => (currentState === "live" ? currentState : "connecting"));
+      socket = new WebSocket(feedUrl);
+
+      socket.onopen = () => {
+        reconnectAttempt = 0;
+        setTransportState("live");
+      };
+      socket.onerror = () => setTransportState("degraded");
+      socket.onclose = () => {
+        if (closedByEffect) return;
+
+        setTransportState("degraded");
+        const reconnectDelayMs = Math.min(reconnectMaxDelayMs, reconnectBaseDelayMs * 2 ** reconnectAttempt);
+        reconnectAttempt += 1;
+        reconnectTimeout = window.setTimeout(connect, reconnectDelayMs);
+      };
+      socket.onmessage = handleSocketMessage;
+    }
+
+    function handleSocketMessage(message: MessageEvent) {
       let payload: unknown;
 
       try {
@@ -90,33 +122,41 @@ export function useUnifiedFeed(platformFilter: PlatformFilter): UnifiedFeedState
 
       if (serverMessage.type === "snapshot") {
         setStream({
-          events: serverMessage.events,
+          events: serverMessage.events.filter((event) => activePlatformsRef.current.has(event.platform)),
           statuses: serverMessage.statuses
         });
         return;
       }
 
       if (serverMessage.type === "event") {
-        if (pausedRef.current || !activePlatforms.has(serverMessage.event.platform)) {
+        if (pausedRef.current || !activePlatformsRef.current.has(serverMessage.event.platform)) {
           return;
         }
 
-        setStream((currentStream) => addEventToStream(currentStream, serverMessage.event));
+        setStream((currentStream) => addEventToStream(currentStream, serverMessage.event, false));
         return;
       }
 
       if (serverMessage.type === "status") {
         setStream((currentStream) => ({
           ...currentStream,
-          statuses: currentStream.statuses.map((status) =>
-            status.platform === serverMessage.status.platform ? serverMessage.status : status
-          )
+          statuses: replaceStatus(currentStream.statuses, serverMessage.status)
         }));
       }
-    };
+    }
 
-    return () => socket.close();
-  }, [activePlatforms]);
+    connect();
+
+    return () => {
+      closedByEffect = true;
+
+      if (reconnectTimeout) {
+        window.clearTimeout(reconnectTimeout);
+      }
+
+      socket?.close();
+    };
+  }, [feedUrl]);
 
   return {
     events: stream.events,
@@ -128,19 +168,30 @@ export function useUnifiedFeed(platformFilter: PlatformFilter): UnifiedFeedState
         ...currentStream,
         events: []
       })),
-    transportLabel: feedWsUrl ? "Live feed server" : "Fixture stream",
+    transportLabel: feedUrl ? "Live feed server" : "Fixture stream",
     transportState
   };
 }
 
 function addEventToStream(
   currentStream: { events: UnifiedEvent[]; statuses: ConnectorStatus[] },
-  event: UnifiedEvent
+  event: UnifiedEvent,
+  updateStatuses: boolean
 ) {
   const nextEvents = dedupeEvents([event, ...currentStream.events]).slice(0, maxBufferSize);
 
   return {
     events: nextEvents,
-    statuses: updateFixtureStatuses(currentStream.statuses, event)
+    statuses: updateStatuses ? updateFixtureStatuses(currentStream.statuses, event) : currentStream.statuses
   };
+}
+
+function replaceStatus(statuses: ConnectorStatus[], nextStatus: ConnectorStatus) {
+  const statusIndex = statuses.findIndex((status) => status.platform === nextStatus.platform);
+
+  if (statusIndex === -1) {
+    return [...statuses, nextStatus];
+  }
+
+  return statuses.map((status) => (status.platform === nextStatus.platform ? nextStatus : status));
 }
