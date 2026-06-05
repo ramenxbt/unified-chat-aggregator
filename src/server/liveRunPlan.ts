@@ -28,6 +28,16 @@ export type LiveRunPlan = {
     kickWebhookLocal: string;
     kickWebhookPublic?: string;
   };
+  obs: {
+    sourceType: string;
+    width: number;
+    height: number;
+    fps: number;
+    background: string;
+    shutdownWhenNotVisible: string;
+    refreshWhenActive: string;
+    customCss: string;
+  };
   evidence: {
     archiveDir: string;
     databasePath: string;
@@ -76,6 +86,16 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       kickWebhookLocal: `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
       kickWebhookPublic: env.KICK_WEBHOOK_PUBLIC_URL
     },
+    obs: {
+      sourceType: "Browser Source",
+      width: 1280,
+      height: 720,
+      fps: 30,
+      background: "transparent",
+      shutdownWhenNotVisible: "off",
+      refreshWhenActive: "off",
+      customCss: "body { background: rgba(0, 0, 0, 0); overflow: hidden; }"
+    },
     evidence: {
       archiveDir,
       databasePath,
@@ -112,6 +132,15 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     "Kick webhook:",
     `  local receiver: ${plan.urls.kickWebhookLocal}`,
     `  public URL: ${plan.urls.kickWebhookPublic ?? "not configured"}`,
+    "",
+    "OBS browser source settings:",
+    `  source type: ${plan.obs.sourceType}`,
+    `  size: ${plan.obs.width}x${plan.obs.height}`,
+    `  FPS: ${plan.obs.fps}`,
+    `  background: ${plan.obs.background}`,
+    `  shutdown when not visible: ${plan.obs.shutdownWhenNotVisible}`,
+    `  refresh browser when scene becomes active: ${plan.obs.refreshWhenActive}`,
+    `  custom CSS: ${plan.obs.customCss}`,
     "",
     "Evidence outputs:",
     `  latest archive directory: ${plan.evidence.archiveDir}`,

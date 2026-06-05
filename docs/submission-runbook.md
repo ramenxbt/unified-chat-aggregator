@@ -37,6 +37,7 @@ npm run live:prepare
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, or `PROOF_MAX_P95_LATENCY_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds.
+Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 
 For a one-platform dry run, use:
 
@@ -101,9 +102,10 @@ Wait for `Live proof gate: ready`. This reads the active JSONL archive while the
 2. Let live events arrive from the stream.
 3. Open the `All sources` OBS preset from the diagnostics rail.
 4. Add that URL as an OBS browser source.
-5. Record the overlay plus the real Market Bubble stream.
-6. Stop recording in the dashboard.
-7. Export recording JSON and CSV.
+5. Apply the `OBS browser source settings` from `npm run live:prepare`.
+6. Record the overlay plus the real Market Bubble stream.
+7. Stop recording in the dashboard.
+8. Export recording JSON and CSV.
 
 Use these backup OBS URLs if needed:
 

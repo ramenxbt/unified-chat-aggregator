@@ -34,6 +34,17 @@ describe("live run plan", () => {
     expect(formatted).toContain("FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed");
     expect(formatted).toContain("VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
+    expect(plan.obs).toMatchObject({
+      sourceType: "Browser Source",
+      width: 1280,
+      height: 720,
+      fps: 30,
+      background: "transparent"
+    });
+    expect(formatted).toContain("OBS browser source settings:");
+    expect(formatted).toContain("source type: Browser Source");
+    expect(formatted).toContain("size: 1280x720");
+    expect(formatted).toContain("custom CSS: body { background: rgba(0, 0, 0, 0); overflow: hidden; }");
     expect(formatted).toContain("database: data/feed.sqlite");
     expect(formatted).toContain(
       "live proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000"
