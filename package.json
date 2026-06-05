@@ -20,6 +20,7 @@
     "qa:stress": "tsx scripts/stressLiveStack.ts",
     "qa:visual": "tsx scripts/captureVisualQa.ts",
     "qa:repo": "tsx scripts/checkRepoHygiene.ts",
+    "qa:final": "tsx scripts/runFinalQa.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "eslint ."

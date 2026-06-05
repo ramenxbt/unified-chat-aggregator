@@ -142,6 +142,14 @@ This writes desktop, mobile, and OBS overlay captures to `qa/visual/`.
 Final stack rehearsal:
 
 ```bash
+npm run qa:final
+```
+
+This runs repository hygiene, tests, lint, build, browser workflows, connector rehearsal, live stack rehearsal, stress rehearsal, and visual QA in submission order.
+
+Individual rehearsal commands:
+
+```bash
 npm run qa:connectors
 npm run qa:rehearsal
 npm run qa:stress
