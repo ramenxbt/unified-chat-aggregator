@@ -27,6 +27,7 @@ export type LiveRunPlan = {
     archiveDir: string;
     databasePath: string;
     evidenceCheckCommand: string;
+    submissionBundleCommand: string;
     replayJsonCommand: string;
     replayCsvCommand: string;
   };
@@ -67,6 +68,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       archiveDir,
       databasePath,
       evidenceCheckCommand: `npm run evidence:check -- --archive ${archiveDir}/<session-id> --db ${databasePath}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive ${archiveDir}/<session-id> --db ${databasePath} --out submission-bundle`,
       replayJsonCommand: `npm run archive:export -- ${archiveDir}/<session-id> --out replay.json`,
       replayCsvCommand: `npm run archive:export -- ${archiveDir}/<session-id> --format csv --out replay.csv`
     }
@@ -95,6 +97,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     `  archive: ${plan.evidence.archiveDir}/<session-id>`,
     `  database: ${plan.evidence.databasePath}`,
     `  evidence check: ${plan.evidence.evidenceCheckCommand}`,
+    `  submission bundle: ${plan.evidence.submissionBundleCommand}`,
     `  replay JSON: ${plan.evidence.replayJsonCommand}`,
     `  replay CSV: ${plan.evidence.replayCsvCommand}`
   ];

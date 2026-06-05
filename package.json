@@ -10,6 +10,7 @@
     "feed": "tsx src/server/feedServer.ts",
     "live:prepare": "tsx src/server/prepareLiveRun.ts",
     "preflight": "tsx src/server/preflight.ts",
+    "submission:bundle": "tsx src/server/submissionBundle.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "qa:rehearsal": "tsx scripts/rehearseLiveStack.ts",

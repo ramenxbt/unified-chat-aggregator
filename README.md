@@ -42,11 +42,14 @@ Convert a server archive back into replay JSON or CSV:
 
 ```bash
 npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite
+npm run submission:bundle -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite --out submission-bundle
 npm run archive:export -- data/feed-sessions/<session-id> --out replay.json
 npm run archive:export -- data/feed-sessions/<session-id> --format csv --out replay.csv
 ```
 
 The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, and optional SQLite database rows before you package the final submission.
+
+The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, and `summary.json` into one folder for the final handoff.
 
 Kick live setup:
 

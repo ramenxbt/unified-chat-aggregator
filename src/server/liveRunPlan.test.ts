@@ -38,6 +38,9 @@ describe("live run plan", () => {
     expect(formatted).toContain(
       "evidence check: npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite"
     );
+    expect(formatted).toContain(
+      "submission bundle: npm run submission:bundle -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite --out submission-bundle"
+    );
   });
 
   it("surfaces missing strict requirements while still printing setup commands", () => {
