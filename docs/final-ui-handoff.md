@@ -11,6 +11,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Source account activity roster with one-click filters.
 - Cross-platform source identity grouping for matching account names.
 - Review queue for held, deleted, or spam-risk normalized events.
+- Performance panel with buffer throughput, average latency, p95 latency, and latest event freshness.
 - Signal mode.
 - Pause, resume, clear, order toggle, and jump-live behavior.
 - Recording start/stop, JSON export, and CSV export.

@@ -50,6 +50,16 @@ describe("App", () => {
     expect(screen.getByText("X_BEARER_TOKEN")).toBeInTheDocument();
   });
 
+  it("shows buffer performance diagnostics", () => {
+    render(<App />);
+
+    expect(screen.getByText("Performance")).toBeInTheDocument();
+    expect(screen.getByText("events/s")).toBeInTheDocument();
+    expect(screen.getByText("p95")).toBeInTheDocument();
+    expect(screen.getByText("avg")).toBeInTheDocument();
+    expect(screen.getByText(/24 buffered events over/i)).toBeInTheDocument();
+  });
+
   it("shows ready-to-open OBS preset links", () => {
     render(<App />);
 

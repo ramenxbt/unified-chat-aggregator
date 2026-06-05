@@ -130,6 +130,7 @@ export function App() {
   const totalEvents = feedEvents.length;
   const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
+  const performanceSummary = useMemo(() => buildPerformanceSummary(feedEvents), [feedEvents]);
   const readinessItems = useMemo(
     () => buildReadinessItems(statuses, effectiveTransportState),
     [statuses, effectiveTransportState]
@@ -545,6 +546,11 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<Activity size={15} />} title="Performance" />
+          <PerformancePanel summary={performanceSummary} />
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
           <SourceAccountsPanel
             accounts={sourceAccountSummaries}
@@ -662,6 +668,15 @@ type ReadinessItem = {
   title: string;
   detail: string;
   requirements: string[];
+};
+
+type PerformanceSummary = {
+  eventCount: number;
+  durationSeconds: number;
+  eventsPerSecond: number;
+  averageLatencyMs: number;
+  p95LatencyMs: number;
+  freshestAgeSeconds: number;
 };
 
 type AuthorProfile = {
@@ -1035,6 +1050,25 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
         <Metric label="drops" value={status.droppedCount} />
         <Metric label="latency" value={status.latencyMs ? `${Math.round(status.latencyMs)}ms` : "n/a"} />
       </div>
+    </div>
+  );
+}
+
+function PerformancePanel({ summary }: { summary: PerformanceSummary }) {
+  return (
+    <div className="performance-panel">
+      <div className="connector-stats">
+        <Metric label="events/s" value={formatThroughput(summary.eventsPerSecond)} />
+        <Metric label="p95" value={formatLatency(summary.p95LatencyMs)} />
+        <Metric label="avg" value={formatLatency(summary.averageLatencyMs)} />
+      </div>
+      <p className="detail-note">
+        {summary.eventCount === 0
+          ? "Waiting for buffer activity."
+          : `${summary.eventCount} buffered events over ${formatDuration(summary.durationSeconds)}. Latest ${formatFreshness(
+              summary.freshestAgeSeconds
+            )}.`}
+      </p>
     </div>
   );
 }
@@ -1515,6 +1549,39 @@ function buildModerationItem(event: UnifiedEvent): ModerationItem | null {
   return null;
 }
 
+function buildPerformanceSummary(events: UnifiedEvent[]): PerformanceSummary {
+  const receivedTimes = events
+    .map((event) => new Date(event.receivedAt).getTime())
+    .filter((time) => Number.isFinite(time));
+  const latencies = events
+    .map((event) => new Date(event.receivedAt).getTime() - new Date(event.occurredAt).getTime())
+    .filter((latency) => Number.isFinite(latency) && latency >= 0);
+  const newestReceivedAt = receivedTimes.length > 0 ? Math.max(...receivedTimes) : Date.now();
+  const oldestReceivedAt = receivedTimes.length > 0 ? Math.min(...receivedTimes) : newestReceivedAt;
+  const durationSeconds = Math.max(0, (newestReceivedAt - oldestReceivedAt) / 1000);
+  const eventsPerSecond = durationSeconds > 0 ? events.length / durationSeconds : events.length;
+  const averageLatencyMs =
+    latencies.length > 0 ? latencies.reduce((total, latency) => total + latency, 0) / latencies.length : 0;
+
+  return {
+    eventCount: events.length,
+    durationSeconds,
+    eventsPerSecond,
+    averageLatencyMs,
+    p95LatencyMs: percentile(latencies, 0.95),
+    freshestAgeSeconds: Math.max(0, (Date.now() - newestReceivedAt) / 1000)
+  };
+}
+
+function percentile(values: number[], percentileValue: number) {
+  if (values.length === 0) return 0;
+
+  const sortedValues = [...values].sort((left, right) => left - right);
+  const index = Math.min(sortedValues.length - 1, Math.max(0, Math.ceil(sortedValues.length * percentileValue) - 1));
+
+  return sortedValues[index];
+}
+
 function getSourceIdentityQuery(label: string) {
   const accountName = label.match(/\(([^)]+)\)/)?.[1] ?? label;
   const normalized = accountName.replace(/^@|^#/, "").trim().toLowerCase();
@@ -1541,6 +1608,37 @@ function formatRelativeTime(dateTime: string) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(dateTime));
+}
+
+function formatThroughput(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  if (value >= 100) return Math.round(value).toLocaleString("en-US");
+  if (value >= 10) return value.toFixed(1);
+
+  return value.toFixed(2);
+}
+
+function formatLatency(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0ms";
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}s`;
+
+  return `${Math.round(value)}ms`;
+}
+
+function formatDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+
+  return `${Math.round(seconds / 3600)}h`;
+}
+
+function formatFreshness(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 1) return "now";
+  if (seconds < 60) return `${Math.round(seconds)}s ago`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
+
+  return `${Math.round(seconds / 3600)}h ago`;
 }
 
 function buildReadinessItems(statuses: ConnectorStatus[], transportState: AppTransportState): ReadinessItem[] {
