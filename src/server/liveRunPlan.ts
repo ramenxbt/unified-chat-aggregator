@@ -69,10 +69,10 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       archiveDir,
       databasePath,
       proofGateCommand: `npm run proof:gate -- --archive-dir ${archiveDir} --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000`,
-      evidenceCheckCommand: `npm run evidence:check -- --archive ${archiveDir}/<session-id> --db ${databasePath}`,
-      submissionBundleCommand: `npm run submission:bundle -- --archive ${archiveDir}/<session-id> --db ${databasePath} --out submission-bundle`,
-      replayJsonCommand: `npm run archive:export -- ${archiveDir}/<session-id> --out replay.json`,
-      replayCsvCommand: `npm run archive:export -- ${archiveDir}/<session-id> --format csv --out replay.csv`
+      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${archiveDir} --db ${databasePath}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${archiveDir} --db ${databasePath} --out submission-bundle`,
+      replayJsonCommand: `npm run archive:export -- --archive-dir ${archiveDir} --out replay.json`,
+      replayCsvCommand: `npm run archive:export -- --archive-dir ${archiveDir} --format csv --out replay.csv`
     }
   };
 }
@@ -96,7 +96,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     `  public URL: ${plan.urls.kickWebhookPublic ?? "not configured"}`,
     "",
     "Evidence outputs:",
-    `  archive: ${plan.evidence.archiveDir}/<session-id>`,
+    `  latest archive directory: ${plan.evidence.archiveDir}`,
     `  database: ${plan.evidence.databasePath}`,
     `  live proof gate: ${plan.evidence.proofGateCommand}`,
     `  evidence check: ${plan.evidence.evidenceCheckCommand}`,

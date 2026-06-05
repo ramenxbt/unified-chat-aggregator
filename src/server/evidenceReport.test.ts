@@ -61,6 +61,16 @@ describe("evidence report", () => {
     expect(report.ok).toBe(true);
     expect(report.platforms.x).toBe(1);
   });
+
+  it("can check the latest session in an archive directory", async () => {
+    const { archiveDir, archivePath } = await createEvidenceFixture([0, 1, 2]);
+    const report = await buildEvidenceReport({
+      archiveDir
+    });
+
+    expect(report.ok).toBe(true);
+    expect(report.archivePath).toBe(archivePath);
+  });
 });
 
 async function createEvidenceFixture(eventIndexes: number[]) {
@@ -97,6 +107,7 @@ async function createEvidenceFixture(eventIndexes: number[]) {
   await databaseArchive.stop("2026-06-04T22:00:10.000Z");
 
   return {
+    archiveDir: path.join(baseDir, "feed-sessions"),
     archivePath: path.join(baseDir, "feed-sessions", sessionId),
     databasePath
   };

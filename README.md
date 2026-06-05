@@ -52,15 +52,15 @@ Gate, check, or convert a server archive:
 
 ```bash
 npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000
-npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite
-npm run submission:bundle -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite --out submission-bundle
-npm run archive:export -- data/feed-sessions/<session-id> --out replay.json
-npm run archive:export -- data/feed-sessions/<session-id> --format csv --out replay.csv
+npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite
+npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle
+npm run archive:export -- --archive-dir data/feed-sessions --out replay.json
+npm run archive:export -- --archive-dir data/feed-sessions --format csv --out replay.csv
 ```
 
 The proof gate reads the active JSONL archive while the feed server is still running. Use it before the final OBS capture; it waits for enough events, Twitch/Kick/X coverage, connector status samples, account source labels, and acceptable p95 latency.
 
-The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
+The evidence commands use the newest session in `data/feed-sessions` by default. Pass `--archive data/feed-sessions/<session-id>` instead when you need to inspect an older run. The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
 
 The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, and `summary.json` into one folder for the final handoff. The notes file gives a human-readable proof summary, while the JSON summary keeps platform counts, source labels, throughput, and latency metrics from the recorded run.
 

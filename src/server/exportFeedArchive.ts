@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { recordingEventsToCsv, recordingExportSchema, type RecordingExport } from "../domain/recording";
 import { unifiedEventSchema } from "../domain/unifiedEvent";
+import { resolveArchivePath } from "./feedArchiveLookup";
 
 const archiveManifestSchema = z.object({
   sessionId: z.string(),
@@ -43,13 +44,19 @@ export function archiveRecordingToCsv(recording: RecordingExport) {
 async function runCli() {
   const parsedArgs = parseArgs(process.argv.slice(2));
 
-  if (!parsedArgs.sessionPath) {
-    console.error("Usage: npm run archive:export -- <session-path> [--format json|csv] [--out file]");
+  if (!parsedArgs.sessionPath && !parsedArgs.archiveDir) {
+    console.error(
+      "Usage: npm run archive:export -- (<session-path> | --archive-dir data/feed-sessions) [--format json|csv] [--out file]"
+    );
     process.exitCode = 1;
     return;
   }
 
-  const recording = await readArchiveRecording(parsedArgs.sessionPath);
+  const archivePath = await resolveArchivePath({
+    archivePath: parsedArgs.sessionPath ?? undefined,
+    archiveDir: parsedArgs.archiveDir ?? undefined
+  });
+  const recording = await readArchiveRecording(archivePath);
   const output =
     parsedArgs.format === "csv" ? archiveRecordingToCsv(recording) : `${JSON.stringify(recording, null, 2)}\n`;
 
@@ -66,6 +73,7 @@ type ExportFormat = "json" | "csv";
 
 type ParsedArgs = {
   sessionPath: string | null;
+  archiveDir: string | null;
   format: ExportFormat;
   outPath: string | null;
 };
@@ -73,6 +81,7 @@ type ParsedArgs = {
 function parseArgs(args: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     sessionPath: null,
+    archiveDir: null,
     format: "json",
     outPath: null
   };
@@ -82,6 +91,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--format") {
       parsed.format = parseFormat(args[index + 1]);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--archive-dir") {
+      parsed.archiveDir = args[index + 1] ?? null;
       index += 1;
       continue;
     }

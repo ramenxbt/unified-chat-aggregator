@@ -8,10 +8,10 @@ import { createSubmissionBundle, formatSubmissionBundleResult } from "./submissi
 
 describe("submission bundle", () => {
   it("writes evidence, replay, csv, and summary files", async () => {
-    const { archivePath, databasePath, baseDir } = await createBundleFixture();
+    const { archiveDir, archivePath, databasePath, baseDir } = await createBundleFixture();
     const outputDir = path.join(baseDir, "bundle");
     const result = await createSubmissionBundle({
-      archivePath,
+      archiveDir,
       databasePath,
       outputDir
     });
@@ -33,6 +33,7 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("Status: ready");
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
+    expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
       evidenceOk: true,
       eventCount: 3,
@@ -85,6 +86,7 @@ async function createBundleFixture() {
   await databaseArchive.stop("2026-06-04T23:00:10.000Z");
 
   return {
+    archiveDir: path.join(baseDir, "feed-sessions"),
     archivePath: path.join(baseDir, "feed-sessions", sessionId),
     databasePath,
     baseDir

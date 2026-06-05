@@ -10,6 +10,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "../domain/unifiedEvent";
+import { resolveArchivePath } from "./feedArchiveLookup";
 
 const archiveManifestSchema = z.object({
   sessionId: z.string(),
@@ -39,7 +40,8 @@ const archivedStatusSchema = z.object({
 const requiredPlatforms: SourcePlatform[] = ["twitch", "kick", "x"];
 
 export type EvidenceReportOptions = {
-  archivePath: string;
+  archivePath?: string;
+  archiveDir?: string;
   databasePath?: string;
   requireAllPlatforms?: boolean;
 };
@@ -86,10 +88,11 @@ type SQLiteDatabase = {
 };
 
 export async function buildEvidenceReport(options: EvidenceReportOptions): Promise<EvidenceReport> {
+  const archivePath = await resolveArchivePath(options);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
-  const manifest = await readArchiveManifest(options.archivePath);
-  const events = await readArchiveEvents(options.archivePath, manifest);
-  const statuses = await readArchiveStatuses(options.archivePath, manifest);
+  const manifest = await readArchiveManifest(archivePath);
+  const events = await readArchiveEvents(archivePath, manifest);
+  const statuses = await readArchiveStatuses(archivePath, manifest);
   const platforms = countEventPlatforms(events);
   const statusPlatforms = countStatusPlatforms(statuses);
   const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))].sort();
@@ -127,7 +130,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
     ok: issues.length === 0,
     sessionId: manifest.sessionId,
     mode: manifest.mode,
-    archivePath: options.archivePath,
+    archivePath,
     databasePath: options.databasePath,
     eventCount: events.length,
     statusCount: statuses.length,
@@ -336,14 +339,17 @@ async function openSQLiteDatabase(databasePath: string) {
 async function runCli() {
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.archivePath) {
-    console.error("Usage: npm run evidence:check -- --archive <session-path> [--db data/feed.sqlite] [--allow-partial]");
+  if (!args.archivePath && !args.archiveDir) {
+    console.error(
+      "Usage: npm run evidence:check -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--allow-partial]"
+    );
     process.exitCode = 1;
     return;
   }
 
   const report = await buildEvidenceReport({
-    archivePath: args.archivePath,
+    archivePath: args.archivePath ?? undefined,
+    archiveDir: args.archiveDir ?? undefined,
     databasePath: args.databasePath,
     requireAllPlatforms: !args.allowPartial
   });
@@ -357,6 +363,7 @@ async function runCli() {
 
 type ParsedArgs = {
   archivePath: string | null;
+  archiveDir: string | null;
   databasePath?: string;
   allowPartial: boolean;
 };
@@ -364,6 +371,7 @@ type ParsedArgs = {
 function parseArgs(args: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     archivePath: null,
+    archiveDir: null,
     allowPartial: false
   };
 
@@ -372,6 +380,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--archive") {
       parsed.archivePath = args[index + 1] ?? null;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--archive-dir") {
+      parsed.archiveDir = args[index + 1] ?? null;
       index += 1;
       continue;
     }

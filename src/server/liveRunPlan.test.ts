@@ -39,10 +39,10 @@ describe("live run plan", () => {
       "live proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000"
     );
     expect(formatted).toContain(
-      "evidence check: npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite"
+      "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite --out submission-bundle"
+      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle"
     );
   });
 

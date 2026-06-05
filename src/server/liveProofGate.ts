@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -10,6 +10,7 @@ import {
   type SourcePlatform,
   type UnifiedEvent
 } from "../domain/unifiedEvent";
+import { resolveArchivePath } from "./feedArchiveLookup";
 import { loadLocalEnv } from "./loadLocalEnv";
 
 const archivedStatusSchema = z.object({
@@ -63,7 +64,7 @@ export type LiveProofGateReport = {
 type ArchivedStatus = z.infer<typeof archivedStatusSchema>;
 
 export async function buildLiveProofGateReport(options: LiveProofGateOptions): Promise<LiveProofGateReport> {
-  const archivePath = options.archivePath ?? (await findLatestArchivePath(options.archiveDir ?? "data/feed-sessions"));
+  const archivePath = await resolveArchivePath(options);
   const events = await readArchiveEvents(archivePath);
   const statuses = await readArchiveStatuses(archivePath);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
@@ -170,30 +171,6 @@ export function formatLiveProofGateReport(report: LiveProofGateReport) {
   ];
 
   return lines.join("\n");
-}
-
-async function findLatestArchivePath(archiveDir: string) {
-  const entries = await readdir(archiveDir, { withFileTypes: true });
-  const sessionDirs = await Promise.all(
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map(async (entry) => {
-        const sessionPath = path.join(archiveDir, entry.name);
-        const stats = await stat(sessionPath);
-
-        return {
-          path: sessionPath,
-          modifiedAt: stats.mtimeMs
-        };
-      })
-  );
-
-  const latestSession = sessionDirs.sort((left, right) => right.modifiedAt - left.modifiedAt)[0];
-  if (!latestSession) {
-    throw new Error(`No feed archive sessions found in ${archiveDir}`);
-  }
-
-  return latestSession.path;
 }
 
 async function readArchiveEvents(archivePath: string) {

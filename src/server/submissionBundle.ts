@@ -4,9 +4,11 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { archiveRecordingToCsv, readArchiveRecording } from "./exportFeedArchive";
 import { buildEvidenceReport, formatEvidenceReport, type EvidenceReport } from "./evidenceReport";
+import { resolveArchivePath } from "./feedArchiveLookup";
 
 export type SubmissionBundleOptions = {
-  archivePath: string;
+  archivePath?: string;
+  archiveDir?: string;
   databasePath?: string;
   outputDir: string;
   requireAllPlatforms?: boolean;
@@ -26,12 +28,13 @@ export type SubmissionBundleResult = {
 };
 
 export async function createSubmissionBundle(options: SubmissionBundleOptions): Promise<SubmissionBundleResult> {
+  const archivePath = await resolveArchivePath(options);
   const evidence = await buildEvidenceReport({
-    archivePath: options.archivePath,
+    archivePath,
     databasePath: options.databasePath,
     requireAllPlatforms: options.requireAllPlatforms
   });
-  const recording = await readArchiveRecording(options.archivePath);
+  const recording = await readArchiveRecording(archivePath);
   const bundleDir = path.resolve(options.outputDir);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
@@ -52,7 +55,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       `${JSON.stringify(
         {
           generatedAt: new Date().toISOString(),
-          archivePath: options.archivePath,
+          archivePath,
           databasePath: options.databasePath,
           evidenceOk: evidence.ok,
           sessionId: evidence.sessionId,
@@ -145,16 +148,17 @@ function formatNumber(value: number) {
 async function runCli() {
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.archivePath) {
+  if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- --archive <session-path> [--db data/feed.sqlite] [--out submission-bundle] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
   }
 
   const result = await createSubmissionBundle({
-    archivePath: args.archivePath,
+    archivePath: args.archivePath ?? undefined,
+    archiveDir: args.archiveDir ?? undefined,
     databasePath: args.databasePath,
     outputDir: args.outputDir ?? "submission-bundle",
     requireAllPlatforms: !args.allowPartial
@@ -169,6 +173,7 @@ async function runCli() {
 
 type ParsedArgs = {
   archivePath: string | null;
+  archiveDir: string | null;
   databasePath?: string;
   outputDir?: string;
   allowPartial: boolean;
@@ -177,6 +182,7 @@ type ParsedArgs = {
 function parseArgs(args: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     archivePath: null,
+    archiveDir: null,
     allowPartial: false
   };
 
@@ -185,6 +191,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--archive") {
       parsed.archivePath = args[index + 1] ?? null;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--archive-dir") {
+      parsed.archiveDir = args[index + 1] ?? null;
       index += 1;
       continue;
     }

@@ -112,20 +112,22 @@ The feed server archive is the source of truth if the browser loses its local re
 Check the archive and database evidence:
 
 ```bash
-npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite
-npm run submission:bundle -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite --out submission-bundle
+npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite
+npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle
 ```
+
+These commands use the newest archive session. Pass `--archive data/feed-sessions/<session-id>` instead when reviewing an older run.
 
 Export replay JSON:
 
 ```bash
-npm run archive:export -- data/feed-sessions/<session-id> --out replay.json
+npm run archive:export -- --archive-dir data/feed-sessions --out replay.json
 ```
 
 Export CSV:
 
 ```bash
-npm run archive:export -- data/feed-sessions/<session-id> --format csv --out replay.csv
+npm run archive:export -- --archive-dir data/feed-sessions --format csv --out replay.csv
 ```
 
 Then use `Import recording JSON` in the dashboard to load `replay.json`.
