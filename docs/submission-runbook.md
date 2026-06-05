@@ -95,6 +95,7 @@ npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 -
 ```
 
 Wait for `Live proof gate: ready`. This reads the active JSONL archive while the feed server is still running and confirms event volume, Twitch/Kick/X event coverage, connector status samples, account source labels, and p95 latency before the OBS capture.
+Strict proof requires `Mode: connectors`. A fixture-mode archive is rehearsal proof only and should not be used for the final submission recording.
 
 ## 4. Record The Main Submission
 

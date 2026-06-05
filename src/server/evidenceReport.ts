@@ -107,6 +107,10 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
     issues.push(`archive manifest statusCount ${manifest.statusCount} does not match ${statuses.length} parsed statuses`);
   }
 
+  if (requireAllPlatforms && manifest.mode !== "connectors") {
+    issues.push(`archive mode ${manifest.mode} is not connector-mode live proof`);
+  }
+
   addPlatformIssues(issues, platforms, requireAllPlatforms, "events");
   addPlatformIssues(issues, statusPlatforms, requireAllPlatforms, "connector statuses");
 

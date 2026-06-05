@@ -12,7 +12,7 @@ import {
 
 describe("live proof gate", () => {
   it("passes when the archive has enough events, all platforms, statuses, labels, and latency", async () => {
-    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], initialConnectorStatuses);
+    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], initialConnectorStatuses, "connectors");
     const report = await buildLiveProofGateReport({
       archivePath,
       minEvents: 6,
@@ -22,6 +22,7 @@ describe("live proof gate", () => {
     const formatted = formatLiveProofGateReport(report);
 
     expect(report.ok).toBe(true);
+    expect(report.mode).toBe("connectors");
     expect(report.platformCounts).toMatchObject({
       twitch: 2,
       kick: 2,
@@ -35,11 +36,32 @@ describe("live proof gate", () => {
     expect(report.sourceLabels).toContain("KICK (MARKETBUBBLE)");
     expect(report.performance.p95LatencyMs).toBeLessThanOrEqual(1500);
     expect(formatted).toContain("Live proof gate: ready");
+    expect(formatted).toContain("PASS Archive mode");
     expect(formatted).toContain("PASS Event volume");
   });
 
+  it("blocks fixture-mode archives from strict final proof", async () => {
+    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], initialConnectorStatuses);
+    const report = await buildLiveProofGateReport({
+      archivePath,
+      minEvents: 6,
+      minSourceLabels: 3,
+      maxP95LatencyMs: 1500
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.mode).toBe("fixture");
+    expect(report.checks).toContainEqual(
+      expect.objectContaining({
+        name: "Archive mode",
+        ok: false,
+        detail: "fixture archive is rehearsal-only"
+      })
+    );
+  });
+
   it("reports the missing proof needed before recording", async () => {
-    const { archivePath } = await createProofFixture([0, 4], [initialConnectorStatuses[1]]);
+    const { archivePath } = await createProofFixture([0, 4], [initialConnectorStatuses[1]], "connectors");
     const report = await buildLiveProofGateReport({
       archivePath,
       minEvents: 6,
@@ -71,7 +93,7 @@ describe("live proof gate", () => {
   });
 
   it("can find and watch the latest archive directory", async () => {
-    const { archiveDir } = await createProofFixture([0, 1, 2], initialConnectorStatuses);
+    const { archiveDir } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors");
     const report = await watchLiveProofGate({
       archiveDir,
       minEvents: 3,
@@ -85,20 +107,24 @@ describe("live proof gate", () => {
   });
 });
 
-async function createProofFixture(eventIndexes: number[], statuses = initialConnectorStatuses) {
+async function createProofFixture(
+  eventIndexes: number[],
+  statuses = initialConnectorStatuses,
+  mode: "fixture" | "connectors" = "fixture"
+) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "live-proof-gate-"));
   const archiveDir = path.join(baseDir, "feed-sessions");
   const archive = new FileFeedArchive(archiveDir);
   const startedAt = "2026-06-05T15:00:00.000Z";
-  const sessionId = createFeedSessionId(startedAt, "fixture");
+  const sessionId = createFeedSessionId(startedAt, mode);
 
   await archive.start({
     sessionId,
     startedAt,
-    mode: "fixture",
+    mode,
     bufferSize: 250,
     fixtureIntervalMs: 1100,
-    connectorPlatforms: []
+    connectorPlatforms: mode === "connectors" ? ["twitch", "kick", "x"] : []
   });
 
   for (const eventIndex of eventIndexes) {

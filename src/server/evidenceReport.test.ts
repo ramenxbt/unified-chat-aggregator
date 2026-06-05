@@ -8,7 +8,7 @@ import { buildEvidenceReport, formatEvidenceReport } from "./evidenceReport";
 
 describe("evidence report", () => {
   it("validates archive and database evidence for all platforms", async () => {
-    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2, 6]);
+    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2, 6], "connectors");
     const report = await buildEvidenceReport({
       archivePath,
       databasePath
@@ -42,13 +42,23 @@ describe("evidence report", () => {
   });
 
   it("fails strict mode when a platform is missing", async () => {
-    const { archivePath } = await createEvidenceFixture([0, 2]);
+    const { archivePath } = await createEvidenceFixture([0, 2], "connectors");
     const report = await buildEvidenceReport({
       archivePath
     });
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContain("missing x events");
+  });
+
+  it("fails strict mode when the archive is fixture-mode rehearsal proof", async () => {
+    const { archivePath } = await createEvidenceFixture([0, 1, 2, 6]);
+    const report = await buildEvidenceReport({
+      archivePath
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContain("archive mode fixture is not connector-mode live proof");
   });
 
   it("supports partial evidence checks for smoke runs", async () => {
@@ -63,7 +73,7 @@ describe("evidence report", () => {
   });
 
   it("can check the latest session in an archive directory", async () => {
-    const { archiveDir, archivePath } = await createEvidenceFixture([0, 1, 2]);
+    const { archiveDir, archivePath } = await createEvidenceFixture([0, 1, 2], "connectors");
     const report = await buildEvidenceReport({
       archiveDir
     });
@@ -73,20 +83,20 @@ describe("evidence report", () => {
   });
 });
 
-async function createEvidenceFixture(eventIndexes: number[]) {
+async function createEvidenceFixture(eventIndexes: number[], mode: "fixture" | "connectors" = "fixture") {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "feed-evidence-"));
   const archive = new FileFeedArchive(path.join(baseDir, "feed-sessions"));
   const databasePath = path.join(baseDir, "feed.sqlite");
   const databaseArchive = new SQLiteFeedArchive(databasePath);
   const startedAt = "2026-06-04T22:00:00.000Z";
-  const sessionId = createFeedSessionId(startedAt, "fixture");
+  const sessionId = createFeedSessionId(startedAt, mode);
   const session = {
     sessionId,
     startedAt,
-    mode: "fixture" as const,
+    mode,
     bufferSize: 250,
     fixtureIntervalMs: 1100,
-    connectorPlatforms: []
+    connectorPlatforms: mode === "connectors" ? ["twitch", "kick", "x"] : []
   };
 
   await archive.start(session);

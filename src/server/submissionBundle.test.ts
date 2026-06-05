@@ -58,14 +58,14 @@ async function createBundleFixture() {
   const databasePath = path.join(baseDir, "feed.sqlite");
   const databaseArchive = new SQLiteFeedArchive(databasePath);
   const startedAt = "2026-06-04T23:00:00.000Z";
-  const sessionId = createFeedSessionId(startedAt, "fixture");
+  const sessionId = createFeedSessionId(startedAt, "connectors");
   const session = {
     sessionId,
     startedAt,
-    mode: "fixture" as const,
+    mode: "connectors" as const,
     bufferSize: 250,
     fixtureIntervalMs: 1100,
-    connectorPlatforms: []
+    connectorPlatforms: ["twitch", "kick", "x"]
   };
 
   await archive.start(session);

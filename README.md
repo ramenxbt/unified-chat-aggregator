@@ -62,6 +62,7 @@ npm run archive:export -- --archive-dir data/feed-sessions --format csv --out re
 ```
 
 The proof gate reads the active JSONL archive while the feed server is still running. Use it before the final OBS capture; it waits for enough events, Twitch/Kick/X coverage, connector status samples, account source labels, and acceptable p95 latency.
+Strict proof also requires a connector-mode archive. Fixture-mode archives are accepted only for explicit partial smoke or rehearsal checks.
 
 Set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, and `PROOF_MAX_P95_LATENCY_MS` before `npm run live:prepare` when you want a stricter final capture gate. The printed proof command will use those same values.
 

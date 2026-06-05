@@ -36,7 +36,8 @@ async function main() {
   const archivePath = await findNewestSessionPath();
   const report = await buildEvidenceReport({
     archivePath,
-    databasePath
+    databasePath,
+    requireAllPlatforms: false
   });
 
   if (!report.ok) {

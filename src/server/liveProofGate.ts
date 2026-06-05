@@ -26,6 +26,10 @@ const archivedStatusSchema = z.object({
   })
 });
 
+const archiveManifestSchema = z.object({
+  mode: z.enum(["fixture", "connectors"])
+});
+
 const requiredPlatforms: SourcePlatform[] = ["twitch", "kick", "x"];
 
 export type LiveProofGateOptions = {
@@ -43,6 +47,7 @@ export type LiveProofGateOptions = {
 export type LiveProofGateReport = {
   ok: boolean;
   archivePath: string;
+  mode: "fixture" | "connectors";
   eventCount: number;
   statusCount: number;
   platformCounts: Record<SourcePlatform, number>;
@@ -65,6 +70,7 @@ type ArchivedStatus = z.infer<typeof archivedStatusSchema>;
 
 export async function buildLiveProofGateReport(options: LiveProofGateOptions): Promise<LiveProofGateReport> {
   const archivePath = await resolveArchivePath(options);
+  const manifest = await readArchiveManifest(archivePath);
   const events = await readArchiveEvents(archivePath);
   const statuses = await readArchiveStatuses(archivePath);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
@@ -78,6 +84,16 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
   const missingEventPlatforms = requiredPlatforms.filter((platform) => platformCounts[platform] === 0);
   const missingStatusPlatforms = requiredPlatforms.filter((platform) => statusPlatformCounts[platform] === 0);
   const checks = [
+    {
+      name: "Archive mode",
+      ok: requireAllPlatforms ? manifest.mode === "connectors" : true,
+      detail:
+        manifest.mode === "connectors"
+          ? "connector-mode live archive"
+          : requireAllPlatforms
+            ? "fixture archive is rehearsal-only"
+            : "fixture archive allowed for partial smoke"
+    },
     {
       name: "Event volume",
       ok: events.length >= minEvents,
@@ -114,6 +130,7 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
   return {
     ok: checks.every((check) => check.ok),
     archivePath,
+    mode: manifest.mode,
     eventCount: events.length,
     statusCount: statuses.length,
     platformCounts,
@@ -150,6 +167,7 @@ export function formatLiveProofGateReport(report: LiveProofGateReport) {
   const lines = [
     `Live proof gate: ${report.ok ? "ready" : "needs more signal"}`,
     `Archive: ${report.archivePath}`,
+    `Mode: ${report.mode}`,
     `Events: ${report.eventCount}`,
     `Statuses: ${report.statusCount}`,
     `Duration: ${formatNumber(report.performance.durationSeconds)}s`,
@@ -175,6 +193,18 @@ export function formatLiveProofGateReport(report: LiveProofGateReport) {
 
 async function readArchiveEvents(archivePath: string) {
   return readJsonl(path.join(archivePath, "events.jsonl"), unifiedEventSchema.parse);
+}
+
+async function readArchiveManifest(archivePath: string) {
+  try {
+    return archiveManifestSchema.parse(JSON.parse(await readFile(path.join(archivePath, "manifest.json"), "utf8")));
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { mode: "fixture" as const };
+    }
+
+    throw error;
+  }
 }
 
 async function readArchiveStatuses(archivePath: string) {
