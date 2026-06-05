@@ -8,6 +8,7 @@
     "archive:export": "tsx src/server/exportFeedArchive.ts",
     "evidence:check": "tsx src/server/evidenceReport.ts",
     "feed": "tsx src/server/feedServer.ts",
+    "live:doctor": "tsx src/server/liveDoctor.ts",
     "live:prepare": "tsx src/server/prepareLiveRun.ts",
     "preflight": "tsx src/server/preflight.ts",
     "proof:gate": "tsx src/server/liveProofGate.ts",

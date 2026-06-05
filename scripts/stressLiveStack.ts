@@ -17,7 +17,7 @@ const maximumP95LatencyMs = Number(process.env.STRESS_MAX_P95_LATENCY_MS ?? 1500
 async function main() {
   await mkdir(archiveDir, { recursive: true });
 
-  const feedServer = startProcess("npm", ["run", "feed"], {
+  const feedServer = startProcess(localBin("tsx"), ["src/server/feedServer.ts"], {
     FEED_SERVER_PORT: String(feedPort),
     FEED_REPLAY_BUFFER_SIZE: "1000",
     FEED_INITIAL_EVENT_COUNT: "0",
@@ -82,6 +82,10 @@ function startProcess(command: string, args: string[], env: Record<string, strin
   });
 
   return child;
+}
+
+function localBin(command: string) {
+  return path.resolve("node_modules", ".bin", process.platform === "win32" ? `${command}.cmd` : command);
 }
 
 async function waitForStressEvents() {
@@ -177,8 +181,20 @@ async function stopProcess(child: ChildProcessWithoutNullStreams) {
   if (child.killed || child.exitCode !== null) return;
 
   await new Promise<void>((resolve) => {
-    child.once("exit", () => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
       resolve();
+    };
+    const timeout = setTimeout(() => {
+      child.kill("SIGKILL");
+      finish();
+    }, 5000);
+
+    child.once("exit", () => {
+      finish();
     });
     child.kill("SIGTERM");
   });

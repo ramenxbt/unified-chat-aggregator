@@ -21,7 +21,15 @@ npm run qa:stress
 
 This proves the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
 
-Run the strict check first:
+Run the local doctor first:
+
+```bash
+npm run live:doctor
+```
+
+This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database paths.
+
+Run the strict connector check next:
 
 ```bash
 npm run preflight

@@ -15,7 +15,7 @@ const databasePath = path.resolve("qa/rehearsal", `feed-${Date.now()}.sqlite`);
 async function main() {
   await mkdir(archiveDir, { recursive: true });
 
-  const feedServer = startProcess("npm", ["run", "feed"], {
+  const feedServer = startProcess(localBin("tsx"), ["src/server/feedServer.ts"], {
     FEED_SERVER_PORT: String(feedPort),
     FEED_FIXTURE_INTERVAL_MS: "100",
     FEED_ARCHIVE_DIR: archiveDir,
@@ -65,6 +65,10 @@ function startProcess(command: string, args: string[], env: Record<string, strin
   });
 
   return child;
+}
+
+function localBin(command: string) {
+  return path.resolve("node_modules", ".bin", process.platform === "win32" ? `${command}.cmd` : command);
 }
 
 async function waitForFeedServer() {

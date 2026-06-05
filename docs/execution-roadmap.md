@@ -83,9 +83,10 @@
 
 ## Immediate Next Tasks
 
-1. Run `npm run preflight` with real Twitch, Kick, and X stream credentials.
-2. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
-3. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
-4. Enable `FEED_DB_PATH=data/feed.sqlite` during the live proof run for durable queryable evidence.
-5. Add final UI polish pass after live connector proof.
-6. Capture final submission video through OBS mode.
+1. Run `npm run live:doctor` with real Twitch, Kick, and X stream credentials.
+2. Run `npm run preflight` with real Twitch, Kick, and X stream credentials.
+3. Run Twitch EventSub, Kick webhooks, and X connector paths with real stream credentials.
+4. Expose the Kick webhook endpoint through a public tunnel for the Market Bubble stream.
+5. Enable `FEED_DB_PATH=data/feed.sqlite` during the live proof run for durable queryable evidence.
+6. Add final UI polish pass after live connector proof.
+7. Capture final submission video through OBS mode.
