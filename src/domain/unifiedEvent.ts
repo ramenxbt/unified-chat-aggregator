@@ -119,3 +119,30 @@ export function isSignalEvent(event: UnifiedEvent): boolean {
   return scoreEventSignal(event) >= 3;
 }
 
+export function formatPlatformSourceLabel(event: UnifiedEvent) {
+  const accountName =
+    event.platform === "x" ? event.authorName ?? event.sourceChannelName : event.sourceChannelName ?? event.authorName;
+
+  return formatSourceDisplayLabel(event.platform, accountName, {
+    forceXHandle: event.platform === "x" && Boolean(event.authorName)
+  });
+}
+
+export function formatSourceDisplayLabel(
+  platform: SourcePlatform,
+  sourceName: string | undefined,
+  options: { forceXHandle?: boolean } = {}
+) {
+  const normalizedSource = sourceName?.replace(/^#|^@/, "").trim();
+  const platformName = platformLabels[platform].toUpperCase();
+
+  if (!normalizedSource) {
+    return platformName;
+  }
+
+  if (platform === "x" && (options.forceXHandle || sourceName?.trim().startsWith("@"))) {
+    return `${platformName} (@${normalizedSource.toUpperCase()})`;
+  }
+
+  return `${platformName} (${normalizedSource.toUpperCase()})`;
+}

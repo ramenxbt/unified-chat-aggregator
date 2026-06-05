@@ -1,7 +1,8 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  platformLabels,
+  formatPlatformSourceLabel,
+  formatSourceDisplayLabel,
   scoreEventSignal,
   type ConnectorStatus,
   type SourcePlatform,
@@ -195,8 +196,9 @@ export class SQLiteFeedArchive implements FeedArchive {
 
     const sourceKey = this.upsertSource({
       platform: event.platform,
-      sourceChannelId: event.sourceChannelId,
-      sourceName: getEventSourceName(event)
+      sourceChannelId: getEventSourceIdentityId(event),
+      sourceName: getEventSourceName(event),
+      displayLabel: formatPlatformSourceLabel(event)
     });
 
     this.db
@@ -292,7 +294,12 @@ export class SQLiteFeedArchive implements FeedArchive {
     this.sessionId = null;
   }
 
-  private upsertSource(source: { platform: SourcePlatform; sourceChannelId?: string; sourceName: string }) {
+  private upsertSource(source: {
+    platform: SourcePlatform;
+    sourceChannelId?: string;
+    sourceName: string;
+    displayLabel?: string;
+  }) {
     if (!this.db) return null;
 
     const sourceKey = buildSourceKey(source.platform, source.sourceChannelId, source.sourceName);
@@ -320,7 +327,7 @@ export class SQLiteFeedArchive implements FeedArchive {
         source.platform,
         source.sourceChannelId ?? null,
         source.sourceName,
-        formatSourceDisplayLabel(source.platform, source.sourceName),
+        source.displayLabel ?? formatSourceDisplayLabel(source.platform, source.sourceName),
         now,
         now
       );
@@ -416,26 +423,23 @@ create index if not exists connector_statuses_session_platform_idx on connector_
 `;
 
 function getEventSourceName(event: UnifiedEvent) {
+  if (event.platform === "x" && event.authorName) {
+    return event.authorName;
+  }
+
   return event.sourceChannelName ?? event.authorName ?? event.sourceChannelId ?? event.platform;
+}
+
+function getEventSourceIdentityId(event: UnifiedEvent) {
+  if (event.platform === "x") {
+    return event.authorId ?? event.authorName ?? event.sourceChannelId;
+  }
+
+  return event.sourceChannelId;
 }
 
 function buildSourceKey(platform: SourcePlatform, sourceChannelId: string | undefined, sourceName: string) {
   return [platform, sourceChannelId ?? sourceName.toLowerCase()].join(":");
-}
-
-function formatSourceDisplayLabel(platform: SourcePlatform, sourceName: string) {
-  const normalizedSource = sourceName.replace(/^#|^@/, "").trim();
-  const platformName = platformLabels[platform].toUpperCase();
-
-  if (!normalizedSource) {
-    return platformName;
-  }
-
-  if (platform === "x" && sourceName.trim().startsWith("@")) {
-    return `${platformName} (@${normalizedSource.toUpperCase()})`;
-  }
-
-  return `${platformName} (${normalizedSource.toUpperCase()})`;
 }
 
 function platformLabelsForSession(platforms: string[]) {

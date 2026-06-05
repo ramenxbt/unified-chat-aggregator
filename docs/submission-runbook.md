@@ -92,6 +92,12 @@ http://127.0.0.1:5173/?obs=1&signal=1&limit=10
 
 The feed server archive is the source of truth if the browser loses its local recording.
 
+Check the archive and database evidence:
+
+```bash
+npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite
+```
+
 Export replay JSON:
 
 ```bash
@@ -113,6 +119,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Visual QA screenshots from `npm run qa:visual`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
+- Passing `npm run evidence:check` output for the recorded session.
 - Exported recording JSON.
 - Exported recording CSV.
 - Server archive folder with `manifest.json`, `events.jsonl`, and `statuses.jsonl`.

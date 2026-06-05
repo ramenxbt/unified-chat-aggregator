@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildUnifiedEventId,
   dedupeEvents,
+  formatPlatformSourceLabel,
   isSignalEvent,
   scoreEventSignal,
   unifiedEventSchema,
@@ -64,3 +65,31 @@ describe("signal scoring", () => {
   });
 });
 
+describe("source labels", () => {
+  it("formats platform account labels consistently", () => {
+    expect(
+      formatPlatformSourceLabel({
+        ...createFixtureEvent(7),
+        platform: "kick",
+        sourceChannelName: "ansem",
+        authorName: "greenwick"
+      })
+    ).toBe("KICK (ANSEM)");
+    expect(
+      formatPlatformSourceLabel({
+        ...createFixtureEvent(2),
+        platform: "twitch",
+        sourceChannelName: "ansem",
+        authorName: "user67"
+      })
+    ).toBe("TWITCH (ANSEM)");
+    expect(
+      formatPlatformSourceLabel({
+        ...createFixtureEvent(1),
+        platform: "x",
+        sourceChannelName: "crypto rule set",
+        authorName: "user1337"
+      })
+    ).toBe("X (@USER1337)");
+  });
+});

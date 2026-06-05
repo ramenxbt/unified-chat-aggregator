@@ -65,6 +65,7 @@
 - [x] Backpressure tests
 - [x] Reconnect tests
 - [x] Webhook verification tests
+- [x] Submission evidence checker
 - [x] Fixture replay tests
 - [x] Browser UI checks
 - [x] README setup guide

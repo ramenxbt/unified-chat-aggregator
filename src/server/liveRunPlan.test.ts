@@ -35,6 +35,9 @@ describe("live run plan", () => {
     expect(formatted).toContain("VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain("database: data/feed.sqlite");
+    expect(formatted).toContain(
+      "evidence check: npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite"
+    );
   });
 
   it("surfaces missing strict requirements while still printing setup commands", () => {

@@ -27,6 +27,7 @@ import {
   Zap
 } from "lucide-react";
 import {
+  formatPlatformSourceLabel,
   isSignalEvent,
   platformLabels,
   scoreEventSignal,
@@ -1627,23 +1628,6 @@ function formatAuthor(event: UnifiedEvent) {
   }
 
   return event.authorName ?? event.sourceChannelName ?? "system";
-}
-
-function formatPlatformSourceLabel(event: UnifiedEvent) {
-  const accountName =
-    event.platform === "x" ? event.authorName ?? event.sourceChannelName : event.sourceChannelName ?? event.authorName;
-  const normalizedAccount = accountName?.replace(/^#|^@/, "").trim();
-  const platformName = platformLabels[event.platform].toUpperCase();
-
-  if (!normalizedAccount) {
-    return platformName;
-  }
-
-  if (event.platform === "x" && event.authorName) {
-    return `${platformName} (@${normalizedAccount.toUpperCase()})`;
-  }
-
-  return `${platformName} (${normalizedAccount.toUpperCase()})`;
 }
 
 function formatSourceMeta(event: UnifiedEvent) {
