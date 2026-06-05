@@ -67,6 +67,7 @@
 - [x] Webhook verification tests
 - [x] Submission evidence checker
 - [x] Submission bundle generator
+- [x] Live proof gate before OBS capture
 - [x] High-volume stress rehearsal
 - [x] Fixture replay tests
 - [x] Browser UI checks

@@ -26,6 +26,7 @@ export type LiveRunPlan = {
   evidence: {
     archiveDir: string;
     databasePath: string;
+    proofGateCommand: string;
     evidenceCheckCommand: string;
     submissionBundleCommand: string;
     replayJsonCommand: string;
@@ -67,6 +68,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
     evidence: {
       archiveDir,
       databasePath,
+      proofGateCommand: `npm run proof:gate -- --archive-dir ${archiveDir} --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000`,
       evidenceCheckCommand: `npm run evidence:check -- --archive ${archiveDir}/<session-id> --db ${databasePath}`,
       submissionBundleCommand: `npm run submission:bundle -- --archive ${archiveDir}/<session-id> --db ${databasePath} --out submission-bundle`,
       replayJsonCommand: `npm run archive:export -- ${archiveDir}/<session-id> --out replay.json`,
@@ -96,6 +98,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     "Evidence outputs:",
     `  archive: ${plan.evidence.archiveDir}/<session-id>`,
     `  database: ${plan.evidence.databasePath}`,
+    `  live proof gate: ${plan.evidence.proofGateCommand}`,
     `  evidence check: ${plan.evidence.evidenceCheckCommand}`,
     `  submission bundle: ${plan.evidence.submissionBundleCommand}`,
     `  replay JSON: ${plan.evidence.replayJsonCommand}`,

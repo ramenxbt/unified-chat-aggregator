@@ -36,6 +36,9 @@ describe("live run plan", () => {
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain("database: data/feed.sqlite");
     expect(formatted).toContain(
+      "live proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000"
+    );
+    expect(formatted).toContain(
       "evidence check: npm run evidence:check -- --archive data/feed-sessions/<session-id> --db data/feed.sqlite"
     );
     expect(formatted).toContain(

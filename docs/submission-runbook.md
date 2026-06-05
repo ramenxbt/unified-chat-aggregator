@@ -71,6 +71,14 @@ http://127.0.0.1:5173/
 
 Confirm the dashboard shows connector cards for Twitch, Kick, and X. At least one live event should arrive before recording.
 
+Terminal 3:
+
+```bash
+npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000
+```
+
+Wait for `Live proof gate: ready`. This reads the active JSONL archive while the feed server is still running and confirms event volume, Twitch/Kick/X event coverage, connector status samples, account source labels, and p95 latency before the OBS capture.
+
 ## 4. Record The Main Submission
 
 1. Click `Record`.
