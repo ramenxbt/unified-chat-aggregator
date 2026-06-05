@@ -14,6 +14,7 @@ export type LiveFeedRuntimeOptions = {
   port: number;
   bufferSize?: number;
   fixtureIntervalMs?: number;
+  fixtureBurstSize?: number;
   mode: "fixture" | "connectors";
   connectors?: Connector[];
   initialEventCount?: number;
@@ -33,6 +34,7 @@ export class LiveFeedRuntime {
   private readonly replayBuffer: ReplayBuffer;
   private readonly wss: WebSocketServerLike;
   private readonly fixtureIntervalMs: number;
+  private readonly fixtureBurstSize: number;
   private readonly mode: LiveFeedRuntimeOptions["mode"];
   private readonly connectors: Connector[];
   private fixtureInterval: ReturnType<typeof setInterval> | null = null;
@@ -44,6 +46,7 @@ export class LiveFeedRuntime {
     this.replayBuffer = new ReplayBuffer(options.bufferSize ?? 250);
     this.wss = options.webSocketServer ?? new WebSocketServer({ port: options.port });
     this.fixtureIntervalMs = options.fixtureIntervalMs ?? 1100;
+    this.fixtureBurstSize = Math.max(1, Math.floor(options.fixtureBurstSize ?? 1));
     this.mode = options.mode;
     this.connectors = options.connectors ?? [];
 
@@ -67,6 +70,7 @@ export class LiveFeedRuntime {
       mode: this.mode,
       bufferSize: this.options.bufferSize ?? 250,
       fixtureIntervalMs: this.fixtureIntervalMs,
+      fixtureBurstSize: this.fixtureBurstSize,
       connectorPlatforms: this.connectors.map((connector) => connector.platform)
     });
 
@@ -91,9 +95,11 @@ export class LiveFeedRuntime {
 
     if (this.mode === "fixture") {
       this.fixtureInterval = setInterval(() => {
-        const event = createFixtureEvent(this.sequence);
-        this.sequence += 1;
-        this.broadcastEvent(event);
+        for (let burstIndex = 0; burstIndex < this.fixtureBurstSize; burstIndex += 1) {
+          const event = createFixtureEvent(this.sequence);
+          this.sequence += 1;
+          this.broadcastEvent(event);
+        }
       }, this.fixtureIntervalMs);
       return;
     }

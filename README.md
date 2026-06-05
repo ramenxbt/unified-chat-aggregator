@@ -38,6 +38,8 @@ The feed server archives every accepted event and connector status update under 
 
 Set `FEED_DB_PATH=data/feed.sqlite` to also persist sessions, normalized sources, events, and connector status samples into a queryable SQLite database. Source rows use the same platform/account label shape as the UI, such as `KICK (ANSEM)`, so the final run has durable proof of which account each message came from.
 
+For high-volume fixture proof, set `FEED_INITIAL_EVENT_COUNT=0`, `FEED_FIXTURE_INTERVAL_MS=10`, and `FEED_FIXTURE_BURST_SIZE=25`, or run `npm run qa:stress`. The stress rehearsal drives burst traffic through WebSocket fanout, JSONL archive, SQLite, and evidence metrics.
+
 Convert a server archive back into replay JSON or CSV:
 
 ```bash
@@ -118,9 +120,10 @@ Final stack rehearsal:
 
 ```bash
 npm run qa:rehearsal
+npm run qa:stress
 ```
 
-This starts the feed server and dashboard on alternate local ports, verifies the browser is reading from `VITE_FEED_WS_URL`, and confirms server archive output under `qa/rehearsal/`.
+The rehearsal starts the feed server and dashboard on alternate local ports, verifies the browser is reading from `VITE_FEED_WS_URL`, and confirms server archive output under `qa/rehearsal/`. The stress run records high-volume proof under `qa/stress/` and fails if throughput or p95 latency miss the configured thresholds.
 
 ## Docs
 

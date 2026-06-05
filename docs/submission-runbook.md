@@ -8,9 +8,10 @@ Run the fixture rehearsal once before connecting real credentials:
 
 ```bash
 npm run qa:rehearsal
+npm run qa:stress
 ```
 
-This proves the feed WebSocket, dashboard transport, and server archive path work together.
+This proves the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
 
 Run the strict check first:
 
@@ -118,6 +119,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Live dashboard recording with source labels visible.
 - OBS overlay recording with source labels visible.
 - Visual QA screenshots from `npm run qa:visual`.
+- Passing stress output from `npm run qa:stress`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.

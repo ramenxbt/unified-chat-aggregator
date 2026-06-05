@@ -127,6 +127,19 @@ function findStatus(messages: unknown[]): ConnectorStatus | undefined {
   })?.status;
 }
 
+async function waitFor(predicate: () => boolean) {
+  const deadline = Date.now() + 1000;
+
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
+  }
+
+  throw new Error("Timed out waiting for runtime condition");
+}
+
 describe("LiveFeedRuntime", () => {
   it("serves fixture snapshots and events", async () => {
     const server = new MockServer();
@@ -193,6 +206,25 @@ describe("LiveFeedRuntime", () => {
     await runtime.stop();
 
     expect(messagesOfType(client.messages, "event")).toHaveLength(1);
+  });
+
+  it("emits fixture bursts from a single interval tick", async () => {
+    const server = new MockServer();
+    const runtime = new LiveFeedRuntime({
+      port: 18807,
+      mode: "fixture",
+      initialEventCount: 0,
+      fixtureIntervalMs: 10,
+      fixtureBurstSize: 4,
+      webSocketServer: server
+    });
+
+    await runtime.start();
+    const client = server.connect();
+    await waitFor(() => messagesOfType(client.messages, "event").length >= 4);
+    await runtime.stop();
+
+    expect(messagesOfType(client.messages, "event").length).toBeGreaterThanOrEqual(4);
   });
 
   it("skips clients that are not open under fanout pressure", async () => {
@@ -265,7 +297,8 @@ describe("LiveFeedRuntime", () => {
     expect(archive.sessions).toHaveLength(1);
     expect(archive.sessions[0]).toMatchObject({
       mode: "fixture",
-      bufferSize: 250
+      bufferSize: 250,
+      fixtureBurstSize: 1
     });
     expect(archive.events).toEqual([event]);
     expect(archive.statuses.some((status) => status.platform === event.platform)).toBe(true);

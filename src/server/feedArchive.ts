@@ -15,6 +15,7 @@ export type FeedArchiveSession = {
   mode: "fixture" | "connectors";
   bufferSize: number;
   fixtureIntervalMs: number;
+  fixtureBurstSize?: number;
   connectorPlatforms: string[];
 };
 
@@ -186,6 +187,7 @@ export class SQLiteFeedArchive implements FeedArchive {
         JSON.stringify({
           bufferSize: session.bufferSize,
           fixtureIntervalMs: session.fixtureIntervalMs,
+          fixtureBurstSize: session.fixtureBurstSize ?? 1,
           connectorPlatforms: session.connectorPlatforms
         })
       );

@@ -8,6 +8,8 @@ import { LiveFeedRuntime } from "./liveFeedRuntime";
 const port = Number(process.env.FEED_SERVER_PORT ?? 8787);
 const bufferSize = Number(process.env.FEED_REPLAY_BUFFER_SIZE ?? 250);
 const fixtureIntervalMs = Number(process.env.FEED_FIXTURE_INTERVAL_MS ?? 1100);
+const fixtureBurstSize = Number(process.env.FEED_FIXTURE_BURST_SIZE ?? 1);
+const initialEventCount = Number(process.env.FEED_INITIAL_EVENT_COUNT ?? 24);
 
 const connectors = buildConnectorsFromEnv();
 const mode = connectors.length > 0 ? "connectors" : "fixture";
@@ -16,6 +18,8 @@ const runtime = new LiveFeedRuntime({
   port,
   bufferSize,
   fixtureIntervalMs,
+  fixtureBurstSize,
+  initialEventCount,
   mode,
   connectors,
   archive

@@ -67,6 +67,7 @@
 - [x] Webhook verification tests
 - [x] Submission evidence checker
 - [x] Submission bundle generator
+- [x] High-volume stress rehearsal
 - [x] Fixture replay tests
 - [x] Browser UI checks
 - [x] README setup guide

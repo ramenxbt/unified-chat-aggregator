@@ -78,6 +78,7 @@ npm test
 npm run test:e2e
 npm run qa:visual
 npm run qa:rehearsal
+npm run qa:stress
 npm run lint
 npm run build
 npm audit --audit-level=moderate
