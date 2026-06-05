@@ -124,6 +124,7 @@ Use `Copy replay link` to create a local read-only replay URL for the current bu
 Verification:
 
 ```bash
+npm run qa:repo
 npm test
 npm run test:e2e
 npm run lint

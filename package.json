@@ -19,6 +19,7 @@
     "qa:connectors": "tsx scripts/rehearseConnectorStack.ts",
     "qa:stress": "tsx scripts/stressLiveStack.ts",
     "qa:visual": "tsx scripts/captureVisualQa.ts",
+    "qa:repo": "tsx scripts/checkRepoHygiene.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "eslint ."

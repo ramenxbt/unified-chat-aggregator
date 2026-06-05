@@ -15,12 +15,13 @@ The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `f
 Run the fixture rehearsal once before connecting real credentials:
 
 ```bash
+npm run qa:repo
 npm run qa:connectors
 npm run qa:rehearsal
 npm run qa:stress
 ```
 
-This proves the real connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
+This checks tracked files for accidental live credentials or attribution issues, then proves the real connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, and high-volume burst handling work together.
 
 Run the local doctor first:
 
@@ -146,6 +147,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 
 - Live dashboard recording with source labels visible.
 - OBS overlay recording with source labels visible.
+- Passing tracked-file hygiene output from `npm run qa:repo`.
 - Visual QA screenshots from `npm run qa:visual`.
 - Passing stress output from `npm run qa:stress`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
