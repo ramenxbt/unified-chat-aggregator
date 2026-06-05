@@ -131,6 +131,10 @@ export function App() {
   const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
   const performanceSummary = useMemo(() => buildPerformanceSummary(feedEvents), [feedEvents]);
+  const submissionChecklistItems = useMemo(
+    () => buildSubmissionChecklistItems(feedEvents, effectiveTransportState, recording, recordedEvents.length),
+    [effectiveTransportState, feedEvents, recordedEvents.length, recording]
+  );
   const readinessItems = useMemo(
     () => buildReadinessItems(statuses, effectiveTransportState),
     [statuses, effectiveTransportState]
@@ -551,6 +555,11 @@ export function App() {
         </section>
 
         <section className="detail-section">
+          <SectionTitle icon={<CheckCircle2 size={15} />} title="Submission checklist" />
+          <SubmissionChecklistPanel items={submissionChecklistItems} />
+        </section>
+
+        <section className="detail-section">
           <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
           <SourceAccountsPanel
             accounts={sourceAccountSummaries}
@@ -677,6 +686,12 @@ type PerformanceSummary = {
   averageLatencyMs: number;
   p95LatencyMs: number;
   freshestAgeSeconds: number;
+};
+
+type SubmissionChecklistItem = {
+  state: "ready" | "watching" | "setup" | "attention";
+  title: string;
+  detail: string;
 };
 
 type AuthorProfile = {
@@ -1069,6 +1084,25 @@ function PerformancePanel({ summary }: { summary: PerformanceSummary }) {
               summary.freshestAgeSeconds
             )}.`}
       </p>
+    </div>
+  );
+}
+
+function SubmissionChecklistPanel({ items }: { items: SubmissionChecklistItem[] }) {
+  return (
+    <div className="readiness-panel">
+      <p className="readiness-summary">Final proof status across transport, coverage, labels, recording, and performance.</p>
+      <div className="readiness-list">
+        {items.map((item) => (
+          <div className="readiness-item" data-state={item.state} key={item.title}>
+            <div className="readiness-heading">
+              <span>{item.title}</span>
+              <strong>{item.state}</strong>
+            </div>
+            <p>{item.detail}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1571,6 +1605,67 @@ function buildPerformanceSummary(events: UnifiedEvent[]): PerformanceSummary {
     p95LatencyMs: percentile(latencies, 0.95),
     freshestAgeSeconds: Math.max(0, (Date.now() - newestReceivedAt) / 1000)
   };
+}
+
+function buildSubmissionChecklistItems(
+  events: UnifiedEvent[],
+  transportState: AppTransportState,
+  recording: boolean,
+  recordedEventCount: number
+): SubmissionChecklistItem[] {
+  const platformCounts = platforms.map((platform) => ({
+    platform,
+    count: events.filter((event) => event.platform === platform).length
+  }));
+  const missingPlatforms = platformCounts
+    .filter((platformCount) => platformCount.count === 0)
+    .map((platformCount) => platformLabels[platformCount.platform]);
+  const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))];
+  const accountLabelCount = sourceLabels.filter((label) => label.includes("(")).length;
+
+  return [
+    {
+      title: "Live transport",
+      state: transportState === "live" ? "ready" : transportState === "degraded" ? "attention" : "setup",
+      detail:
+        transportState === "live"
+          ? "Dashboard is connected to the local feed WebSocket."
+          : `Need live WebSocket transport before final recording. Current mode: ${transportState}.`
+    },
+    {
+      title: "Platform coverage",
+      state: missingPlatforms.length === 0 ? "ready" : events.length > 0 ? "attention" : "setup",
+      detail:
+        missingPlatforms.length === 0
+          ? "Current buffer includes Twitch, Kick, and X events."
+          : `Waiting on ${missingPlatforms.join(", ")} events in the current buffer.`
+    },
+    {
+      title: "Account labels",
+      state: accountLabelCount >= 3 ? "ready" : accountLabelCount > 0 ? "attention" : "setup",
+      detail:
+        accountLabelCount >= 3
+          ? `Source labels are visible across ${accountLabelCount} account feeds.`
+          : "Need platform plus account labels visible in the buffer."
+    },
+    {
+      title: "Recording proof",
+      state: recording ? "ready" : recordedEventCount > 0 ? "watching" : "setup",
+      detail: recording
+        ? `${recordedEventCount} events captured in the active recording.`
+        : recordedEventCount > 0
+          ? `${recordedEventCount} events captured. Export JSON and CSV before closing the browser.`
+          : "Click Record before the submission capture starts."
+    },
+    {
+      title: "Performance proof",
+      state: events.length > 0 ? "ready" : "setup",
+      detail:
+        events.length > 0
+          ? "Throughput and latency metrics are visible in the diagnostics rail."
+          : "Waiting for events before performance metrics are meaningful."
+    }
+  ];
 }
 
 function percentile(values: number[], percentileValue: number) {

@@ -91,6 +91,8 @@ The `Review queue` flags held, deleted, or spam-risk messages when those signals
 
 The diagnostics rail includes a `Performance` panel with current buffer throughput, average latency, p95 latency, and latest event freshness for visible proof during the recording.
 
+The diagnostics rail includes a `Submission checklist` panel that tracks whether the current run has live WebSocket transport, Twitch/Kick/X coverage, account-qualified source labels, active recording proof, and visible performance metrics before the final capture.
+
 The diagnostics rail includes a `Readiness` panel. In fixture mode it shows the exact connector env vars and public webhook setup still needed for Twitch, Kick, and X before a real stream recording.
 
 Use `Save current buffer` to persist the current in-browser feed buffer to local sessions. The app keeps the latest 12 saved sessions and can load any saved session back into replay mode without needing a JSON file.

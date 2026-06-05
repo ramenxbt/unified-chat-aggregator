@@ -60,6 +60,20 @@ describe("App", () => {
     expect(screen.getByText(/24 buffered events over/i)).toBeInTheDocument();
   });
 
+  it("shows a final recording submission checklist", async () => {
+    render(<App />);
+
+    expect(screen.getByText("Submission checklist")).toBeInTheDocument();
+    expect(screen.getByText(/need live websocket transport before final recording/i)).toBeInTheDocument();
+    expect(screen.getByText("Current buffer includes Twitch, Kick, and X events.")).toBeInTheDocument();
+    expect(screen.getByText(/source labels are visible across/i)).toBeInTheDocument();
+    expect(screen.getByText("Click Record before the submission capture starts.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^record$/i }));
+
+    expect(screen.getByText("24 events captured in the active recording.")).toBeInTheDocument();
+  });
+
   it("shows ready-to-open OBS preset links", () => {
     render(<App />);
 
