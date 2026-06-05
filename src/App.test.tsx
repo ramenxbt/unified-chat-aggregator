@@ -63,6 +63,11 @@ describe("App", () => {
   it("shows a final recording submission checklist", async () => {
     render(<App />);
 
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Transportfixture");
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Coverage3/3");
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Labels6");
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("P951.2s");
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Recordingidle");
     expect(screen.getByText("Submission checklist")).toBeInTheDocument();
     expect(screen.getByText(/need live websocket transport before final recording/i)).toBeInTheDocument();
     expect(screen.getByText("Current buffer includes Twitch, Kick, and X events.")).toBeInTheDocument();
@@ -71,6 +76,7 @@ describe("App", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /^record$/i }));
 
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Recording24");
     expect(screen.getByText("24 events captured in the active recording.")).toBeInTheDocument();
   });
 
@@ -342,7 +348,7 @@ describe("App", () => {
     expect(screen.getByText("Replay: market-bubble-feed.json")).toBeInTheDocument();
     expect(screen.getByText("1 imported events from Live feed server.")).toBeInTheDocument();
     expect(screen.getByRole("log")).toHaveTextContent("Ansem is cooking again");
-    expect(screen.getByText("replay")).toBeInTheDocument();
+    expect(screen.getAllByText("replay").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: /exit replay/i }));
 
@@ -384,7 +390,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /^fixture stream - 24 events/i }));
 
     expect(screen.getByText("Replay: Fixture stream - 24 events")).toBeInTheDocument();
-    expect(screen.getByText("replay")).toBeInTheDocument();
+    expect(screen.getAllByText("replay").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: /delete fixture stream - 24 events/i }));
 

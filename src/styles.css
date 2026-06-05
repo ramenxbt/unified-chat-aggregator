@@ -234,7 +234,7 @@ button {
 
 .feed-panel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   min-width: 0;
   height: 100vh;
   min-height: 100vh;
@@ -327,6 +327,72 @@ button {
 .obs-preset-link:hover {
   border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.055);
+}
+
+.proof-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  background: rgba(8, 9, 8, 0.78);
+  white-space: nowrap;
+}
+
+.proof-strip-title {
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.proof-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 9px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.032);
+  font-size: 11px;
+}
+
+.proof-pill strong {
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.proof-pill[data-state="ready"] {
+  border-color: rgba(125, 242, 118, 0.34);
+  color: #a4f79f;
+}
+
+.proof-pill[data-state="ready"] strong {
+  color: #7df276;
+}
+
+.proof-pill[data-state="watching"] {
+  border-color: rgba(229, 196, 107, 0.4);
+  color: #e9d28d;
+}
+
+.proof-pill[data-state="watching"] strong {
+  color: var(--gold);
+}
+
+.proof-pill[data-state="attention"],
+.proof-pill[data-state="setup"] {
+  border-color: rgba(255, 107, 107, 0.32);
+}
+
+.proof-pill[data-state="attention"] strong,
+.proof-pill[data-state="setup"] strong {
+  color: #ff9b9b;
 }
 
 .feed-toolbar {
@@ -1176,6 +1242,27 @@ button {
   background: rgba(8, 9, 8, 0.72);
 }
 
+.app-shell[data-obs="true"] .proof-strip {
+  min-height: 30px;
+  border: 0;
+  padding: 0 12px;
+  background: rgba(8, 9, 8, 0.72);
+}
+
+.app-shell[data-obs="true"] .proof-strip-title {
+  font-size: 10px;
+}
+
+.app-shell[data-obs="true"] .proof-pill {
+  min-height: 22px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+.app-shell[data-obs="true"] .proof-pill strong {
+  font-size: 11px;
+}
+
 .app-shell[data-obs="true"] .event-list {
   padding: 6px 8px 10px;
 }
@@ -1288,6 +1375,15 @@ button {
   .feed-toolbar {
     gap: 10px;
     padding: 0 10px;
+  }
+
+  .proof-strip {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .proof-strip-title {
+    display: none;
   }
 
   .feed-toolbar > span:last-child {

@@ -13,6 +13,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Review queue for held, deleted, or spam-risk normalized events.
 - Performance panel with buffer throughput, average latency, p95 latency, and latest event freshness.
 - Submission checklist for live transport, platform coverage, account labels, recording proof, and performance proof.
+- Feed-panel `Run proof` strip visible in dashboard, submission, and OBS captures.
 - Signal mode.
 - Pause, resume, clear, order toggle, and jump-live behavior.
 - Recording start/stop, JSON export, and CSV export.

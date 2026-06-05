@@ -131,6 +131,11 @@ export function App() {
   const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
   const performanceSummary = useMemo(() => buildPerformanceSummary(feedEvents), [feedEvents]);
+  const proofStripItems = useMemo(
+    () =>
+      buildProofStripItems(feedEvents, effectiveTransportState, recording, recordedEvents.length, performanceSummary),
+    [effectiveTransportState, feedEvents, performanceSummary, recordedEvents.length, recording]
+  );
   const submissionChecklistItems = useMemo(
     () => buildSubmissionChecklistItems(feedEvents, effectiveTransportState, recording, recordedEvents.length),
     [effectiveTransportState, feedEvents, recordedEvents.length, recording]
@@ -487,6 +492,8 @@ export function App() {
           </div>
         </header>
 
+        <ProofStrip items={proofStripItems} />
+
         <div className="feed-toolbar">
           <span>{displayedEvents.length} visible</span>
           <button className="order-button" onClick={toggleFeedOrder} type="button">
@@ -692,6 +699,12 @@ type SubmissionChecklistItem = {
   state: "ready" | "watching" | "setup" | "attention";
   title: string;
   detail: string;
+};
+
+type ProofStripItem = {
+  label: string;
+  value: string;
+  state: "ready" | "watching" | "setup" | "attention";
 };
 
 type AuthorProfile = {
@@ -1103,6 +1116,20 @@ function SubmissionChecklistPanel({ items }: { items: SubmissionChecklistItem[] 
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ProofStrip({ items }: { items: ProofStripItem[] }) {
+  return (
+    <div className="proof-strip" aria-label="Run proof">
+      <span className="proof-strip-title">Run proof</span>
+      {items.map((item) => (
+        <span className="proof-pill" data-state={item.state} key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </span>
+      ))}
     </div>
   );
 }
@@ -1664,6 +1691,50 @@ function buildSubmissionChecklistItems(
         events.length > 0
           ? "Throughput and latency metrics are visible in the diagnostics rail."
           : "Waiting for events before performance metrics are meaningful."
+    }
+  ];
+}
+
+function buildProofStripItems(
+  events: UnifiedEvent[],
+  transportState: AppTransportState,
+  recording: boolean,
+  recordedEventCount: number,
+  performance: PerformanceSummary
+): ProofStripItem[] {
+  const platformCounts = platforms.map((platform) => ({
+    platform,
+    count: events.filter((event) => event.platform === platform).length
+  }));
+  const coveredPlatformCount = platformCounts.filter((platformCount) => platformCount.count > 0).length;
+  const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))];
+  const accountLabelCount = sourceLabels.filter((label) => label.includes("(")).length;
+
+  return [
+    {
+      label: "Transport",
+      value: transportState === "live" ? "Live WS" : transportState,
+      state: transportState === "live" ? "ready" : transportState === "degraded" ? "attention" : "setup"
+    },
+    {
+      label: "Coverage",
+      value: `${coveredPlatformCount}/3`,
+      state: coveredPlatformCount === 3 ? "ready" : coveredPlatformCount > 0 ? "attention" : "setup"
+    },
+    {
+      label: "Labels",
+      value: `${accountLabelCount}`,
+      state: accountLabelCount >= 3 ? "ready" : accountLabelCount > 0 ? "attention" : "setup"
+    },
+    {
+      label: "P95",
+      value: events.length > 0 ? formatLatency(performance.p95LatencyMs) : "n/a",
+      state: events.length === 0 ? "setup" : performance.p95LatencyMs <= 5000 ? "ready" : "attention"
+    },
+    {
+      label: "Recording",
+      value: recording ? `${recordedEventCount}` : recordedEventCount > 0 ? `${recordedEventCount}` : "idle",
+      state: recording ? "ready" : recordedEventCount > 0 ? "watching" : "setup"
     }
   ];
 }

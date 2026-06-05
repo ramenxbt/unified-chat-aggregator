@@ -7,6 +7,9 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
   await expect(page.getByRole("log")).toContainText("TWITCH (ANSEM)");
   await expect(page.getByRole("log")).toContainText("KICK (MARKETBUBBLE)");
   await expect(page.getByRole("log")).toContainText("X (@USER1337)");
+  await expect(page.getByLabel("Run proof")).toContainText("Coverage");
+  await expect(page.getByLabel("Run proof")).toContainText("3/3");
+  await expect(page.getByLabel("Run proof")).toContainText("Labels");
 
   await page.getByLabel("Search feed").fill("polymarket");
 
@@ -45,7 +48,7 @@ test("recording and local replay workflows are browser-ready", async ({ page }) 
   await page.locator(".session-load").first().click();
 
   await expect(page.getByText("Replay: Fixture stream - 24 events")).toBeVisible();
-  await expect(page.getByText("replay", { exact: true })).toBeVisible();
+  await expect(page.locator(".feed-toolbar").getByText("replay", { exact: true })).toBeVisible();
 });
 
 test("OBS route opens as a clean transparent browser source", async ({ page }) => {
@@ -57,6 +60,8 @@ test("OBS route opens as a clean transparent browser source", async ({ page }) =
   await expect(page.locator(".detail-rail")).toBeHidden();
   await expect(page.locator(".topbar-actions")).toBeHidden();
   await expect(page.locator(".live-button")).toBeHidden();
+  await expect(page.getByLabel("Run proof")).toBeVisible();
+  await expect(page.getByLabel("Run proof")).toContainText("Coverage");
   await expect(page.locator(".feed-toolbar > span").first()).toHaveText("3 visible");
   await expect(page.getByRole("log")).toContainText("TWITCH (ANSEM)");
   await expect(page.getByRole("log")).not.toContainText("KICK (MARKETBUBBLE)");
