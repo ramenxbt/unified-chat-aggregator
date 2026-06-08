@@ -37,7 +37,7 @@ export async function buildFinalReadinessReport(
   const qaDir = options.qaDir ?? "qa";
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
   const repo = collectRepoMetadata();
-  const liveRunPlanCheck = await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit);
+  const liveRunPlanCheck = await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit, plan.urls.obsAllSources);
   const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl, repo.commit);
   const checks = [
     {
@@ -123,7 +123,11 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
   }
 }
 
-async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | null): Promise<LiveRunPlanReadinessCheck> {
+async function checkLiveRunPlan(
+  runSheetPath: string,
+  currentCommit: string | null,
+  currentObsAllSourcesUrl: string
+): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
     const commit = content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
@@ -158,6 +162,15 @@ async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | nu
         name: "Final live run sheet",
         state: "setup",
         detail: `${runSheetPath} is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt.`
+      };
+    }
+
+    if (expectedObsAllSourcesUrl !== currentObsAllSourcesUrl) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} expects ${expectedObsAllSourcesUrl}, but current live:ready options expect ${currentObsAllSourcesUrl}.`,
+        expectedObsAllSourcesUrl
       };
     }
 

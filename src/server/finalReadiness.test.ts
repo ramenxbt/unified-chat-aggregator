@@ -79,11 +79,24 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("is missing the OBS all-source URL");
   });
 
+  it("fails when the final run sheet OBS URL does not match current live options", async () => {
+    const qaDir = await createReadyQaDir({
+      obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14",
+      obsHandoffUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
+    });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("but current live:ready options expect http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
+  });
+
   it("fails when OBS handoff URLs do not match the final run sheet", async () => {
     const qaDir = await createReadyQaDir({
       obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
     });
-    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir, appPort: 5260 });
     const formatted = formatFinalReadinessReport(report);
 
     expect(report.ok).toBe(false);
@@ -104,11 +117,13 @@ describe("final recording readiness", () => {
 
 async function createReadyQaDir({
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
+  obsHandoffUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   obsHandoffCommit = currentCommit(),
   runSheetCommit = currentCommit(),
   withObsHandoff = true
 }: {
   obsAllSourcesUrl?: string | null;
+  obsHandoffUrl?: string;
   obsHandoffCommit?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
@@ -119,7 +134,7 @@ async function createReadyQaDir({
   await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(runSheetCommit, obsAllSourcesUrl), "utf8");
 
   if (withObsHandoff) {
-    await writeObsHandoff(path.join(qaDir, "obs"), obsHandoffCommit);
+    await writeObsHandoff(path.join(qaDir, "obs"), obsHandoffCommit, obsHandoffUrl);
   }
 
   return qaDir;
@@ -152,13 +167,13 @@ function createLiveRunPlan(commit: string, obsAllSourcesUrl: string | null) {
   return lines.join("\n");
 }
 
-async function writeObsHandoff(obsHandoffDir: string, commit: string) {
+async function writeObsHandoff(obsHandoffDir: string, commit: string, obsHandoffUrl: string) {
   await mkdir(obsHandoffDir, { recursive: true });
   await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
-  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson(commit)), "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson(commit, obsHandoffUrl)), "utf8");
 }
 
-function createObsHandoffJson(commit: string) {
+function createObsHandoffJson(commit: string, obsHandoffUrl: string) {
   return {
     repo: {
       commit
@@ -172,7 +187,7 @@ function createObsHandoffJson(commit: string) {
     sources: [
       {
         name: "Unified Chat - All Sources",
-        url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+        url: obsHandoffUrl
       },
       {
         name: "Unified Chat - Twitch + Kick",

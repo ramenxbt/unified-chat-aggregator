@@ -49,7 +49,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run obs:handoff -- --out qa/obs` writes `obs-browser-sources.md` and `obs-browser-sources.json` with OBS browser source names, URLs, dimensions, FPS, transparent CSS, and focused Twitch/Kick/X proof shots. Run it after choosing the same `--app-port` used by `live:prepare`.
 
-`npm run live:ready` is the final go/no-go check before opening OBS. It requires strict Twitch/Kick/X preflight, a passing current `qa/final-report.json`, a strict current `qa/live-run-plan.txt` with the OBS all-source URL, valid current-commit `qa/obs` handoff files, and matching OBS all-source URLs between the run sheet and handoff.
+`npm run live:ready` is the final go/no-go check before opening OBS. It requires strict Twitch/Kick/X preflight, a passing current `qa/final-report.json`, a strict current `qa/live-run-plan.txt` with the OBS all-source URL for the current app port, valid current-commit `qa/obs` handoff files, and matching OBS all-source URLs between the run sheet and handoff.
 
 `npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only. Add `--require-ready --with-proof-gate` for the final capture stack: it requires the `live:ready` artifact gate before launch, runs the live proof gate beside feed and dashboard, and keeps feed/dashboard running after proof passes or fails.
 
