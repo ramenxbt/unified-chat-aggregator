@@ -78,7 +78,10 @@ export function formatLivePreflightReport(report: LivePreflightReport): string {
 
 function checkTwitch(env: LivePreflightEnv): PlatformPreflight {
   const required = ["TWITCH_CLIENT_ID", "TWITCH_ACCESS_TOKEN", "TWITCH_BROADCASTER_USER_ID", "TWITCH_BOT_USER_ID"];
-  const missing = required.filter((key) => !env[key]);
+  const missing = [
+    ...required.filter((key) => !env[key]),
+    ...required.filter((key) => env[key] && isPlaceholderCredentialValue(env[key])).map((key) => `${key} (replace placeholder)`)
+  ];
 
   return {
     platform: "twitch",
@@ -121,6 +124,9 @@ function checkKick(env: LivePreflightEnv, options: { requirePublicDelivery: bool
   if (subscribeOnStart) {
     if (!env.KICK_ACCESS_TOKEN) missing.push("KICK_ACCESS_TOKEN");
     if (!env.KICK_BROADCASTER_USER_ID) missing.push("KICK_BROADCASTER_USER_ID");
+    if (env.KICK_ACCESS_TOKEN && isPlaceholderCredentialValue(env.KICK_ACCESS_TOKEN)) {
+      missing.push("KICK_ACCESS_TOKEN (replace placeholder)");
+    }
   }
 
   return {
@@ -147,6 +153,9 @@ function checkX(env: LivePreflightEnv): PlatformPreflight {
   const missing = [];
 
   if (!env.X_BEARER_TOKEN) missing.push("X_BEARER_TOKEN");
+  if (env.X_BEARER_TOKEN && isPlaceholderCredentialValue(env.X_BEARER_TOKEN)) {
+    missing.push("X_BEARER_TOKEN (replace placeholder)");
+  }
   if (!hasSource) missing.push("X_FILTER_RULES or X_SPACES_QUERY");
 
   return {
@@ -180,6 +189,10 @@ function validateKickWebhookPublicUrl(publicUrl: string, webhookPath: string) {
     return "public KICK_WEBHOOK_PUBLIC_URL host";
   }
 
+  if (parsedUrl.hostname.toLowerCase().startsWith("your-tunnel.")) {
+    return "real KICK_WEBHOOK_PUBLIC_URL";
+  }
+
   if (parsedUrl.pathname.replace(/\/+$/, "") !== normalizePath(webhookPath)) {
     return `KICK_WEBHOOK_PUBLIC_URL ending in ${normalizePath(webhookPath)}`;
   }
@@ -195,6 +208,14 @@ function normalizePath(value: string) {
 
 function isLocalHost(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function isPlaceholderCredentialValue(value: string | undefined) {
+  if (!value) return false;
+
+  return /^(changeme|change-me|example|fake|kick-token|local|mock|not-configured|placeholder|test|token|tw-client|tw-token|x-token)$/i.test(
+    value.trim()
+  );
 }
 
 function parseEnvList(value: string | undefined) {

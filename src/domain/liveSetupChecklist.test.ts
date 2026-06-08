@@ -33,6 +33,12 @@ describe("live setup checklist", () => {
       ["X_FILTER_RULES", "from:marketbubble,Market Bubble,marketbubble"],
       ["X_SPACES_QUERY", "Market Bubble"]
     ]);
+    expect(credentialAssignmentCandidates("X_BEARER_TOKEN (replace placeholder)")).toEqual([
+      ["X_BEARER_TOKEN", ""]
+    ]);
+    expect(credentialAssignmentCandidates("real KICK_WEBHOOK_PUBLIC_URL")).toEqual([
+      ["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]
+    ]);
   });
 
   it("lists per-platform dashboard readiness requirements", () => {

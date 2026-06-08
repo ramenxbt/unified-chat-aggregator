@@ -9,18 +9,18 @@ import type { LiveDoctorCheck } from "./liveDoctor";
 import type { LivePreflightEnv } from "./livePreflight";
 
 const completeEnv: LivePreflightEnv = {
-  TWITCH_CLIENT_ID: "tw-client",
-  TWITCH_ACCESS_TOKEN: "tw-token",
+  TWITCH_CLIENT_ID: "twitch-client-live-123",
+  TWITCH_ACCESS_TOKEN: "twitch-access-live-123",
   TWITCH_BROADCASTER_USER_ID: "1337",
   TWITCH_BOT_USER_ID: "9001",
   TWITCH_BROADCASTER_LOGIN: "marketbubble",
   KICK_WEBHOOK_ENABLED: "true",
   KICK_WEBHOOK_PUBLIC_URL: "https://market-bubble-tunnel.example/webhooks/kick",
-  KICK_ACCESS_TOKEN: "kick-token",
+  KICK_ACCESS_TOKEN: "kick-access-live-123",
   KICK_BROADCASTER_USER_ID: "123456789",
   KICK_BROADCASTER_SLUG: "marketbubble",
   KICK_SUBSCRIBE_ON_START: "true",
-  X_BEARER_TOKEN: "x-token",
+  X_BEARER_TOKEN: "x-bearer-live-123",
   X_FILTER_RULES: "from:marketbubble, market bubble",
   X_SPACES_QUERY: "Market Bubble",
   FEED_DB_PATH: "data/feed.sqlite"
@@ -248,7 +248,7 @@ describe("live stack runner", () => {
   it("passes partial mode through to the proof gate launch plan", async () => {
     const plan = await buildLiveStackLaunchPlan(
       {
-        X_BEARER_TOKEN: "x-token",
+        X_BEARER_TOKEN: "x-bearer-live-123",
         X_FILTER_RULES: "from:marketbubble",
         X_SPACES_QUERY: "Market Bubble"
       },
@@ -298,7 +298,7 @@ describe("live stack runner", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const exitCode = await runLiveStack(
       {
-        X_BEARER_TOKEN: "x-token",
+        X_BEARER_TOKEN: "x-bearer-live-123",
         X_SPACES_QUERY: "Market Bubble"
       },
       {

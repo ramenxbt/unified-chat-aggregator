@@ -46,9 +46,15 @@ export function credentialAssignmentCandidates(missing: string): Array<[key: str
     missing === "valid KICK_WEBHOOK_PUBLIC_URL" ||
     missing === "HTTPS KICK_WEBHOOK_PUBLIC_URL" ||
     missing === "public KICK_WEBHOOK_PUBLIC_URL host" ||
+    missing === "real KICK_WEBHOOK_PUBLIC_URL" ||
     missing.startsWith("KICK_WEBHOOK_PUBLIC_URL ending in")
   ) {
     return [["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]];
+  }
+
+  const placeholderCredential = missing.match(/^([A-Z0-9_]+) \(replace placeholder\)$/);
+  if (placeholderCredential) {
+    return [[placeholderCredential[1], ""]];
   }
 
   if (/^[A-Z0-9_]+$/.test(missing)) {
