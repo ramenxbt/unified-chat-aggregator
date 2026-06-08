@@ -152,7 +152,7 @@ Final stack rehearsal:
 npm run qa:final
 ```
 
-This runs repository hygiene, tests, lint, build, browser workflows, connector rehearsal, live stack rehearsal, stress rehearsal, and visual QA in submission order.
+This runs repository hygiene, tests, lint, build, browser workflows, connector rehearsal, live stack rehearsal, stress rehearsal, and visual QA in submission order. It writes durable proof artifacts to `qa/final-report.md` and `qa/final-report.json`.
 
 Individual rehearsal commands:
 

@@ -18,7 +18,7 @@ Run the fixture rehearsal once before connecting real credentials:
 npm run qa:final
 ```
 
-This checks tracked files for accidental live credentials or attribution issues, then proves tests, lint, build, browser workflows, connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, high-volume burst handling, and visual captures work together.
+This checks tracked files for accidental live credentials or attribution issues, then proves tests, lint, build, browser workflows, connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, high-volume burst handling, and visual captures work together. It writes `qa/final-report.md` and `qa/final-report.json` for the final evidence packet.
 
 Run the local doctor first:
 
@@ -160,7 +160,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 
 - Live dashboard recording with source labels visible.
 - OBS overlay recording with source labels visible.
-- Passing final local rehearsal output from `npm run qa:final`.
+- Passing final local rehearsal report from `qa/final-report.md`.
 - Visual QA screenshots from `qa/visual/`.
 - Passing stress output from the final QA run.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.

@@ -181,7 +181,7 @@ function buildExternalArtifactChecklist() {
     "OBS overlay recording with Twitch, Kick, and X source labels visible",
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
     "Exported dashboard recording JSON and CSV, if captured from the browser",
-    "Final local rehearsal output from npm run qa:final"
+    "Final local rehearsal report from qa/final-report.md"
   ];
 }
 
