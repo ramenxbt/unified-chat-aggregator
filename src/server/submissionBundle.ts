@@ -263,7 +263,8 @@ function buildExternalArtifactChecklist() {
     "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
     "Final live run sheet from qa/live-run-plan.txt",
     "OBS browser source handoff from qa/obs/obs-browser-sources.md",
-    "Final local rehearsal report from qa/final-report.md"
+    "Final local rehearsal report from qa/final-report.md",
+    "Visual QA manifest from qa/visual/manifest.md"
   ];
 }
 

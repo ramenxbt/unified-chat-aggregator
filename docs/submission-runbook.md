@@ -175,6 +175,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Final `qa/live-run-plan.txt` regenerated after the final commit.
 - OBS browser source handoff files in `qa/obs/`.
 - Visual QA screenshots from `qa/visual/`.
+- Visual QA manifest from `qa/visual/manifest.md`.
 - Passing stress output from the final QA run.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.

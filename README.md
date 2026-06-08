@@ -154,7 +154,7 @@ Visual QA screenshots:
 npm run qa:visual
 ```
 
-This writes desktop, mobile, and OBS overlay captures to `qa/visual/`.
+This writes desktop, mobile, and OBS overlay captures to `qa/visual/`, plus `qa/visual/manifest.md` and `qa/visual/manifest.json` with routes, viewport sizes, file sizes, and repo metadata.
 
 Final stack rehearsal:
 

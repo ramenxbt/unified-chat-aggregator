@@ -61,6 +61,7 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("Repo commit:");
     expect(submissionNotes).toContain("## External Artifacts To Attach");
     expect(submissionNotes).toContain("OBS overlay recording with Twitch, Kick, and X source labels visible");
+    expect(submissionNotes).toContain("Visual QA manifest from qa/visual/manifest.md");
     expect(submissionNotes).toContain("## Clip Queue");
     expect(submissionNotes).toContain("- Clips marked: 2");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
@@ -106,7 +107,8 @@ describe("submission bundle", () => {
         "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
         "Final live run sheet from qa/live-run-plan.txt",
         "OBS browser source handoff from qa/obs/obs-browser-sources.md",
-        "Final local rehearsal report from qa/final-report.md"
+        "Final local rehearsal report from qa/final-report.md",
+        "Visual QA manifest from qa/visual/manifest.md"
       ],
       clipQueue: {
         clipCount: 2,

@@ -95,6 +95,7 @@ Inspect these generated screenshots:
 qa/visual/desktop-dashboard.png
 qa/visual/mobile-dashboard.png
 qa/visual/obs-overlay.png
+qa/visual/manifest.md
 ```
 
 ## Known Live-Only Requirements
