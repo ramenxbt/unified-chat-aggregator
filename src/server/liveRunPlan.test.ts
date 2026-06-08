@@ -43,9 +43,7 @@ describe("live run plan", () => {
     expect(formatted).toContain("TWITCH (MARKETBUBBLE)");
     expect(formatted).toContain("X (@MARKETBUBBLE)");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
-    expect(formatted).toContain(
-      "tunnel health check: curl -i https://market-bubble-tunnel.example/webhooks/kick"
-    );
+    expect(formatted).toContain("tunnel health check: npm run live:tunnel");
     expect(plan.obs).toMatchObject({
       sourceType: "Browser Source",
       width: 1280,

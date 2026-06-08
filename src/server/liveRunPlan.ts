@@ -35,6 +35,7 @@ export type LiveRunPlan = {
     kickWebhookLocal: string;
     kickWebhookPublic?: string;
     kickWebhookHealth: string;
+    kickWebhookHealthCommand: string;
   };
   obs: {
     sourceType: string;
@@ -103,7 +104,8 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       obsSignals: `${dashboardUrl}?obs=1&signal=1&limit=10`,
       kickWebhookLocal: `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
       kickWebhookPublic: env.KICK_WEBHOOK_PUBLIC_URL,
-      kickWebhookHealth: env.KICK_WEBHOOK_PUBLIC_URL ?? `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`
+      kickWebhookHealth: env.KICK_WEBHOOK_PUBLIC_URL ?? `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
+      kickWebhookHealthCommand: "npm run live:tunnel"
     },
     obs: {
       sourceType: "Browser Source",
@@ -159,7 +161,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     "Kick webhook:",
     `  local receiver: ${plan.urls.kickWebhookLocal}`,
     `  public URL: ${plan.urls.kickWebhookPublic ?? "not configured"}`,
-    `  tunnel health check: curl -i ${shellQuote(plan.urls.kickWebhookHealth)}`,
+    `  tunnel health check: ${plan.urls.kickWebhookHealthCommand}`,
     "",
     "OBS browser source settings:",
     `  source type: ${plan.obs.sourceType}`,

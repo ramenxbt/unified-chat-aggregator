@@ -44,6 +44,7 @@ Strict final mode requires `KICK_WEBHOOK_PUBLIC_URL` to be a public HTTPS URL en
 The saved `qa/live-run-plan.txt` file keeps the exact commands, target source labels, OBS URLs, tunnel health check, evidence commands, clip-aware bundle command, replay export commands, and repo commit metadata available during setup. Set `TWITCH_BROADCASTER_LOGIN` and `KICK_BROADCASTER_SLUG` even when you already have numeric IDs so the final overlay can prove account-qualified labels like `TWITCH (MARKETBUBBLE)` and `KICK (MARKETBUBBLE)`.
 The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-sources.json` with the browser source URLs, settings, and focused proof shots for the same app port.
 The final `live:ready` gate checks strict connector preflight, three readable target source labels, current final QA, current visual QA manifest, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup. If connector setup is incomplete, it repeats the strict preflight details and `.env` checklist inline.
+After the feed server is running, use `npm run live:tunnel` instead of a manual browser check to prove the public Kick tunnel reaches the local `/webhooks/kick` receiver.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 If a default port, evidence path, clip queue path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, `live:ready`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --clips exports/final-clips.json --proof-timeout-ms 300000`.
@@ -124,13 +125,14 @@ Start the capture stack with `npm run live:stack -- --require-ready --with-proof
 
 1. Click `Record`.
 2. Let live events arrive from the stream.
-3. Open `qa/obs/obs-browser-sources.md`.
-4. Add `Unified Chat - All Sources` as an OBS browser source.
-5. Apply the `OBS browser source settings` from `npm run live:prepare`.
-6. Mark the strongest messages with `Clip` as they happen so the exact source-account labels are preserved for editing. The clip queue is saved in local storage, so refreshes should not lose marked moments before export.
-7. Record the overlay plus the real Market Bubble stream.
-8. Stop recording in the dashboard.
-9. Export recording JSON, recording CSV, and clip queue JSON.
+3. Run `npm run live:tunnel` and confirm it says `Kick tunnel: ready`.
+4. Open `qa/obs/obs-browser-sources.md`.
+5. Add `Unified Chat - All Sources` as an OBS browser source.
+6. Apply the `OBS browser source settings` from `npm run live:prepare`.
+7. Mark the strongest messages with `Clip` as they happen so the exact source-account labels are preserved for editing. The clip queue is saved in local storage, so refreshes should not lose marked moments before export.
+8. Record the overlay plus the real Market Bubble stream.
+9. Stop recording in the dashboard.
+10. Export recording JSON, recording CSV, and clip queue JSON.
 
 Use these backup OBS URLs if needed:
 
@@ -180,6 +182,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Passing stress output from the final QA run.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
+- Passing `npm run live:tunnel` output after the capture stack starts.
 - Passing `npm run live:ready` output before opening OBS.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.

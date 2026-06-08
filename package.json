@@ -12,6 +12,7 @@
     "live:prepare": "tsx src/server/prepareLiveRun.ts",
     "live:ready": "tsx src/server/finalReadiness.ts",
     "live:stack": "tsx src/server/runLiveStack.ts",
+    "live:tunnel": "tsx src/server/kickTunnelCheck.ts",
     "obs:handoff": "tsx src/server/obsHandoff.ts",
     "preflight": "tsx src/server/preflight.ts",
     "proof:gate": "tsx src/server/liveProofGate.ts",
