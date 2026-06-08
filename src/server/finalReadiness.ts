@@ -30,6 +30,7 @@ export type FinalReadinessReport = {
 export type FinalReadinessOptions = LiveRunPlanOptions & {
   qaDir?: string;
   obsHandoffDir?: string;
+  visualQaDir?: string;
 };
 
 type LiveRunPlanReadinessCheck = FinalReadinessCheck & {
@@ -43,6 +44,7 @@ export async function buildFinalReadinessReport(
   const plan = buildLiveRunPlan(env, options);
   const qaDir = options.qaDir ?? "qa";
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
+  const visualQaDir = options.visualQaDir ?? path.join(qaDir, "visual");
   const repo = collectRepoMetadata();
   const liveRunPlanCheck = await checkLiveRunPlan(
     path.join(qaDir, "live-run-plan.txt"),
@@ -66,6 +68,7 @@ export async function buildFinalReadinessReport(
         : "Run npm run preflight and resolve missing Twitch, Kick, or X setup before recording."
     } satisfies FinalReadinessCheck,
     await checkFinalQaReport(path.join(qaDir, "final-report.json"), repo.commit),
+    await checkVisualQaManifest(visualQaDir, repo.commit),
     liveRunPlanCheck,
     obsHandoffCheck
   ];
@@ -173,6 +176,55 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
       name: "Final QA report",
       state: "setup",
       detail: `${reportPath} is missing or unreadable; run npm run qa:final.`
+    };
+  }
+}
+
+async function checkVisualQaManifest(visualQaDir: string, currentCommit: string | null): Promise<FinalReadinessCheck> {
+  const markdownPath = path.join(visualQaDir, "manifest.md");
+  const jsonPath = path.join(visualQaDir, "manifest.json");
+
+  try {
+    const [markdown, jsonContent] = await Promise.all([readFile(markdownPath, "utf8"), readFile(jsonPath, "utf8")]);
+    const manifest = JSON.parse(jsonContent) as {
+      repo?: {
+        commit?: string | null;
+      };
+      captures?: Array<{
+        route?: string;
+        file?: string;
+      }>;
+    };
+    const expectedFiles = ["desktop-dashboard.png", "mobile-dashboard.png", "obs-overlay.png"];
+    const captureFiles = manifest.captures?.map((capture) => capture.file ?? "") ?? [];
+    const hasExpectedCaptures = expectedFiles.every((fileName) => captureFiles.some((file) => file.endsWith(fileName)));
+
+    if (!markdown.includes("Visual QA Manifest") || !Array.isArray(manifest.captures) || manifest.captures.length < 3 || !hasExpectedCaptures) {
+      return {
+        name: "Visual QA manifest",
+        state: "setup",
+        detail: `${visualQaDir} is malformed; run npm run qa:visual.`
+      };
+    }
+
+    if (currentCommit && manifest.repo?.commit !== currentCommit) {
+      return {
+        name: "Visual QA manifest",
+        state: "setup",
+        detail: `${visualQaDir} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${currentCommit}.`
+      };
+    }
+
+    return {
+      name: "Visual QA manifest",
+      state: "ready",
+      detail: `${visualQaDir} has ${manifest.captures.length} current captures.`
+    };
+  } catch {
+    return {
+      name: "Visual QA manifest",
+      state: "setup",
+      detail: `${visualQaDir} is missing or unreadable; run npm run qa:visual.`
     };
   }
 }
@@ -459,6 +511,12 @@ function parseFinalReadinessCliArgs(args: string[]): FinalReadinessOptions {
 
     if (arg === "--obs-handoff-dir") {
       parsed.obsHandoffDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--visual-qa-dir") {
+      parsed.visualQaDir = args[index + 1];
       index += 1;
       continue;
     }

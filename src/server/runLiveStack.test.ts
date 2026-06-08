@@ -265,6 +265,7 @@ async function createReadyQaDir() {
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
   await writeObsHandoff(path.join(qaDir, "obs"));
+  await writeVisualQaManifest(path.join(qaDir, "visual"));
 
   return qaDir;
 }
@@ -331,6 +332,34 @@ function createObsHandoffJson() {
       {
         name: "Unified Chat - Signals",
         url: "http://127.0.0.1:5173/?obs=1&signal=1&limit=10"
+      }
+    ]
+  };
+}
+
+async function writeVisualQaManifest(visualQaDir: string) {
+  await mkdir(visualQaDir, { recursive: true });
+  await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
+  await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(createVisualQaManifestJson()), "utf8");
+}
+
+function createVisualQaManifestJson() {
+  return {
+    repo: {
+      commit: currentCommit()
+    },
+    captures: [
+      {
+        route: "/",
+        file: "qa/visual/desktop-dashboard.png"
+      },
+      {
+        route: "/",
+        file: "qa/visual/mobile-dashboard.png"
+      },
+      {
+        route: "/?obs=1&sources=twitch,kick,x&limit=14",
+        file: "qa/visual/obs-overlay.png"
       }
     ]
   };

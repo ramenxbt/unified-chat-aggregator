@@ -41,6 +41,7 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("Final recording readiness: ready");
     expect(formatted).toContain("PASS Strict connector preflight");
     expect(formatted).toContain("PASS Final QA report");
+    expect(formatted).toContain("PASS Visual QA manifest");
     expect(formatted).toContain("PASS Final live run sheet");
     expect(formatted).toContain("PASS OBS handoff");
     expect(formatted).toContain("npm run proof:gate --");
@@ -80,6 +81,26 @@ describe("final recording readiness", () => {
 
     expect(report.ok).toBe(false);
     expect(formatFinalReadinessReport(report)).toContain("MISS OBS handoff");
+  });
+
+  it("fails when the visual QA manifest is missing", async () => {
+    const qaDir = await createReadyQaDir({ withVisualQaManifest: false });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Visual QA manifest");
+    expect(formatted).toContain("is missing or unreadable");
+  });
+
+  it("fails when the visual QA manifest was generated from a stale commit", async () => {
+    const qaDir = await createReadyQaDir({ visualQaCommit: "stale123" });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Visual QA manifest");
+    expect(formatted).toContain("was generated for commit stale123");
   });
 
   it("fails when the final run sheet is missing the OBS all-source URL", async () => {
@@ -237,8 +258,10 @@ async function createReadyQaDir({
   evidenceCheckCommand = defaultEvidenceCheckCommand,
   submissionBundleCommand = defaultSubmissionBundleCommand,
   obsHandoffCommit = currentCommit(),
+  visualQaCommit = currentCommit(),
   runSheetCommit = currentCommit(),
-  withObsHandoff = true
+  withObsHandoff = true,
+  withVisualQaManifest = true
 }: {
   obsAllSourcesUrl?: string | null;
   obsHandoffUrl?: string;
@@ -248,8 +271,10 @@ async function createReadyQaDir({
   evidenceCheckCommand?: string | null;
   submissionBundleCommand?: string | null;
   obsHandoffCommit?: string;
+  visualQaCommit?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
+  withVisualQaManifest?: boolean;
 } = {}) {
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-"));
 
@@ -270,6 +295,10 @@ async function createReadyQaDir({
 
   if (withObsHandoff) {
     await writeObsHandoff(path.join(qaDir, "obs"), obsHandoffCommit, obsHandoffUrl);
+  }
+
+  if (withVisualQaManifest) {
+    await writeVisualQaManifest(path.join(qaDir, "visual"), visualQaCommit);
   }
 
   return qaDir;
@@ -359,6 +388,34 @@ function createObsHandoffJson(commit: string, obsHandoffUrl: string) {
       {
         name: "Unified Chat - Signals",
         url: "http://127.0.0.1:5173/?obs=1&signal=1&limit=10"
+      }
+    ]
+  };
+}
+
+async function writeVisualQaManifest(visualQaDir: string, commit: string) {
+  await mkdir(visualQaDir, { recursive: true });
+  await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
+  await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(createVisualQaManifestJson(commit)), "utf8");
+}
+
+function createVisualQaManifestJson(commit: string) {
+  return {
+    repo: {
+      commit
+    },
+    captures: [
+      {
+        route: "/",
+        file: "qa/visual/desktop-dashboard.png"
+      },
+      {
+        route: "/",
+        file: "qa/visual/mobile-dashboard.png"
+      },
+      {
+        route: "/?obs=1&sources=twitch,kick,x&limit=14",
+        file: "qa/visual/obs-overlay.png"
       }
     ]
   };

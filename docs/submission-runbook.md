@@ -43,7 +43,7 @@ If setup is incomplete, the preflight output includes a `Stream-day .env checkli
 Strict final mode requires `KICK_WEBHOOK_PUBLIC_URL` to be a public HTTPS URL ending in `/webhooks/kick`; use `--allow-partial` only for local-only Kick receiver smoke tests.
 The saved `qa/live-run-plan.txt` file keeps the exact commands, target source labels, OBS URLs, tunnel health check, evidence commands, clip-aware bundle command, replay export commands, and repo commit metadata available during setup.
 The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-sources.json` with the browser source URLs, settings, and focused proof shots for the same app port.
-The final `live:ready` gate checks strict connector preflight, current final QA, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup. If connector setup is incomplete, it repeats the strict preflight details and `.env` checklist inline.
+The final `live:ready` gate checks strict connector preflight, current final QA, current visual QA manifest, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup. If connector setup is incomplete, it repeats the strict preflight details and `.env` checklist inline.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 If a default port, evidence path, clip queue path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, `live:ready`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --clips exports/final-clips.json --proof-timeout-ms 300000`.
@@ -56,7 +56,7 @@ npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
-Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial` and rerun `npm run obs:handoff -- --out qa/obs`; `submission:bundle` will fail with an artifact issue if the run sheet is partial, stale, or missing launch/evidence commands, if the OBS handoff files are stale, missing, or malformed, or if the OBS handoff URL does not match the run sheet.
+Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial` and rerun `npm run obs:handoff -- --out qa/obs`; `submission:bundle` will fail with an artifact issue if the run sheet is partial, stale, or missing launch/evidence commands, if the OBS handoff files are stale, missing, or malformed, if the visual QA manifest is stale or malformed, or if the OBS handoff URL does not match the run sheet.
 
 ## 2. Kick Tunnel
 
