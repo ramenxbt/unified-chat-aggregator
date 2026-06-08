@@ -220,7 +220,15 @@ function createFinalReadinessProof() {
   return [
     "Final recording readiness: ready",
     `Repo commit: ${currentCommit()}`,
-    "Checked at: 2026-06-08T16:00:00.000Z"
+    "Checked at: 2026-06-08T16:00:00.000Z",
+    "",
+    "Checks:",
+    "  PASS Strict connector preflight: Twitch, Kick, and X are ready for a connector-mode capture.",
+    "  PASS Target source labels: KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)",
+    "  PASS Final QA report: qa/final-report.json passed for the current commit.",
+    "  PASS Visual QA manifest: qa/visual has current captures.",
+    "  PASS Final live run sheet: qa/live-run-plan.txt is strict and current.",
+    "  PASS OBS handoff: qa/obs has browser source presets."
   ].join("\n");
 }
 
