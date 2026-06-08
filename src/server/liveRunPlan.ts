@@ -73,11 +73,14 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
     report,
     proofGate,
     commands: {
-      feed: `${formatEnvAssignment("FEED_DB_PATH", databasePath)} ${formatEnvAssignment(
+      feed: `${formatEnvAssignment("FEED_SERVER_PORT", String(feedPort))} ${formatEnvAssignment(
+        "FEED_DB_PATH",
+        databasePath
+      )} ${formatEnvAssignment(
         "FEED_ARCHIVE_DIR",
         archiveDir
       )} npm run feed`,
-      dashboard: `${formatEnvAssignment("VITE_FEED_WS_URL", feedWsUrl)} npm run dev`
+      dashboard: `${formatEnvAssignment("VITE_FEED_WS_URL", feedWsUrl)} npm run dev -- --host 127.0.0.1 --port ${shellQuote(String(appPort))}`
     },
     urls: {
       dashboard: dashboardUrl,

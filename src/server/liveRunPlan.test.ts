@@ -31,8 +31,12 @@ describe("live run plan", () => {
 
     expect(plan.ok).toBe(true);
     expect(formatted).toContain("Live preflight: ready");
-    expect(formatted).toContain("FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed");
-    expect(formatted).toContain("VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev");
+    expect(formatted).toContain(
+      "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed"
+    );
+    expect(formatted).toContain(
+      "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173"
+    );
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain(
       "tunnel health check: curl -i https://market-bubble-tunnel.example/webhooks/kick"

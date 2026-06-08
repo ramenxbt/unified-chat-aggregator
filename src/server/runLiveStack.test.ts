@@ -33,6 +33,7 @@ describe("live stack runner", () => {
       command: "npm",
       args: ["run", "feed"],
       env: {
+        FEED_SERVER_PORT: "8787",
         FEED_DB_PATH: "data/feed.sqlite",
         FEED_ARCHIVE_DIR: "data/feed-sessions"
       }
@@ -62,6 +63,19 @@ describe("live stack runner", () => {
       ],
       env: {}
     });
+  });
+
+  it("carries custom planned ports into spawned process settings", async () => {
+    const plan = await buildLiveStackLaunchPlan(completeEnv, {
+      appPort: 5260,
+      feedPort: 8899,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+
+    expect(plan.processes.feed.env.FEED_SERVER_PORT).toBe("8899");
+    expect(plan.processes.dashboard.args).toEqual(["run", "dev", "--", "--host", "127.0.0.1", "--port", "5260"]);
+    expect(plan.processes.dashboard.env.VITE_FEED_WS_URL).toBe("ws://127.0.0.1:8899");
   });
 
   it("dry-runs without spawning long-lived processes", async () => {

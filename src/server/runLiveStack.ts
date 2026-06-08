@@ -46,6 +46,7 @@ export async function buildLiveStackLaunchPlan(
         command: "npm",
         args: ["run", "feed"],
         env: {
+          FEED_SERVER_PORT: String(feedPort),
           FEED_DB_PATH: doctor.plan.evidence.databasePath,
           FEED_ARCHIVE_DIR: doctor.plan.evidence.archiveDir
         }
