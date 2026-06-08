@@ -1121,6 +1121,7 @@ function EventRow({
 }) {
   const signalScore = scoreEventSignal(event);
   const platformSourceLabel = formatPlatformSourceLabel(event);
+  const sourceContext = formatSourceContext(event);
   const isChatPlatform = event.platform !== "x";
   const timestamp = new Intl.DateTimeFormat("en", {
     hour: "2-digit",
@@ -1136,6 +1137,7 @@ function EventRow({
       data-selected={selected}
       onClick={onSelect}
       style={{ "--accent": platformAccent[event.platform] } as CSSProperties}
+      title={`${platformSourceLabel} / ${formatAuthor(event)} / ${timestamp}`}
       type="button"
     >
       <span className="platform-label" title={platformSourceLabel}>
@@ -1159,7 +1161,10 @@ function EventRow({
             <EventText event={event} query={query} />
           </span>
           <span className="native-event-meta">
-            <span className="event-source">{formatSourceMeta(event)}</span>
+            <span className="event-source event-source-account" title={platformSourceLabel}>
+              {platformSourceLabel}
+            </span>
+            <span className="event-source event-source-context">{sourceContext}</span>
             <span className="event-time">{timestamp}</span>
           </span>
         </span>
@@ -1169,7 +1174,10 @@ function EventRow({
             <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
               {formatAuthor(event)}
             </span>
-            <span className="event-source">{formatSourceMeta(event)}</span>
+            <span className="event-source event-source-account" title={platformSourceLabel}>
+              {platformSourceLabel}
+            </span>
+            <span className="event-source event-source-context">{sourceContext}</span>
             <span className="event-time">{timestamp}</span>
           </span>
           <EventText event={event} query={query} />
@@ -2154,7 +2162,7 @@ function formatAuthor(event: UnifiedEvent) {
   return event.authorName ?? event.sourceChannelName ?? "system";
 }
 
-function formatSourceMeta(event: UnifiedEvent) {
+function formatSourceContext(event: UnifiedEvent) {
   if (event.platform === "twitch") {
     return event.sourceChannelName ? `#${event.sourceChannelName}` : "chat";
   }

@@ -456,7 +456,7 @@ button {
 
 .event-row {
   display: grid;
-  grid-template-columns: 148px minmax(0, 1fr) 36px;
+  grid-template-columns: minmax(154px, 188px) minmax(0, 1fr) 42px;
   align-items: start;
   gap: 10px;
   width: 100%;
@@ -582,6 +582,18 @@ button {
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.event-source-account {
+  flex: 0 1 auto;
+  max-width: 180px;
+  color: color-mix(in srgb, var(--accent), white 18%);
+  font-weight: 760;
+}
+
+.event-source-context {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .event-text {
@@ -1495,7 +1507,7 @@ button {
   }
 
   .event-row {
-    grid-template-columns: 132px minmax(0, 1fr) 30px;
+    grid-template-columns: minmax(136px, 160px) minmax(0, 1fr) 34px;
   }
 }
 
@@ -1580,7 +1592,7 @@ button {
   }
 
   .event-row {
-    grid-template-columns: 116px minmax(0, 1fr);
+    grid-template-columns: minmax(112px, 128px) minmax(0, 1fr);
     min-height: 66px;
   }
 
