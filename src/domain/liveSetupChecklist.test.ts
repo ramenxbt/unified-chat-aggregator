@@ -16,7 +16,7 @@ describe("live setup checklist", () => {
       "KICK_WEBHOOK_ENABLED=true",
       "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick",
       "X_BEARER_TOKEN=",
-      "X_FILTER_RULES=Market Bubble,marketbubble",
+      "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble",
       "X_SPACES_QUERY=Market Bubble"
     ]);
     expect(streamDayEnvChecklistText).toBe(streamDayEnvChecklist.join("\n"));
@@ -28,7 +28,7 @@ describe("live setup checklist", () => {
       ["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]
     ]);
     expect(credentialAssignmentCandidates("X_FILTER_RULES or X_SPACES_QUERY")).toEqual([
-      ["X_FILTER_RULES", "Market Bubble,marketbubble"],
+      ["X_FILTER_RULES", "from:marketbubble,Market Bubble,marketbubble"],
       ["X_SPACES_QUERY", "Market Bubble"]
     ]);
   });

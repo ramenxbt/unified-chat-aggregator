@@ -14,7 +14,7 @@ export const streamDayEnvChecklist = [
   "KICK_WEBHOOK_ENABLED=true",
   "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick",
   "X_BEARER_TOKEN=",
-  "X_FILTER_RULES=Market Bubble,marketbubble",
+  "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble",
   "X_SPACES_QUERY=Market Bubble"
 ];
 
@@ -44,7 +44,7 @@ export function credentialAssignmentCandidates(missing: string): Array<[key: str
 
   if (missing === "X_FILTER_RULES or X_SPACES_QUERY") {
     return [
-      ["X_FILTER_RULES", "Market Bubble,marketbubble"],
+      ["X_FILTER_RULES", "from:marketbubble,Market Bubble,marketbubble"],
       ["X_SPACES_QUERY", "Market Bubble"]
     ];
   }
