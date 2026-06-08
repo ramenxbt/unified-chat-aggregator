@@ -17,6 +17,7 @@
     "preflight": "tsx src/server/preflight.ts",
     "proof:gate": "tsx src/server/liveProofGate.ts",
     "submission:bundle": "tsx src/server/submissionBundle.ts",
+    "submission:finalize": "tsx src/server/finalizeSubmission.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "qa:rehearsal": "tsx scripts/rehearseLiveStack.ts",
