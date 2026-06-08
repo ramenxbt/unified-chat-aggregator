@@ -125,7 +125,7 @@ Start the capture stack with `npm run live:stack -- --require-ready --with-proof
 3. Open `qa/obs/obs-browser-sources.md`.
 4. Add `Unified Chat - All Sources` as an OBS browser source.
 5. Apply the `OBS browser source settings` from `npm run live:prepare`.
-6. Mark the strongest messages with `Clip` as they happen so the exact source-account labels are preserved for editing.
+6. Mark the strongest messages with `Clip` as they happen so the exact source-account labels are preserved for editing. The clip queue is saved in local storage, so refreshes should not lose marked moments before export.
 7. Record the overlay plus the real Market Bubble stream.
 8. Stop recording in the dashboard.
 9. Export recording JSON, recording CSV, and clip queue JSON.

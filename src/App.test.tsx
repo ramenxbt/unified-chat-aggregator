@@ -267,6 +267,21 @@ describe("App", () => {
     expect(screen.getByText("No clipped moments yet.")).toBeInTheDocument();
   });
 
+  it("restores the submission clip queue after a reload", async () => {
+    const { unmount } = render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: /^clip$/i }));
+
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips1");
+
+    unmount();
+    render(<App />);
+
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips1");
+    expect(screen.getByText("1 marked")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /export clip queue json/i })).toBeEnabled();
+  });
+
   it("copies a shareable replay link for the current buffer", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
 

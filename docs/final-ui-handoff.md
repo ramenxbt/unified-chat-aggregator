@@ -11,7 +11,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Source account activity roster with one-click filters.
 - Cross-platform source identity grouping for matching account names.
 - Review queue for held, deleted, or spam-risk normalized events.
-- Clip queue for marking exact submission moments with source-account labels.
+- Clip queue for marking exact submission moments with source-account labels and reload-safe local persistence.
 - Performance panel with buffer throughput, average latency, p95 latency, and latest event freshness.
 - Submission checklist for live transport, platform coverage, account labels, recording proof, and performance proof.
 - Feed-panel `Run proof` strip visible in dashboard, submission, and OBS captures, including clip count.

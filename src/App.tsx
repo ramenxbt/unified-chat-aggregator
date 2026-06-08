@@ -49,6 +49,7 @@ import {
   saveSessionArchive,
   type SavedSession
 } from "./domain/sessionArchive";
+import { readClipQueue, writeClipQueue, type ClipItem } from "./domain/clipQueue";
 import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
 
 const platforms: SourcePlatform[] = ["twitch", "kick", "x"];
@@ -74,7 +75,7 @@ export function App() {
   const [submissionMode, setSubmissionMode] = useState(obsMode);
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
-  const [clipQueue, setClipQueue] = useState<ClipItem[]>([]);
+  const [clipQueue, setClipQueue] = useState(() => readClipQueue());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
   const [sourceAccountFilter, setSourceAccountFilter] = useState<FeedEntityFilter | null>(null);
@@ -176,6 +177,10 @@ export function App() {
       document.body.classList.remove("obs-body");
     };
   }, [obsMode]);
+
+  useEffect(() => {
+    writeClipQueue(clipQueue);
+  }, [clipQueue]);
 
   useEffect(() => {
     const recording = readReplayLinkRecording();
@@ -764,11 +769,6 @@ type AppTransportState = ReturnType<typeof useUnifiedFeed>["transportState"] | "
 type FeedEntityFilter = {
   key: string;
   label: string;
-};
-
-type ClipItem = {
-  clippedAt: string;
-  event: UnifiedEvent;
 };
 
 type FeedOrder = "newest" | "oldest";

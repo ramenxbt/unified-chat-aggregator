@@ -118,7 +118,7 @@ The diagnostics rail includes an `Accounts` roster with live source-account acti
 
 The `Review queue` flags held, deleted, or spam-risk messages when those signals are present in normalized events. It gives the operator a quick way to inspect questionable chat without mutating the platform.
 
-The `Clip queue` lets the operator mark selected messages during the stream. Marked clips preserve the full normalized event, source-account label, and clip timestamp, stay visible in the run-proof strip, and can be exported as a separate JSON file for choosing the best submission moments after the recording.
+The `Clip queue` lets the operator mark selected messages during the stream. Marked clips preserve the full normalized event, source-account label, and clip timestamp, stay visible in the run-proof strip, survive a browser refresh through local storage, and can be exported as a separate JSON file for choosing the best submission moments after the recording.
 
 The diagnostics rail includes a `Performance` panel with current buffer throughput, average latency, p95 latency, and latest event freshness for visible proof during the recording.
 
