@@ -138,6 +138,7 @@ describe("live stack runner", () => {
     const exitCode = await runLiveStack(completeEnv, {
       dryRun: true,
       requireReady: true,
+      withProofGate: true,
       qaDir,
       checkPort: readyPortCheck,
       checkWritableDirectory: readyDirectoryCheck
@@ -151,6 +152,29 @@ describe("live stack runner", () => {
     log.mockRestore();
   });
 
+  it("refuses require-ready capture without the proof gate", async () => {
+    const qaDir = await createReadyQaDir();
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const exitCode = await runLiveStack(completeEnv, {
+      dryRun: true,
+      requireReady: true,
+      qaDir,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+    const output = log.mock.calls.flat().join("\n");
+
+    expect(exitCode).toBe(1);
+    expect(error.mock.calls.flat().join("\n")).toContain("Final capture requires --with-proof-gate");
+    expect(output).not.toContain("Final recording readiness:");
+    expect(output).not.toContain("Live stack dry run: ready");
+
+    log.mockRestore();
+    error.mockRestore();
+  });
+
   it("passes custom visual QA directory into required final readiness", async () => {
     const qaDir = await createReadyQaDir({ withDefaultVisualQa: false });
     const visualQaDir = path.join(qaDir, "custom visual");
@@ -160,6 +184,7 @@ describe("live stack runner", () => {
     const exitCode = await runLiveStack(completeEnv, {
       dryRun: true,
       requireReady: true,
+      withProofGate: true,
       qaDir,
       visualQaDir,
       checkPort: readyPortCheck,
@@ -181,6 +206,7 @@ describe("live stack runner", () => {
     const exitCode = await runLiveStack(completeEnv, {
       dryRun: true,
       requireReady: true,
+      withProofGate: true,
       qaDir,
       checkPort: readyPortCheck,
       checkWritableDirectory: readyDirectoryCheck
