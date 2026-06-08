@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { parseLiveRunCliArgs } from "./liveCliArgs";
+import { parseLiveRunCliArgs, readOptionalArgValue } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import { formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
@@ -637,26 +637,38 @@ export function parseFinalReadinessCliArgs(args: string[]): FinalReadinessCliOpt
     const arg = args[index];
 
     if (arg === "--qa-dir") {
-      parsed.qaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.qaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--obs-handoff-dir") {
-      parsed.obsHandoffDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.obsHandoffDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--visual-qa-dir") {
-      parsed.visualQaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.visualQaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--out" || arg === "--output") {
-      parsed.outPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outPath = value;
+        index += 1;
+      }
       continue;
     }
   }

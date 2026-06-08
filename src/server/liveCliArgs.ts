@@ -22,67 +22,74 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
     const arg = args[index];
 
     if (arg === "--feed-port") {
-      assignOptionalPositiveNumber(parsed, "feedPort", args[index + 1]);
-      index += 1;
+      if (assignOptionalPositiveNumber(parsed, "feedPort", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--app-port") {
-      assignOptionalPositiveNumber(parsed, "appPort", args[index + 1]);
-      index += 1;
+      if (assignOptionalPositiveNumber(parsed, "appPort", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--archive-dir") {
-      parsed.archiveDir = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "archiveDir", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--db" || arg === "--database-path") {
-      parsed.databasePath = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "databasePath", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--clips" || arg === "--clip-queue") {
-      parsed.clipQueuePath = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "clipQueuePath", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--qa-dir") {
-      parsed.qaDir = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "qaDir", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--evidence-check" || arg === "--evidence-out") {
-      parsed.evidenceCheckPath = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "evidenceCheckPath", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--kick-tunnel-check") {
-      parsed.kickTunnelCheckPath = args[index + 1];
-      index += 1;
+      if (assignOptionalString(parsed, "kickTunnelCheckPath", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--proof-timeout-ms" || arg === "--timeout-ms") {
-      assignOptionalPositiveNumber(parsed, "proofTimeoutMs", args[index + 1]);
-      index += 1;
+      if (assignOptionalPositiveNumber(parsed, "proofTimeoutMs", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
 
     if (arg === "--proof-interval-ms" || arg === "--interval-ms") {
-      assignOptionalPositiveNumber(parsed, "proofIntervalMs", args[index + 1]);
-      index += 1;
+      if (assignOptionalPositiveNumber(parsed, "proofIntervalMs", readOptionalArgValue(args, index))) index += 1;
       continue;
     }
   }
 
   return parsed;
+}
+
+export function readOptionalArgValue(args: string[], index: number) {
+  const value = args[index + 1];
+
+  return value && !value.startsWith("--") ? value : undefined;
+}
+
+function assignOptionalString(
+  target: LiveRunPlanOptions,
+  key: "archiveDir" | "clipQueuePath" | "databasePath" | "evidenceCheckPath" | "kickTunnelCheckPath" | "qaDir",
+  value: string | undefined
+) {
+  if (value === undefined) return false;
+
+  target[key] = value;
+  return true;
 }
 
 function assignOptionalPositiveNumber(
@@ -94,7 +101,10 @@ function assignOptionalPositiveNumber(
 
   if (parsed !== undefined) {
     target[key] = parsed;
+    return true;
   }
+
+  return false;
 }
 
 function parseOptionalPositiveNumber(value: string | undefined) {
@@ -115,14 +125,20 @@ export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
     const arg = args[index];
 
     if (arg === "--obs-handoff-dir") {
-      parsed.obsHandoffDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.obsHandoffDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--visual-qa-dir") {
-      parsed.visualQaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.visualQaDir = value;
+        index += 1;
+      }
       continue;
     }
   }
@@ -137,8 +153,11 @@ export function parseLivePrepareCliArgs(args: string[]): LivePrepareCliOptions {
     const arg = args[index];
 
     if (arg === "--out" || arg === "--output") {
-      parsed.outPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outPath = value;
+        index += 1;
+      }
     }
   }
 

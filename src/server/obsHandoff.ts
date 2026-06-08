@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { parseLiveRunCliArgs } from "./liveCliArgs";
+import { parseLiveRunCliArgs, readOptionalArgValue } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import type { LivePreflightEnv } from "./livePreflight";
@@ -225,8 +225,11 @@ function parseObsHandoffArgs(args: string[]) {
     const arg = args[index];
 
     if (arg === "--out" || arg === "--output") {
-      outDir = args[index + 1] ?? outDir;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        outDir = value;
+        index += 1;
+      }
     }
   }
 

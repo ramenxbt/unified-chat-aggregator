@@ -261,6 +261,23 @@ describe("final recording readiness", () => {
     });
   });
 
+  it("does not consume the next flag when readiness artifact values are omitted", () => {
+    expect(
+      parseFinalReadinessCliArgs([
+        "--qa-dir",
+        "--obs-handoff-dir",
+        "qa/obs",
+        "--visual-qa-dir",
+        "--out",
+        "qa/ready.txt"
+      ])
+    ).toEqual({
+      allowPartial: false,
+      obsHandoffDir: "qa/obs",
+      outPath: "qa/ready.txt"
+    });
+  });
+
   it("writes the final readiness report to a proof file", async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-output-"));
     const reportPath = path.join(tempDir, "qa", "final-readiness.txt");

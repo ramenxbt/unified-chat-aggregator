@@ -74,6 +74,13 @@ describe("OBS handoff", () => {
     });
     expect(json.repo.commit).toBe(currentCommit());
   });
+
+  it("does not consume the next flag when the output directory is omitted", async () => {
+    const result = await createObsHandoff(completeEnv, ["--out", "--app-port", "5260"]);
+
+    expect(result.files.json).toBe(path.resolve("qa/obs/obs-browser-sources.json"));
+    expect(result.handoff.dashboardUrl).toBe("http://127.0.0.1:5260/");
+  });
 });
 
 function currentCommit() {

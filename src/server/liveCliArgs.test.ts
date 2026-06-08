@@ -97,4 +97,40 @@ describe("live CLI args", () => {
       allowPartial: false
     });
   });
+
+  it("does not consume the next flag when a value is omitted", () => {
+    expect(
+      parseLiveRunCliArgs([
+        "--archive-dir",
+        "--db",
+        "data/live.sqlite",
+        "--clips",
+        "--qa-dir",
+        "qa/final",
+        "--evidence-check",
+        "--kick-tunnel-check",
+        "qa/kick.txt"
+      ])
+    ).toEqual({
+      allowPartial: false,
+      databasePath: "data/live.sqlite",
+      qaDir: "qa/final",
+      kickTunnelCheckPath: "qa/kick.txt"
+    });
+  });
+
+  it("does not consume the next flag for stack and prepare output options", () => {
+    expect(parseLiveStackCliArgs(["--obs-handoff-dir", "--visual-qa-dir", "qa/visual"])).toEqual({
+      allowPartial: false,
+      dryRun: false,
+      requireReady: false,
+      visualQaDir: "qa/visual",
+      withProofGate: false
+    });
+
+    expect(parseLivePrepareCliArgs(["--out", "--app-port", "5260"])).toEqual({
+      allowPartial: false,
+      appPort: 5260
+    });
+  });
 });
