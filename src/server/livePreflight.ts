@@ -1,4 +1,5 @@
 import type { SourcePlatform } from "../domain/unifiedEvent";
+import { credentialAssignmentCandidates } from "../domain/liveSetupChecklist";
 
 export type LivePreflightEnv = Record<string, string | undefined>;
 
@@ -221,36 +222,4 @@ function buildCredentialChecklist(report: LivePreflightReport) {
   }
 
   return [...assignments.entries()].map(([key, value]) => `${key}=${value}`);
-}
-
-function credentialAssignmentCandidates(missing: string): Array<[key: string, value: string]> {
-  if (missing === "KICK_WEBHOOK_ENABLED=true or KICK_WEBHOOK_PUBLIC_URL") {
-    return [
-      ["KICK_WEBHOOK_ENABLED", "true"],
-      ["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]
-    ];
-  }
-
-  if (
-    missing === "KICK_WEBHOOK_PUBLIC_URL" ||
-    missing === "valid KICK_WEBHOOK_PUBLIC_URL" ||
-    missing === "HTTPS KICK_WEBHOOK_PUBLIC_URL" ||
-    missing === "public KICK_WEBHOOK_PUBLIC_URL host" ||
-    missing.startsWith("KICK_WEBHOOK_PUBLIC_URL ending in")
-  ) {
-    return [["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]];
-  }
-
-  if (/^[A-Z0-9_]+$/.test(missing)) {
-    return [[missing, ""]];
-  }
-
-  if (missing === "X_FILTER_RULES or X_SPACES_QUERY") {
-    return [
-      ["X_FILTER_RULES", "Market Bubble,marketbubble"],
-      ["X_SPACES_QUERY", "Market Bubble"]
-    ];
-  }
-
-  return [];
 }
