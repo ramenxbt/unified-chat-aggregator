@@ -224,12 +224,13 @@ function extractXTargetNames(env: LivePreflightEnv) {
     env.X_FILTER_RULES?.split(/\r?\n|,/)
       .map((rule) => rule.trim().match(/\bfrom:([A-Za-z0-9_]+)/)?.[1])
       .filter((sourceName): sourceName is string => Boolean(sourceName)) ?? [];
+  const targetNames = [...fromRules];
 
-  if (fromRules.length > 0) {
-    return fromRules;
+  if (env.X_SPACES_QUERY) {
+    targetNames.push(env.X_SPACES_QUERY);
   }
 
-  return env.X_SPACES_QUERY ? [env.X_SPACES_QUERY] : [];
+  return [...new Set(targetNames)];
 }
 
 function shellQuote(value: string) {

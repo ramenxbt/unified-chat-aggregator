@@ -46,12 +46,14 @@ describe("OBS handoff", () => {
       "Unified Chat - Signals",
       "Unified Chat - KICK MARKETBUBBLE Focus",
       "Unified Chat - TWITCH MARKETBUBBLE Focus",
-      "Unified Chat - X @MARKETBUBBLE Focus"
+      "Unified Chat - X @MARKETBUBBLE Focus",
+      "Unified Chat - X MARKET BUBBLE Focus"
     ]);
     expect(handoff.sources[0].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14");
     expect(handoff.sources[3].url).toBe("http://127.0.0.1:5260/?obs=1&sources=kick&limit=8&q=MARKETBUBBLE");
     expect(handoff.sources[4].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch&limit=8&q=MARKETBUBBLE");
     expect(handoff.sources[5].url).toBe("http://127.0.0.1:5260/?obs=1&sources=x&limit=8&q=MARKETBUBBLE");
+    expect(handoff.sources[6].url).toBe("http://127.0.0.1:5260/?obs=1&sources=x&limit=8&q=MARKET%20BUBBLE");
     expect(markdown).toContain("# OBS Browser Source Handoff");
     expect(markdown).toContain(`Commit: ${currentCommit()}`);
     expect(markdown).toContain("Unified Chat - All Sources");
@@ -65,7 +67,7 @@ describe("OBS handoff", () => {
     const json = JSON.parse(await readFile(result.files.json, "utf8"));
 
     expect(markdown).toContain("OBS Browser Source Handoff");
-    expect(json.sources).toHaveLength(6);
+    expect(json.sources).toHaveLength(7);
     expect(json.sources[0]).toMatchObject({
       name: "Unified Chat - All Sources",
       url: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"

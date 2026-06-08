@@ -45,7 +45,7 @@ describe("final recording readiness", () => {
     expect(formatted).toMatch(/Checked at: \d{4}-\d{2}-\d{2}T/);
     expect(formatted).toContain("PASS Strict connector preflight");
     expect(formatted).toContain("PASS Target source labels");
-    expect(formatted).toContain("KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)");
+    expect(formatted).toContain("KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE), X (MARKET BUBBLE)");
     expect(formatted).toContain("PASS Final QA report");
     expect(formatted).toContain("PASS Visual QA manifest");
     expect(formatted).toContain("PASS Final live run sheet");

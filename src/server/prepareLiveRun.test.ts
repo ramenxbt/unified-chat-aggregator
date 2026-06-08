@@ -49,6 +49,7 @@ describe("prepare live run", () => {
     expect(savedPlan).toContain("KICK (MARKETBUBBLE)");
     expect(savedPlan).toContain("TWITCH (MARKETBUBBLE)");
     expect(savedPlan).toContain("X (@MARKETBUBBLE)");
+    expect(savedPlan).toContain("X (MARKET BUBBLE)");
     expect(savedPlan).toContain("OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(savedPlan).toContain(
       "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json' --qa-dir qa --evidence-out qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"

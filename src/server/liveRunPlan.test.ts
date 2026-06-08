@@ -37,11 +37,17 @@ describe("live run plan", () => {
     expect(formatted).toContain(
       "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173"
     );
-    expect(plan.targetSourceLabels).toEqual(["KICK (MARKETBUBBLE)", "TWITCH (MARKETBUBBLE)", "X (@MARKETBUBBLE)"]);
+    expect(plan.targetSourceLabels).toEqual([
+      "KICK (MARKETBUBBLE)",
+      "TWITCH (MARKETBUBBLE)",
+      "X (@MARKETBUBBLE)",
+      "X (MARKET BUBBLE)"
+    ]);
     expect(formatted).toContain("Target source labels:");
     expect(formatted).toContain("KICK (MARKETBUBBLE)");
     expect(formatted).toContain("TWITCH (MARKETBUBBLE)");
     expect(formatted).toContain("X (@MARKETBUBBLE)");
+    expect(formatted).toContain("X (MARKET BUBBLE)");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain("tunnel health check: npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
     expect(plan.obs).toMatchObject({
