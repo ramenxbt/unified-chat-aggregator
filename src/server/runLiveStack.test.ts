@@ -31,6 +31,8 @@ const defaultProofGateCommand =
 const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
 const defaultSubmissionBundleCommand =
   "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle";
+const defaultFeedCommand = "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
+const defaultDashboardCommand = "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 
 describe("live stack runner", () => {
   it("builds feed and dashboard launch commands from the checked live plan", async () => {
@@ -285,6 +287,10 @@ function createLiveRunPlan() {
     "branch: main",
     "",
     "Live preflight: ready",
+    "",
+    "Final run commands:",
+    `  feed: ${defaultFeedCommand}`,
+    `  dashboard: ${defaultDashboardCommand}`,
     "",
     "Open:",
     "  OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",

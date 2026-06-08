@@ -275,6 +275,47 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a live run sheet without launch commands in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-launch-commands");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(liveRunPlanDir, "live-run-plan.txt"),
+      createLiveRunPlan(
+        "Live preflight: ready\n",
+        currentCommit(),
+        "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
+        defaultProofGateCommand(),
+        defaultEvidenceCheckCommand(),
+        defaultSubmissionBundleCommand(),
+        null,
+        null
+      ),
+      "utf8"
+    );
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: liveRunPlanDir,
+      liveRunPlanDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the feed command; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the dashboard command; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+  });
+
   it("flags a live run sheet without evidence packaging commands in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");
@@ -505,7 +546,9 @@ function createLiveRunPlan(
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   proofGateCommand: string | null = defaultProofGateCommand(),
   evidenceCheckCommand: string | null = defaultEvidenceCheckCommand(),
-  submissionBundleCommand: string | null = defaultSubmissionBundleCommand()
+  submissionBundleCommand: string | null = defaultSubmissionBundleCommand(),
+  feedCommand: string | null = defaultFeedCommand(),
+  dashboardCommand: string | null = defaultDashboardCommand()
 ) {
   const lines = [
     "Live run sheet:",
@@ -518,6 +561,12 @@ function createLiveRunPlan(
     "Open:",
     `  OBS all sources: ${obsAllSourcesUrl}`
   ];
+
+  if (feedCommand || dashboardCommand) {
+    lines.push("", "Final run commands:");
+    if (feedCommand) lines.push(`  feed: ${feedCommand}`);
+    if (dashboardCommand) lines.push(`  dashboard: ${dashboardCommand}`);
+  }
 
   if (proofGateCommand) {
     lines.push("", "Evidence outputs:", `  live proof gate: ${proofGateCommand}`);
@@ -546,6 +595,14 @@ function defaultEvidenceCheckCommand() {
 
 function defaultSubmissionBundleCommand() {
   return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle";
+}
+
+function defaultFeedCommand() {
+  return "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
+}
+
+function defaultDashboardCommand() {
+  return "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 }
 
 async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsHandoffJson()) {

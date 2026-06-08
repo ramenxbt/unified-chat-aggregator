@@ -42,6 +42,8 @@ export async function buildFinalReadinessReport(
     repo.commit,
     plan.urls.obsAllSources,
     {
+      feed: plan.commands.feed,
+      dashboard: plan.commands.dashboard,
       proofGate: plan.evidence.proofGateCommand,
       evidenceCheck: plan.evidence.evidenceCheckCommand,
       submissionBundle: plan.evidence.submissionBundleCommand
@@ -136,11 +138,13 @@ async function checkLiveRunPlan(
   runSheetPath: string,
   currentCommit: string | null,
   currentObsAllSourcesUrl: string,
-  currentEvidenceCommands: { proofGate: string; evidenceCheck: string; submissionBundle: string }
+  currentRunSheetCommands: { feed: string; dashboard: string; proofGate: string; evidenceCheck: string; submissionBundle: string }
 ): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
     const commit = content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
+    const expectedFeedCommand = extractRunSheetCommand(content, "feed");
+    const expectedDashboardCommand = extractRunSheetCommand(content, "dashboard");
     const expectedObsAllSourcesUrl = content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
     const expectedProofGateCommand = extractRunSheetCommand(content, "live proof gate");
     const expectedEvidenceCheckCommand = extractRunSheetCommand(content, "evidence check");
@@ -170,6 +174,38 @@ async function checkLiveRunPlan(
       };
     }
 
+    if (!expectedFeedCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the feed command; rerun live:prepare -- --out qa/live-run-plan.txt.`
+      };
+    }
+
+    if (expectedFeedCommand !== currentRunSheetCommands.feed) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} feed command does not match current live:ready launch options.`
+      };
+    }
+
+    if (!expectedDashboardCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the dashboard command; rerun live:prepare -- --out qa/live-run-plan.txt.`
+      };
+    }
+
+    if (expectedDashboardCommand !== currentRunSheetCommands.dashboard) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} dashboard command does not match current live:ready launch options.`
+      };
+    }
+
     if (!expectedObsAllSourcesUrl) {
       return {
         name: "Final live run sheet",
@@ -196,7 +232,7 @@ async function checkLiveRunPlan(
       };
     }
 
-    if (expectedProofGateCommand !== currentEvidenceCommands.proofGate) {
+    if (expectedProofGateCommand !== currentRunSheetCommands.proofGate) {
       return {
         name: "Final live run sheet",
         state: "setup",
@@ -214,7 +250,7 @@ async function checkLiveRunPlan(
       };
     }
 
-    if (expectedEvidenceCheckCommand !== currentEvidenceCommands.evidenceCheck) {
+    if (expectedEvidenceCheckCommand !== currentRunSheetCommands.evidenceCheck) {
       return {
         name: "Final live run sheet",
         state: "setup",
@@ -232,7 +268,7 @@ async function checkLiveRunPlan(
       };
     }
 
-    if (expectedSubmissionBundleCommand !== currentEvidenceCommands.submissionBundle) {
+    if (expectedSubmissionBundleCommand !== currentRunSheetCommands.submissionBundle) {
       return {
         name: "Final live run sheet",
         state: "setup",

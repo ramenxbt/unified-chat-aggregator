@@ -339,6 +339,8 @@ async function validateLiveRunPlan(
   const issues: string[] = [];
   const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
   const commit = extractLiveRunPlanCommit(liveRunPlan);
+  const expectedFeedCommand = extractLiveRunPlanFeedCommand(liveRunPlan);
+  const expectedDashboardCommand = extractLiveRunPlanDashboardCommand(liveRunPlan);
   const expectedObsAllSourcesUrl = extractLiveRunPlanObsAllSourcesUrl(liveRunPlan);
   const expectedProofGateCommand = extractLiveRunPlanProofGateCommand(liveRunPlan);
   const expectedEvidenceCheckCommand = extractLiveRunPlanEvidenceCheckCommand(liveRunPlan);
@@ -360,6 +362,14 @@ async function validateLiveRunPlan(
 
   if (!expectedObsAllSourcesUrl) {
     issues.push("qa/live-run-plan.txt is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
+  if (!expectedFeedCommand) {
+    issues.push("qa/live-run-plan.txt is missing the feed command; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
+  if (!expectedDashboardCommand) {
+    issues.push("qa/live-run-plan.txt is missing the dashboard command; rerun live:prepare -- --out qa/live-run-plan.txt");
   }
 
   if (!expectedProofGateCommand) {
@@ -386,6 +396,14 @@ function extractLiveRunPlanCommit(content: string) {
 
 function extractLiveRunPlanObsAllSourcesUrl(content: string) {
   return content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
+}
+
+function extractLiveRunPlanFeedCommand(content: string) {
+  return content.match(/^\s*feed:\s*(.+)$/m)?.[1];
+}
+
+function extractLiveRunPlanDashboardCommand(content: string) {
+  return content.match(/^\s*dashboard:\s*(.+)$/m)?.[1];
 }
 
 function extractLiveRunPlanProofGateCommand(content: string) {

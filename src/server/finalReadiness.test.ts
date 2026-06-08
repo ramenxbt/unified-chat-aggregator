@@ -28,6 +28,8 @@ const defaultProofGateCommand =
 const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
 const defaultSubmissionBundleCommand =
   "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle";
+const defaultFeedCommand = "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
+const defaultDashboardCommand = "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 
 describe("final recording readiness", () => {
   it("passes when strict connectors and final artifacts are current", async () => {
@@ -98,6 +100,26 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("but current live:ready options expect http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
   });
 
+  it("fails when the final run sheet is missing launch commands", async () => {
+    const qaDir = await createReadyQaDir({ feedCommand: null, dashboardCommand: null });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("is missing the feed command");
+  });
+
+  it("fails when the final run sheet launch commands do not match current options", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir, feedPort: 8899 });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("feed command does not match current live:ready launch options");
+  });
+
   it("fails when the final run sheet is missing the live proof gate command", async () => {
     const qaDir = await createReadyQaDir({ proofGateCommand: null });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir });
@@ -135,7 +157,9 @@ describe("final recording readiness", () => {
   });
 
   it("fails when the final run sheet evidence commands do not match current paths", async () => {
-    const qaDir = await createReadyQaDir();
+    const qaDir = await createReadyQaDir({
+      feedCommand: "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/final.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed"
+    });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir, databasePath: "data/final.sqlite" });
     const formatted = formatFinalReadinessReport(report);
 
@@ -146,7 +170,8 @@ describe("final recording readiness", () => {
 
   it("fails when OBS handoff URLs do not match the final run sheet", async () => {
     const qaDir = await createReadyQaDir({
-      obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
+      obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14",
+      dashboardCommand: "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5260"
     });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir, appPort: 5260 });
     const formatted = formatFinalReadinessReport(report);
@@ -170,6 +195,8 @@ describe("final recording readiness", () => {
 async function createReadyQaDir({
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   obsHandoffUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
+  feedCommand = defaultFeedCommand,
+  dashboardCommand = defaultDashboardCommand,
   proofGateCommand = defaultProofGateCommand,
   evidenceCheckCommand = defaultEvidenceCheckCommand,
   submissionBundleCommand = defaultSubmissionBundleCommand,
@@ -179,6 +206,8 @@ async function createReadyQaDir({
 }: {
   obsAllSourcesUrl?: string | null;
   obsHandoffUrl?: string;
+  feedCommand?: string | null;
+  dashboardCommand?: string | null;
   proofGateCommand?: string | null;
   evidenceCheckCommand?: string | null;
   submissionBundleCommand?: string | null;
@@ -191,7 +220,15 @@ async function createReadyQaDir({
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(
     path.join(qaDir, "live-run-plan.txt"),
-    createLiveRunPlan(runSheetCommit, obsAllSourcesUrl, proofGateCommand, evidenceCheckCommand, submissionBundleCommand),
+    createLiveRunPlan(
+      runSheetCommit,
+      obsAllSourcesUrl,
+      feedCommand,
+      dashboardCommand,
+      proofGateCommand,
+      evidenceCheckCommand,
+      submissionBundleCommand
+    ),
     "utf8"
   );
 
@@ -215,6 +252,8 @@ function createFinalQaReport() {
 function createLiveRunPlan(
   commit: string,
   obsAllSourcesUrl: string | null,
+  feedCommand: string | null,
+  dashboardCommand: string | null,
   proofGateCommand: string | null,
   evidenceCheckCommand: string | null,
   submissionBundleCommand: string | null
@@ -227,6 +266,12 @@ function createLiveRunPlan(
     "",
     "Live preflight: ready"
   ];
+
+  if (feedCommand || dashboardCommand) {
+    lines.push("", "Final run commands:");
+    if (feedCommand) lines.push(`  feed: ${feedCommand}`);
+    if (dashboardCommand) lines.push(`  dashboard: ${dashboardCommand}`);
+  }
 
   if (obsAllSourcesUrl) {
     lines.push("", "Open:", `  OBS all sources: ${obsAllSourcesUrl}`);
