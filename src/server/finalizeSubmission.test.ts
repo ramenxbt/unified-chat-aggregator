@@ -78,6 +78,39 @@ describe("submission finalizer", () => {
     expect(result.bundle.files.evidenceCheckReport).toBe(path.join(outputDir, "evidence-check.txt"));
     expect(await readFile(result.bundle.files.evidenceCheckReport as string, "utf8")).toContain("Throughput:");
   });
+
+  it("builds the final bundle from custom OBS and visual artifact directories", async () => {
+    const { archiveDir, databasePath, baseDir } = await createFinalizerFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(baseDir, "obs handoff");
+    const visualQaDir = path.join(baseDir, "visual proof");
+    const outputDir = path.join(baseDir, "submission-bundle");
+
+    await writeStrictQaArtifacts(qaDir, { obsHandoffDir, visualQaDir });
+
+    const result = await finalizeSubmission([
+      "--archive-dir",
+      archiveDir,
+      "--db",
+      databasePath,
+      "--out",
+      outputDir,
+      "--qa-dir",
+      qaDir,
+      "--obs-handoff-dir",
+      obsHandoffDir,
+      "--visual-qa-dir",
+      visualQaDir,
+      "--kick-tunnel-check",
+      path.join(qaDir, "kick-tunnel-check.txt")
+    ]);
+
+    expect(result.bundle.ok).toBe(true);
+    expect(result.bundle.files.obsHandoffJson).toBe(path.join(outputDir, "obs-browser-sources.json"));
+    expect(result.bundle.files.visualQaManifestJson).toBe(path.join(outputDir, "visual-qa-manifest.json"));
+    expect(await readFile(result.bundle.files.obsHandoffMarkdown as string, "utf8")).toContain("OBS Browser Source Handoff");
+    expect(await readFile(result.bundle.files.visualQaManifestMarkdown as string, "utf8")).toContain("Visual QA Manifest");
+  });
 });
 
 async function createFinalizerFixture() {
@@ -120,16 +153,26 @@ async function createFinalizerFixture() {
   };
 }
 
-async function writeStrictQaArtifacts(qaDir: string) {
-  await mkdir(path.join(qaDir, "obs"), { recursive: true });
-  await mkdir(path.join(qaDir, "visual"), { recursive: true });
+async function writeStrictQaArtifacts(
+  qaDir: string,
+  {
+    obsHandoffDir = path.join(qaDir, "obs"),
+    visualQaDir = path.join(qaDir, "visual")
+  }: {
+    obsHandoffDir?: string;
+    visualQaDir?: string;
+  } = {}
+) {
+  await mkdir(qaDir, { recursive: true });
+  await mkdir(obsHandoffDir, { recursive: true });
+  await mkdir(visualQaDir, { recursive: true });
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(path.join(qaDir, "final-readiness.txt"), createFinalReadinessProof(), "utf8");
   await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
-  await writeFile(path.join(qaDir, "obs", "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
-  await writeFile(path.join(qaDir, "obs", "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson()), "utf8");
-  await writeFile(path.join(qaDir, "visual", "manifest.md"), "# Visual QA Manifest\n", "utf8");
-  await writeFile(path.join(qaDir, "visual", "manifest.json"), JSON.stringify(createVisualQaManifestJson()), "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson()), "utf8");
+  await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
+  await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(createVisualQaManifestJson()), "utf8");
   await writeFile(path.join(qaDir, "kick-tunnel-check.txt"), createKickTunnelCheck(), "utf8");
 }
 
