@@ -375,11 +375,13 @@ async function findOptionalFiles(
 ) {
   const files: Record<string, string> = {};
   const sourceFiles: Record<string, string> = {};
+  const expectedFiles: Record<string, string> = {};
   const copyTasks: Array<() => Promise<void>> = [];
 
   for (const [sourceName, targetName, key] of candidates) {
     const sourcePath = path.resolve(sourceDir, sourceName);
     const targetPath = path.join(bundleDir, targetName);
+    expectedFiles[key] = sourcePath;
 
     if (await pathExists(sourcePath)) {
       files[key] = targetPath;
@@ -388,7 +390,7 @@ async function findOptionalFiles(
     }
   }
 
-  return { files, sourceFiles, copyTasks };
+  return { files, sourceFiles, expectedFiles, copyTasks };
 }
 
 async function validateClipQueue(clipQueue: Awaited<ReturnType<typeof findClipQueue>>) {
@@ -458,8 +460,10 @@ async function validateFinalQaReport(
   finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
+  const reportPath = displayPath(finalQaReports.sourceFiles.finalQaReportJson ?? finalQaReports.expectedFiles.finalQaReportJson);
+
   if (!finalQaReports.sourceFiles.finalQaReportJson) {
-    return ["qa/final-report.json is missing; run npm run qa:final before creating the final bundle"];
+    return [`${reportPath} is missing; run npm run qa:final before creating the final bundle`];
   }
 
   const issues: string[] = [];
@@ -474,20 +478,20 @@ async function validateFinalQaReport(
     };
 
     if (report.status !== "passed") {
-      issues.push(`qa/final-report.json status is ${report.status ?? "unknown"}; rerun npm run qa:final and resolve failures`);
+      issues.push(`${reportPath} status is ${report.status ?? "unknown"}; rerun npm run qa:final and resolve failures`);
     }
 
     if (report.repo?.commit && repo.commit && report.repo.commit !== repo.commit) {
       issues.push(
-        `qa/final-report.json was generated for commit ${report.repo.commit}, but current commit is ${repo.commit}; rerun npm run qa:final`
+        `${reportPath} was generated for commit ${report.repo.commit}, but current commit is ${repo.commit}; rerun npm run qa:final`
       );
     }
 
     if (report.repo?.trackedFilesClean !== true) {
-      issues.push("qa/final-report.json was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final");
+      issues.push(`${reportPath} was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final`);
     }
   } catch {
-    issues.push("qa/final-report.json could not be parsed; rerun npm run qa:final before creating the final bundle");
+    issues.push(`${reportPath} could not be parsed; rerun npm run qa:final before creating the final bundle`);
   }
 
   return issues;
@@ -502,6 +506,7 @@ async function validateLiveRunPlan(
   }
 
   const issues: string[] = [];
+  const runSheetPath = displayPath(liveRunPlans.sourceFiles.liveRunPlan);
   const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
   const commit = extractLiveRunPlanCommit(liveRunPlan);
   const expectedFeedCommand = extractLiveRunPlanFeedCommand(liveRunPlan);
@@ -513,40 +518,40 @@ async function validateLiveRunPlan(
 
   if (isPartialLiveRunPlan(liveRunPlan)) {
     issues.push(
-      "qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"
+      `${runSheetPath} was generated in partial mode; rerun live:prepare without --allow-partial for final proof`
     );
   }
 
   if (!commit || commit === "unknown") {
-    issues.push("qa/live-run-plan.txt is missing commit metadata; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing commit metadata; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   } else if (repo.commit && commit !== repo.commit) {
     issues.push(
-      `qa/live-run-plan.txt was generated for commit ${commit}, but current commit is ${repo.commit}; rerun live:prepare -- --out qa/live-run-plan.txt`
+      `${runSheetPath} was generated for commit ${commit}, but current commit is ${repo.commit}; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`
     );
   }
 
   if (!expectedObsAllSourcesUrl) {
-    issues.push("qa/live-run-plan.txt is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the OBS all-source URL; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedFeedCommand) {
-    issues.push("qa/live-run-plan.txt is missing the feed command; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the feed command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedDashboardCommand) {
-    issues.push("qa/live-run-plan.txt is missing the dashboard command; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the dashboard command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedProofGateCommand) {
-    issues.push("qa/live-run-plan.txt is missing the live proof gate command; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the live proof gate command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedEvidenceCheckCommand) {
-    issues.push("qa/live-run-plan.txt is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the evidence check command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedSubmissionBundleCommand) {
-    issues.push("qa/live-run-plan.txt is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt");
+    issues.push(`${runSheetPath} is missing the submission bundle command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   return {
@@ -593,13 +598,16 @@ async function validateObsHandoff(
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
   const issues: string[] = [];
+  const obsMarkdownPath = displayPath(obsHandoff.sourceFiles.obsHandoffMarkdown ?? obsHandoff.expectedFiles.obsHandoffMarkdown);
+  const obsJsonPath = displayPath(obsHandoff.sourceFiles.obsHandoffJson ?? obsHandoff.expectedFiles.obsHandoffJson);
+  const obsHandoffDir = displayPath(path.dirname(obsHandoff.expectedFiles.obsHandoffJson));
 
   if (!obsHandoff.sourceFiles.obsHandoffMarkdown) {
-    issues.push("qa/obs/obs-browser-sources.md is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle");
+    issues.push(`${obsMarkdownPath} is missing; run npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)} before creating the final bundle`);
   }
 
   if (!obsHandoff.sourceFiles.obsHandoffJson) {
-    issues.push("qa/obs/obs-browser-sources.json is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle");
+    issues.push(`${obsJsonPath} is missing; run npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)} before creating the final bundle`);
     return issues;
   }
 
@@ -621,34 +629,34 @@ async function validateObsHandoff(
     };
 
     if (!Array.isArray(handoff.sources) || handoff.sources.length < 3) {
-      issues.push("qa/obs/obs-browser-sources.json does not include the expected OBS browser sources; rerun npm run obs:handoff -- --out qa/obs");
+      issues.push(`${obsJsonPath} does not include the expected OBS browser sources; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}`);
     }
 
     const allSource = handoff.sources?.find((source) => source.name === "Unified Chat - All Sources");
 
     if (!allSource?.url?.includes("obs=1")) {
-      issues.push("qa/obs/obs-browser-sources.json is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out qa/obs");
+      issues.push(`${obsJsonPath} is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}`);
     }
 
     if (expectedObsAllSourcesUrl && allSource?.url && allSource.url !== expectedObsAllSourcesUrl) {
       issues.push(
-        `qa/obs/obs-browser-sources.json all-source URL ${allSource.url} does not match qa/live-run-plan.txt ${expectedObsAllSourcesUrl}; rerun npm run obs:handoff -- --out qa/obs with the same app port`
+        `${obsJsonPath} all-source URL ${allSource.url} does not match the live run sheet ${expectedObsAllSourcesUrl}; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)} with the same app port`
       );
     }
 
     if (repo.commit && handoff.repo?.commit !== repo.commit) {
       issues.push(
-        `qa/obs/obs-browser-sources.json was generated for commit ${handoff.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run obs:handoff -- --out qa/obs`
+        `${obsJsonPath} was generated for commit ${handoff.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}`
       );
     }
 
     const settings = handoff.browserSourceSettings;
 
     if (settings?.width !== 1280 || settings.height !== 720 || settings.fps !== 30 || !settings.customCss?.includes("rgba(0, 0, 0, 0)")) {
-      issues.push("qa/obs/obs-browser-sources.json has unexpected browser source settings; rerun npm run obs:handoff -- --out qa/obs");
+      issues.push(`${obsJsonPath} has unexpected browser source settings; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}`);
     }
   } catch {
-    issues.push("qa/obs/obs-browser-sources.json could not be parsed; rerun npm run obs:handoff -- --out qa/obs");
+    issues.push(`${obsJsonPath} could not be parsed; rerun npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}`);
   }
 
   return issues;
@@ -659,13 +667,15 @@ async function validateVisualQaManifest(
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
   const issues: string[] = [];
+  const visualMarkdownPath = displayPath(visualQaManifest.sourceFiles.visualQaManifestMarkdown ?? visualQaManifest.expectedFiles.visualQaManifestMarkdown);
+  const visualJsonPath = displayPath(visualQaManifest.sourceFiles.visualQaManifestJson ?? visualQaManifest.expectedFiles.visualQaManifestJson);
 
   if (!visualQaManifest.sourceFiles.visualQaManifestJson) {
     return issues;
   }
 
   if (!visualQaManifest.sourceFiles.visualQaManifestMarkdown) {
-    issues.push("qa/visual/manifest.md is missing; rerun npm run qa:visual");
+    issues.push(`${visualMarkdownPath} is missing; rerun npm run qa:visual`);
   }
 
   try {
@@ -678,15 +688,15 @@ async function validateVisualQaManifest(
 
     if (repo.commit && manifest.repo?.commit !== repo.commit) {
       issues.push(
-        `qa/visual/manifest.json was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run qa:visual`
+        `${visualJsonPath} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run qa:visual`
       );
     }
 
     if (!Array.isArray(manifest.captures) || manifest.captures.length < 3) {
-      issues.push("qa/visual/manifest.json does not include the expected desktop, mobile, and OBS captures; rerun npm run qa:visual");
+      issues.push(`${visualJsonPath} does not include the expected desktop, mobile, and OBS captures; rerun npm run qa:visual`);
     }
   } catch {
-    issues.push("qa/visual/manifest.json could not be parsed; rerun npm run qa:visual");
+    issues.push(`${visualJsonPath} could not be parsed; rerun npm run qa:visual`);
   }
 
   return issues;
@@ -696,9 +706,11 @@ async function validateKickTunnelCheck(
   kickTunnelCheck: Awaited<ReturnType<typeof findKickTunnelCheck>>,
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
+  const tunnelPath = displayPath(kickTunnelCheck.sourceFiles.kickTunnelCheck);
+
   if (!kickTunnelCheck.files.kickTunnelCheck) {
     return [
-      "qa/kick-tunnel-check.txt is missing; run npm run live:tunnel -- --out qa/kick-tunnel-check.txt after the capture stack starts"
+      `${tunnelPath} is missing; run npm run live:tunnel -- --out ${shellQuote(tunnelPath)} after the capture stack starts`
     ];
   }
 
@@ -707,18 +719,18 @@ async function validateKickTunnelCheck(
   const commit = content.match(/^Repo commit:\s*(\S+)/m)?.[1] ?? null;
 
   if (!/^Kick tunnel:\s*ready$/m.test(content)) {
-    issues.push("qa/kick-tunnel-check.txt does not say Kick tunnel: ready; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+    issues.push(`${tunnelPath} does not say Kick tunnel: ready; rerun npm run live:tunnel -- --out ${shellQuote(tunnelPath)}`);
   }
 
   if (!/^URL:\s*https:\/\/\S+/m.test(content)) {
-    issues.push("qa/kick-tunnel-check.txt is missing the public HTTPS tunnel URL; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+    issues.push(`${tunnelPath} is missing the public HTTPS tunnel URL; rerun npm run live:tunnel -- --out ${shellQuote(tunnelPath)}`);
   }
 
   if (!commit || commit === "unknown") {
-    issues.push("qa/kick-tunnel-check.txt is missing commit metadata; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+    issues.push(`${tunnelPath} is missing commit metadata; rerun npm run live:tunnel -- --out ${shellQuote(tunnelPath)}`);
   } else if (repo.commit && commit !== repo.commit) {
     issues.push(
-      `qa/kick-tunnel-check.txt was generated for commit ${commit}, but current commit is ${repo.commit}; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt`
+      `${tunnelPath} was generated for commit ${commit}, but current commit is ${repo.commit}; rerun npm run live:tunnel -- --out ${shellQuote(tunnelPath)}`
     );
   }
 
@@ -736,6 +748,30 @@ async function pathExists(filePath: string) {
 
 function formatNumber(value: number) {
   return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+}
+
+function displayPath(filePath: string | undefined) {
+  if (!filePath) return "unknown";
+
+  const resolvedPath = path.resolve(filePath);
+  const relativePath = path.relative(process.cwd(), resolvedPath);
+
+  if (relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
+    return relativePath;
+  }
+
+  const parts = resolvedPath.split(path.sep);
+  const qaIndex = parts.lastIndexOf("qa");
+
+  return qaIndex >= 0 ? parts.slice(qaIndex).join(path.sep) : resolvedPath;
+}
+
+function shellQuote(value: string) {
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(value)) {
+    return value;
+  }
+
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 async function runCli() {

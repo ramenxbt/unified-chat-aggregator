@@ -302,17 +302,18 @@ describe("submission bundle", () => {
   it("requires a final QA report for a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const outputDir = path.join(baseDir, "bundle-missing-qa");
+    const missingQaDir = path.join(baseDir, "missing-qa");
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
-      finalQaReportDir: path.join(baseDir, "missing-qa"),
-      liveRunPlanDir: path.join(baseDir, "missing-qa")
+      finalQaReportDir: missingQaDir,
+      liveRunPlanDir: missingQaDir
     });
 
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
-      "qa/final-report.json is missing; run npm run qa:final before creating the final bundle"
+      `${path.join(missingQaDir, "final-report.json")} is missing; run npm run qa:final before creating the final bundle`
     );
   });
 
@@ -525,6 +526,7 @@ describe("submission bundle", () => {
   it("requires OBS handoff files for a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
+    const missingObsDir = path.join(baseDir, "missing-obs");
     const outputDir = path.join(baseDir, "bundle-missing-obs");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
@@ -536,16 +538,14 @@ describe("submission bundle", () => {
       outputDir,
       finalQaReportDir,
       liveRunPlanDir: finalQaReportDir,
-      obsHandoffDir: path.join(baseDir, "missing-obs")
+      obsHandoffDir: missingObsDir
     });
 
     expect(result.ok).toBe(false);
-    expect(result.artifactIssues).toContain(
-      "qa/obs/obs-browser-sources.md is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle"
-    );
-    expect(result.artifactIssues).toContain(
-      "qa/obs/obs-browser-sources.json is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle"
-    );
+    const missingObsIssues = result.artifactIssues.filter((issue) => issue.includes("missing-obs/obs-browser-sources"));
+    expect(missingObsIssues.some((issue) => issue.includes("missing-obs/obs-browser-sources.md is missing"))).toBe(true);
+    expect(missingObsIssues.some((issue) => issue.includes("missing-obs/obs-browser-sources.json is missing"))).toBe(true);
+    expect(missingObsIssues.every((issue) => issue.includes("npm run obs:handoff -- --out"))).toBe(true);
   });
 
   it("flags malformed OBS handoff JSON in a strict final bundle", async () => {
@@ -601,7 +601,7 @@ describe("submission bundle", () => {
 
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
-      "qa/obs/obs-browser-sources.json all-source URL http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14 does not match qa/live-run-plan.txt http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14; rerun npm run obs:handoff -- --out qa/obs with the same app port"
+      "qa/obs/obs-browser-sources.json all-source URL http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14 does not match the live run sheet http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14; rerun npm run obs:handoff -- --out qa/obs with the same app port"
     );
   });
 
