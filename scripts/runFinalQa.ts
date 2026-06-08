@@ -28,6 +28,8 @@ type FinalQaReport = {
     commit: string;
     branch: string;
     remote: string;
+    trackedFilesClean: boolean;
+    trackedChanges: string[];
   };
   reportFiles: {
     markdown: string;
@@ -129,6 +131,7 @@ export function formatFinalQaReportMarkdown(report: FinalQaReport) {
     `Commit: ${report.repo.commit}`,
     `Branch: ${report.repo.branch}`,
     `Remote: ${report.repo.remote}`,
+    `Tracked files clean: ${report.repo.trackedFilesClean ? "yes" : "no"}`,
     "",
     "## Steps",
     "",
@@ -155,10 +158,17 @@ function writeFinalQaReport(report: FinalQaReport) {
 }
 
 function readRepoMetadata() {
+  const trackedChanges = runGit(["status", "--short", "--untracked-files=no"])
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   return {
     commit: runGit(["rev-parse", "--short", "HEAD"]),
     branch: runGit(["branch", "--show-current"]) || "detached",
-    remote: runGit(["remote", "get-url", "origin"]) || "unknown"
+    remote: runGit(["remote", "get-url", "origin"]) || "unknown",
+    trackedFilesClean: trackedChanges.length === 0,
+    trackedChanges
   };
 }
 

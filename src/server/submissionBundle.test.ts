@@ -173,6 +173,31 @@ describe("submission bundle", () => {
     expect(result.ok).toBe(false);
     expect(result.artifactIssues.some((issue) => issue.includes("was generated for commit stale123"))).toBe(true);
   });
+
+  it("flags a dirty-worktree final QA report in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-dirty-qa");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(
+      path.join(finalQaReportDir, "final-report.json"),
+      JSON.stringify(createFinalQaReport({ trackedFilesClean: false })),
+      "utf8"
+    );
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-report.json was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final"
+    );
+  });
 });
 
 async function createBundleFixture() {
@@ -216,11 +241,12 @@ async function createBundleFixture() {
   };
 }
 
-function createFinalQaReport({ commit = currentCommit() } = {}) {
+function createFinalQaReport({ commit = currentCommit(), trackedFilesClean = true } = {}) {
   return {
     status: "passed",
     repo: {
-      commit
+      commit,
+      trackedFilesClean
     }
   };
 }

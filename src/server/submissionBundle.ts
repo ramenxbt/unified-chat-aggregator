@@ -294,6 +294,7 @@ async function validateFinalQaReport(
       status?: string;
       repo?: {
         commit?: string | null;
+        trackedFilesClean?: boolean;
       };
     };
 
@@ -305,6 +306,10 @@ async function validateFinalQaReport(
       issues.push(
         `qa/final-report.json was generated for commit ${report.repo.commit}, but current commit is ${repo.commit}; rerun npm run qa:final`
       );
+    }
+
+    if (report.repo?.trackedFilesClean !== true) {
+      issues.push("qa/final-report.json was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final");
     }
   } catch {
     issues.push("qa/final-report.json could not be parsed; rerun npm run qa:final before creating the final bundle");

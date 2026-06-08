@@ -10,7 +10,9 @@ describe("final QA report", () => {
       repo: {
         commit: "abc1234",
         branch: "main",
-        remote: "https://github.com/ramenxbt/unified-chat-aggregator.git"
+        remote: "https://github.com/ramenxbt/unified-chat-aggregator.git",
+        trackedFilesClean: true,
+        trackedChanges: []
       },
       reportFiles: {
         markdown: "qa/final-report.md",
@@ -32,6 +34,7 @@ describe("final QA report", () => {
     expect(markdown).toContain("# Final QA Report");
     expect(markdown).toContain("Status: passed");
     expect(markdown).toContain("Commit: abc1234");
+    expect(markdown).toContain("Tracked files clean: yes");
     expect(markdown).toContain("| Repository hygiene | `npm run qa:repo` | passed | 1.00s |");
   });
 });
