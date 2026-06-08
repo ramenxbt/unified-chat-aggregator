@@ -118,17 +118,21 @@ The diagnostics rail includes an `Accounts` roster with live source-account acti
 
 The `Review queue` flags held, deleted, or spam-risk messages when those signals are present in normalized events. It gives the operator a quick way to inspect questionable chat without mutating the platform.
 
+The `Clip queue` lets the operator mark selected messages during the stream. Marked clips preserve the full normalized event, source-account label, and clip timestamp, stay visible in the run-proof strip, and can be exported as a separate JSON file for choosing the best submission moments after the recording.
+
 The diagnostics rail includes a `Performance` panel with current buffer throughput, average latency, p95 latency, and latest event freshness for visible proof during the recording.
 
 The diagnostics rail includes a `Submission checklist` panel that tracks whether the current run has live WebSocket transport, Twitch/Kick/X coverage, account-qualified source labels, active recording proof, and visible performance metrics before the final capture.
 
-The feed panel includes a compact `Run proof` strip for dashboard, submission, and OBS captures. It keeps transport state, platform coverage, account-label count, p95 latency, and recording count visible even when operator rails are hidden.
+The feed panel includes a compact `Run proof` strip for dashboard, submission, and OBS captures. It keeps transport state, platform coverage, account-label count, p95 latency, recording count, and clip count visible even when operator rails are hidden.
 
 The diagnostics rail includes a `Readiness` panel. In fixture mode it shows the exact connector env vars and public webhook setup still needed for Twitch, Kick, and X before a real stream recording.
 
 Use `Save current buffer` to persist the current in-browser feed buffer to local sessions. The app keeps the latest 12 saved sessions and can load any saved session back into replay mode without needing a JSON file.
 
 Recordings can be exported as JSON for replay or CSV for spreadsheet review.
+
+Clip queues can be exported as JSON for a compact list of the exact marked messages to use in the final submission edit.
 
 Use `Import recording JSON` to load a previous export back into the dashboard as replay mode. This is useful for rehearsing or recording the submission if a live connector is unavailable.
 

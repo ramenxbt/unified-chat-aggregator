@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   AtSign,
   Ban,
+  BookmarkCheck,
+  BookmarkPlus,
   CheckCircle2,
   Circle,
   Download,
@@ -72,6 +74,7 @@ export function App() {
   const [submissionMode, setSubmissionMode] = useState(obsMode);
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
+  const [clipQueue, setClipQueue] = useState<ClipItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
   const [sourceAccountFilter, setSourceAccountFilter] = useState<FeedEntityFilter | null>(null);
@@ -135,8 +138,15 @@ export function App() {
   const performanceSummary = useMemo(() => buildPerformanceSummary(feedEvents), [feedEvents]);
   const proofStripItems = useMemo(
     () =>
-      buildProofStripItems(feedEvents, effectiveTransportState, recording, recordedEvents.length, performanceSummary),
-    [effectiveTransportState, feedEvents, performanceSummary, recordedEvents.length, recording]
+      buildProofStripItems(
+        feedEvents,
+        effectiveTransportState,
+        recording,
+        recordedEvents.length,
+        clipQueue.length,
+        performanceSummary
+      ),
+    [clipQueue.length, effectiveTransportState, feedEvents, performanceSummary, recordedEvents.length, recording]
   );
   const submissionChecklistItems = useMemo(
     () => buildSubmissionChecklistItems(feedEvents, effectiveTransportState, recording, recordedEvents.length),
@@ -232,6 +242,39 @@ export function App() {
 
   function exportRecordingCsv() {
     downloadBlob(recordingEventsToCsv(recordedEvents), "text/csv;charset=utf-8", "csv");
+  }
+
+  function exportClipQueue() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: effectiveTransportLabel,
+      transportState: effectiveTransportState,
+      clipCount: clipQueue.length,
+      clips: clipQueue
+    };
+
+    downloadBlob(JSON.stringify(payload, null, 2), "application/json", "json", "market-bubble-clips");
+  }
+
+  function toggleClipEvent(event: UnifiedEvent) {
+    setClipQueue((currentClips) => {
+      if (currentClips.some((clip) => clip.event.id === event.id)) {
+        return currentClips.filter((clip) => clip.event.id !== event.id);
+      }
+
+      return [
+        {
+          clippedAt: new Date().toISOString(),
+          event
+        },
+        ...currentClips
+      ].slice(0, 24);
+    });
+  }
+
+  function selectClipEvent(clip: ClipItem) {
+    setSelectedEventId(clip.event.id);
+    setPinnedToLive(false);
   }
 
   async function copyReplayLink() {
@@ -347,6 +390,7 @@ export function App() {
     clear();
     setAuthorFilter(null);
     setSourceAccountFilter(null);
+    setClipQueue([]);
   }
 
   function toggleAuthorFilter(profile: AuthorProfile) {
@@ -500,6 +544,22 @@ export function App() {
               {recording ? <Square size={15} /> : <Video size={17} />}
               <span>{recording ? "Stop" : "Record"}</span>
             </button>
+            <button
+              className="icon-button"
+              data-active={Boolean(selectedEvent && clipQueue.some((clip) => clip.event.id === selectedEvent.id))}
+              disabled={!selectedEvent}
+              onClick={() => {
+                if (selectedEvent) toggleClipEvent(selectedEvent);
+              }}
+              type="button"
+            >
+              {selectedEvent && clipQueue.some((clip) => clip.event.id === selectedEvent.id) ? (
+                <BookmarkCheck size={16} />
+              ) : (
+                <BookmarkPlus size={16} />
+              )}
+              <span>Clip</span>
+            </button>
             <button className="icon-button" onClick={clearFeed} type="button">
               <Trash2 size={17} />
               <span>{importedReplay ? "Exit replay" : "Clear"}</span>
@@ -528,6 +588,7 @@ export function App() {
           <span>{paused ? "Paused" : "Streaming"}</span>
           <span>{effectiveTransportState}</span>
           <span>{recordedEvents.length} recorded</span>
+          <span>{clipQueue.length} clips</span>
           {sourceAccountFilter ? <span>Source: {sourceAccountFilter.label}</span> : null}
           {authorFilter ? <span>Author: {authorFilter.label}</span> : null}
           <span>{feedOrder === "newest" ? "Live at top" : "Live at bottom"}</span>
@@ -548,6 +609,7 @@ export function App() {
                 onSelect={() => setSelectedEventId(event.id)}
                 query={query}
                 selected={event.id === selectedEvent?.id}
+                clipped={clipQueue.some((clip) => clip.event.id === event.id)}
               />
             ))
           ) : (
@@ -569,6 +631,16 @@ export function App() {
         <section className="detail-section">
           <SectionTitle icon={<AlertTriangle size={15} />} title="Review queue" />
           <ModerationQueue items={moderationItems} onReview={reviewModerationItem} />
+        </section>
+
+        <section className="detail-section">
+          <SectionTitle icon={<BookmarkCheck size={15} />} title="Clip queue" />
+          <ClipQueuePanel
+            clips={clipQueue}
+            onClear={() => setClipQueue([])}
+            onRemove={(eventId) => setClipQueue((currentClips) => currentClips.filter((clip) => clip.event.id !== eventId))}
+            onSelect={selectClipEvent}
+          />
         </section>
 
         <section className="detail-section">
@@ -663,6 +735,9 @@ export function App() {
           >
             Export recording CSV
           </button>
+          <button className="wide-button" disabled={clipQueue.length === 0} onClick={exportClipQueue} type="button">
+            Export clip queue JSON
+          </button>
           <button className="wide-button" disabled={feedEvents.length === 0} onClick={() => void copyReplayLink()} type="button">
             Copy replay link
           </button>
@@ -689,6 +764,11 @@ type AppTransportState = ReturnType<typeof useUnifiedFeed>["transportState"] | "
 type FeedEntityFilter = {
   key: string;
   label: string;
+};
+
+type ClipItem = {
+  clippedAt: string;
+  event: UnifiedEvent;
 };
 
 type FeedOrder = "newest" | "oldest";
@@ -786,13 +866,13 @@ function buildRecordingExport(
   };
 }
 
-function downloadBlob(content: string, type: string, extension: "csv" | "json") {
+function downloadBlob(content: string, type: string, extension: "csv" | "json", prefix = "market-bubble-feed") {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `market-bubble-feed-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
+  link.download = `${prefix}-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -1027,11 +1107,13 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 }
 
 function EventRow({
+  clipped,
   event,
   onSelect,
   query,
   selected
 }: {
+  clipped: boolean;
   event: UnifiedEvent;
   onSelect: () => void;
   query: string;
@@ -1049,6 +1131,7 @@ function EventRow({
   return (
     <button
       className="event-row native-event-row"
+      data-clipped={clipped}
       data-platform={event.platform}
       data-selected={selected}
       onClick={onSelect}
@@ -1092,7 +1175,7 @@ function EventRow({
           <EventText event={event} query={query} />
         </span>
       )}
-      <span className="signal-score">{signalScore > 0 ? signalScore : ""}</span>
+      <span className="signal-score">{clipped ? "CLIP" : signalScore > 0 ? signalScore : ""}</span>
     </button>
   );
 }
@@ -1229,6 +1312,58 @@ function ModerationQueue({
           <span className="review-copy">{item.detail}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+function ClipQueuePanel({
+  clips,
+  onClear,
+  onRemove,
+  onSelect
+}: {
+  clips: ClipItem[];
+  onClear: () => void;
+  onRemove: (eventId: string) => void;
+  onSelect: (clip: ClipItem) => void;
+}) {
+  if (clips.length === 0) {
+    return (
+      <div className="empty-detail compact-empty">
+        <span>No clipped moments yet.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="clip-queue">
+      <div className="clip-queue-actions">
+        <span>{clips.length} marked</span>
+        <button className="inline-action" onClick={onClear} type="button">
+          Clear
+        </button>
+      </div>
+      <div className="clip-list">
+        {clips.map((clip) => (
+          <div className="clip-item" key={clip.event.id}>
+            <button className="clip-select" onClick={() => onSelect(clip)} type="button">
+              <span className="clip-heading">
+                <strong>{formatPlatformSourceLabel(clip.event)}</strong>
+                <span>{formatRelativeTime(clip.clippedAt)}</span>
+              </span>
+              <span className="clip-copy">{clip.event.text || clip.event.kind}</span>
+            </button>
+            <button
+              aria-label={`Remove clip ${formatPlatformSourceLabel(clip.event)}`}
+              className="clip-remove"
+              onClick={() => onRemove(clip.event.id)}
+              type="button"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1819,6 +1954,7 @@ function buildProofStripItems(
   transportState: AppTransportState,
   recording: boolean,
   recordedEventCount: number,
+  clipCount: number,
   performance: PerformanceSummary
 ): ProofStripItem[] {
   const platformCounts = platforms.map((platform) => ({
@@ -1854,6 +1990,11 @@ function buildProofStripItems(
       label: "Recording",
       value: recording ? `${recordedEventCount}` : recordedEventCount > 0 ? `${recordedEventCount}` : "idle",
       state: recording ? "ready" : recordedEventCount > 0 ? "watching" : "setup"
+    },
+    {
+      label: "Clips",
+      value: `${clipCount}`,
+      state: clipCount > 0 ? "watching" : "setup"
     }
   ];
 }

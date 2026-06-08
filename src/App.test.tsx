@@ -245,6 +245,28 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /export recording csv/i })).toBeEnabled();
   });
 
+  it("marks selected events in a submission clip queue", async () => {
+    render(<App />);
+
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips0");
+    expect(screen.getByText("No clipped moments yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /export clip queue json/i })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: /^clip$/i }));
+
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips1");
+    expect(screen.getByText("1 clips")).toBeInTheDocument();
+    expect(screen.getByText("1 marked")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /export clip queue json/i })).toBeEnabled();
+    expect(screen.getByRole("log")).toHaveTextContent("CLIP");
+    expect(screen.getAllByText("TWITCH (ANSEM)").length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("button", { name: /remove clip twitch \(ansem\)/i }));
+
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips0");
+    expect(screen.getByText("No clipped moments yet.")).toBeInTheDocument();
+  });
+
   it("copies a shareable replay link for the current buffer", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
 

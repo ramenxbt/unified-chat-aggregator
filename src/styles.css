@@ -489,6 +489,15 @@ button {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent), transparent 90%), rgba(255, 255, 255, 0.026));
 }
 
+.event-row[data-clipped="true"] {
+  border-color: rgba(229, 196, 107, 0.42);
+}
+
+.event-row[data-clipped="true"] .signal-score {
+  color: var(--gold);
+  font-weight: 760;
+}
+
 .platform-label {
   display: inline-flex;
   align-items: center;
@@ -783,6 +792,113 @@ button {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.25;
+}
+
+.clip-queue {
+  margin-top: 12px;
+}
+
+.clip-queue-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inline-action {
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 9px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.032);
+  cursor: pointer;
+}
+
+.inline-action:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.clip-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.clip-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(229, 196, 107, 0.28);
+  border-radius: 8px;
+  background: rgba(229, 196, 107, 0.045);
+}
+
+.clip-select,
+.clip-remove {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.clip-select {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 10px;
+  text-align: left;
+}
+
+.clip-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 10px;
+}
+
+.clip-heading strong,
+.clip-heading span,
+.clip-copy {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clip-heading strong {
+  color: var(--gold);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.clip-heading span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.clip-copy {
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.clip-remove {
+  display: grid;
+  width: 34px;
+  min-width: 34px;
+  place-items: center;
+  border-left: 1px solid rgba(229, 196, 107, 0.22);
+  color: var(--muted);
+}
+
+.clip-select:hover,
+.clip-remove:hover {
+  background: rgba(229, 196, 107, 0.065);
 }
 
 .account-list {

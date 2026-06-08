@@ -125,9 +125,10 @@ Start the capture stack with `npm run live:stack -- --require-ready --with-proof
 3. Open `qa/obs/obs-browser-sources.md`.
 4. Add `Unified Chat - All Sources` as an OBS browser source.
 5. Apply the `OBS browser source settings` from `npm run live:prepare`.
-6. Record the overlay plus the real Market Bubble stream.
-7. Stop recording in the dashboard.
-8. Export recording JSON and CSV.
+6. Mark the strongest messages with `Clip` as they happen so the exact source-account labels are preserved for editing.
+7. Record the overlay plus the real Market Bubble stream.
+8. Stop recording in the dashboard.
+9. Export recording JSON, recording CSV, and clip queue JSON.
 
 Use these backup OBS URLs if needed:
 
@@ -182,6 +183,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - `submission-notes.md` reviewed for repo commit, source labels, proof metrics, and external artifacts to attach.
 - Exported recording JSON.
 - Exported recording CSV.
+- Exported clip queue JSON.
 - Server archive folder with `manifest.json`, `events.jsonl`, and `statuses.jsonl`.
 - SQLite database when `FEED_DB_PATH` is enabled.
 - Final repo pushed to `ramenxbt/unified-chat-aggregator`.

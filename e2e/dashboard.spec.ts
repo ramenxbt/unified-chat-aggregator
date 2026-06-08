@@ -27,6 +27,13 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
   await expect(page.getByText("TWITCH_CLIENT_ID")).toBeVisible();
   await expect(page.getByText("KICK_WEBHOOK_ENABLED=true")).toBeVisible();
   await expect(page.getByText("X_BEARER_TOKEN")).toBeVisible();
+
+  await page.getByRole("button", { name: "Clip", exact: true }).click();
+
+  await expect(page.getByLabel("Run proof")).toContainText("Clips");
+  await expect(page.getByLabel("Run proof")).toContainText("1");
+  await expect(page.getByText("1 marked")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export clip queue JSON" })).toBeEnabled();
 });
 
 test("recording and local replay workflows are browser-ready", async ({ page }) => {
