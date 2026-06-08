@@ -36,6 +36,18 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
       index += 1;
       continue;
     }
+
+    if (arg === "--proof-timeout-ms" || arg === "--timeout-ms") {
+      parsed.proofTimeoutMs = Number(args[index + 1]);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--proof-interval-ms" || arg === "--interval-ms") {
+      parsed.proofIntervalMs = Number(args[index + 1]);
+      index += 1;
+      continue;
+    }
   }
 
   return parsed;

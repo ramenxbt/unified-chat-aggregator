@@ -60,7 +60,11 @@ describe("live stack runner", () => {
         "--min-source-labels",
         "3",
         "--max-p95-latency-ms",
-        "5000"
+        "5000",
+        "--timeout-ms",
+        "120000",
+        "--interval-ms",
+        "1000"
       ],
       env: {}
     });
@@ -82,6 +86,8 @@ describe("live stack runner", () => {
     expect(plan.processes.dashboard.args).toEqual(["run", "dev", "--", "--host", "127.0.0.1", "--port", "5260"]);
     expect(plan.processes.dashboard.env.VITE_FEED_WS_URL).toBe("ws://127.0.0.1:8899");
     expect(plan.processes.proofGate.args).toContain("data/final sessions");
+    expect(plan.processes.proofGate.args).toContain("120000");
+    expect(plan.processes.proofGate.args).toContain("1000");
   });
 
   it("dry-runs without spawning long-lived processes", async () => {

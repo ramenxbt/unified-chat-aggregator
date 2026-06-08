@@ -298,7 +298,7 @@ function delay(ms: number) {
 async function runCli() {
   loadLocalEnv();
 
-  const args = parseArgs(process.argv.slice(2), process.env);
+  const args = parseLiveProofGateArgs(process.argv.slice(2), process.env);
   const report = args.watch ? await watchLiveProofGate(args) : await buildLiveProofGateReport(args);
 
   console.log(formatLiveProofGateReport(report));
@@ -308,11 +308,13 @@ async function runCli() {
   }
 }
 
-function parseArgs(args: string[], env: NodeJS.ProcessEnv = process.env): LiveProofGateOptions {
+export function parseLiveProofGateArgs(args: string[], env: NodeJS.ProcessEnv = process.env): LiveProofGateOptions {
   const parsed: LiveProofGateOptions = {
     minEvents: parseOptionalNumber(env.PROOF_MIN_EVENTS),
     minSourceLabels: parseOptionalNumber(env.PROOF_MIN_SOURCE_LABELS),
-    maxP95LatencyMs: parseOptionalNumber(env.PROOF_MAX_P95_LATENCY_MS)
+    maxP95LatencyMs: parseOptionalNumber(env.PROOF_MAX_P95_LATENCY_MS),
+    timeoutMs: parseOptionalNumber(env.PROOF_TIMEOUT_MS),
+    intervalMs: parseOptionalNumber(env.PROOF_INTERVAL_MS)
   };
 
   for (let index = 0; index < args.length; index += 1) {

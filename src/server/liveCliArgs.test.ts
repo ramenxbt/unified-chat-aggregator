@@ -13,14 +13,20 @@ describe("live CLI args", () => {
         "--archive-dir",
         "data/final sessions",
         "--db",
-        "data/final proof.sqlite"
+        "data/final proof.sqlite",
+        "--proof-timeout-ms",
+        "300000",
+        "--proof-interval-ms",
+        "2000"
       ])
     ).toEqual({
       allowPartial: true,
       feedPort: 8899,
       appPort: 5260,
       archiveDir: "data/final sessions",
-      databasePath: "data/final proof.sqlite"
+      databasePath: "data/final proof.sqlite",
+      proofTimeoutMs: 300000,
+      proofIntervalMs: 2000
     });
   });
 

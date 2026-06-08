@@ -50,7 +50,11 @@ export async function buildLiveStackLaunchPlan(
     "--min-source-labels",
     String(doctor.plan.proofGate.minSourceLabels),
     "--max-p95-latency-ms",
-    String(doctor.plan.proofGate.maxP95LatencyMs)
+    String(doctor.plan.proofGate.maxP95LatencyMs),
+    "--timeout-ms",
+    String(doctor.plan.proofGate.timeoutMs),
+    "--interval-ms",
+    String(doctor.plan.proofGate.intervalMs)
   ];
 
   if (options.allowPartial) {

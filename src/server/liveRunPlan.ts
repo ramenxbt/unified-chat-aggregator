@@ -6,6 +6,8 @@ export type LiveRunPlanOptions = {
   feedPort?: number;
   archiveDir?: string;
   databasePath?: string;
+  proofTimeoutMs?: number;
+  proofIntervalMs?: number;
 };
 
 export type LiveRunPlan = {
@@ -15,6 +17,8 @@ export type LiveRunPlan = {
     minEvents: number;
     minSourceLabels: number;
     maxP95LatencyMs: number;
+    timeoutMs: number;
+    intervalMs: number;
   };
   commands: {
     feed: string;
@@ -58,7 +62,9 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   const proofGate = {
     minEvents: parsePositiveNumber(env.PROOF_MIN_EVENTS, 25),
     minSourceLabels: parsePositiveNumber(env.PROOF_MIN_SOURCE_LABELS, 3),
-    maxP95LatencyMs: parsePositiveNumber(env.PROOF_MAX_P95_LATENCY_MS, 5000)
+    maxP95LatencyMs: parsePositiveNumber(env.PROOF_MAX_P95_LATENCY_MS, 5000),
+    timeoutMs: options.proofTimeoutMs ?? parsePositiveNumber(env.PROOF_TIMEOUT_MS, 120_000),
+    intervalMs: options.proofIntervalMs ?? parsePositiveNumber(env.PROOF_INTERVAL_MS, 1000)
   };
   const partialFlag = options.allowPartial ? " --allow-partial" : "";
   const kickWebhookPort = env.KICK_WEBHOOK_PORT ?? "8788";
@@ -111,7 +117,9 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         "--watch",
         `--min-events ${proofGate.minEvents}`,
         `--min-source-labels ${proofGate.minSourceLabels}`,
-        `--max-p95-latency-ms ${proofGate.maxP95LatencyMs}${partialFlag}`
+        `--max-p95-latency-ms ${proofGate.maxP95LatencyMs}`,
+        `--timeout-ms ${proofGate.timeoutMs}`,
+        `--interval-ms ${proofGate.intervalMs}${partialFlag}`
       ].join(" "),
       evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}${partialFlag}`,
       submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle${partialFlag}`,

@@ -70,7 +70,9 @@ describe("live run plan", () => {
         ...completeEnv,
         PROOF_MIN_EVENTS: "100",
         PROOF_MIN_SOURCE_LABELS: "5",
-        PROOF_MAX_P95_LATENCY_MS: "2500"
+        PROOF_MAX_P95_LATENCY_MS: "2500",
+        PROOF_TIMEOUT_MS: "300000",
+        PROOF_INTERVAL_MS: "2000"
       },
       {
         archiveDir: "data/final sessions",
@@ -82,10 +84,12 @@ describe("live run plan", () => {
     expect(plan.proofGate).toEqual({
       minEvents: 100,
       minSourceLabels: 5,
-      maxP95LatencyMs: 2500
+      maxP95LatencyMs: 2500,
+      timeoutMs: 300000,
+      intervalMs: 2000
     });
     expect(formatted).toContain(
-      "live proof gate: npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 100 --min-source-labels 5 --max-p95-latency-ms 2500"
+      "live proof gate: npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 100 --min-source-labels 5 --max-p95-latency-ms 2500 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
       "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite'"

@@ -7,6 +7,7 @@ import { createFeedSessionId, FileFeedArchive } from "./feedArchive";
 import {
   buildLiveProofGateReport,
   formatLiveProofGateReport,
+  parseLiveProofGateArgs,
   watchLiveProofGate
 } from "./liveProofGate";
 
@@ -104,6 +105,24 @@ describe("live proof gate", () => {
 
     expect(report.ok).toBe(true);
     expect(report.eventCount).toBe(3);
+  });
+
+  it("reads proof timing defaults from the environment", () => {
+    expect(
+      parseLiveProofGateArgs([], {
+        PROOF_MIN_EVENTS: "100",
+        PROOF_MIN_SOURCE_LABELS: "5",
+        PROOF_MAX_P95_LATENCY_MS: "2500",
+        PROOF_TIMEOUT_MS: "300000",
+        PROOF_INTERVAL_MS: "2000"
+      })
+    ).toMatchObject({
+      minEvents: 100,
+      minSourceLabels: 5,
+      maxP95LatencyMs: 2500,
+      timeoutMs: 300000,
+      intervalMs: 2000
+    });
   });
 });
 
