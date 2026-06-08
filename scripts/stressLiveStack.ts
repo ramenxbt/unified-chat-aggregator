@@ -21,8 +21,8 @@ async function main() {
     FEED_SERVER_PORT: String(feedPort),
     FEED_REPLAY_BUFFER_SIZE: "1000",
     FEED_INITIAL_EVENT_COUNT: "0",
-    FEED_FIXTURE_INTERVAL_MS: "10",
-    FEED_FIXTURE_BURST_SIZE: "25",
+    FEED_FIXTURE_INTERVAL_MS: "20",
+    FEED_FIXTURE_BURST_SIZE: "10",
     FEED_ARCHIVE_DIR: archiveDir,
     FEED_DB_PATH: databasePath
   });
