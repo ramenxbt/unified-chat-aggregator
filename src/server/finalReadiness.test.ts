@@ -46,6 +46,7 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("PASS Visual QA manifest");
     expect(formatted).toContain("PASS Final live run sheet");
     expect(formatted).toContain("PASS OBS handoff");
+    expect(formatted).toContain("npm run live:tunnel -- --out");
     expect(formatted).toContain("npm run proof:gate --");
     expect(formatted).toContain("npm run submission:bundle --");
   });
@@ -192,6 +193,7 @@ describe("final recording readiness", () => {
       )}'`
     );
     expect(formatted).toContain(`npm run obs:handoff -- --app-port 5260 --out '${obsHandoffDir}'`);
+    expect(formatted).toContain(`npm run live:tunnel -- --out '${path.join(qaDir, "kick-tunnel-check.txt")}'`);
     expect(formatted).toContain(
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );

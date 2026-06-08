@@ -22,6 +22,7 @@ export type FinalReadinessReport = {
     finalQa: string;
     livePrepare: string;
     obsHandoff: string;
+    kickTunnelCheck: string;
     proofGate: string;
     submissionBundle: string;
   };
@@ -93,6 +94,7 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
     `  ${report.requiredCommands.finalQa}`,
     `  ${report.requiredCommands.livePrepare}`,
     `  ${report.requiredCommands.obsHandoff}`,
+    `  ${report.requiredCommands.kickTunnelCheck}`,
     `  ${report.requiredCommands.proofGate}`,
     `  ${report.requiredCommands.submissionBundle}`
   ];
@@ -114,6 +116,7 @@ function buildRequiredCommands(
     finalQa: "npm run qa:final",
     livePrepare: ["npm run live:prepare --", ...formatLiveRunOptionArgs(options), "--out", shellQuote(path.join(qaDir, "live-run-plan.txt"))].join(" "),
     obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
+    kickTunnelCheck: ["npm run live:tunnel --", "--out", shellQuote(path.join(qaDir, "kick-tunnel-check.txt"))].join(" "),
     proofGate: plan.evidence.proofGateCommand,
     submissionBundle: plan.evidence.submissionBundleCommand
   };
