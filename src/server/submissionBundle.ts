@@ -265,16 +265,7 @@ async function validateCopiedArtifacts(
   const issues: string[] = [];
 
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
-
-  if (liveRunPlans.sourceFiles.liveRunPlan) {
-    const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
-
-    if (isPartialLiveRunPlan(liveRunPlan)) {
-      issues.push(
-        "qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"
-      );
-    }
-  }
+  issues.push(...(await validateLiveRunPlan(liveRunPlans, repo)));
 
   return issues;
 }
@@ -316,6 +307,39 @@ async function validateFinalQaReport(
   }
 
   return issues;
+}
+
+async function validateLiveRunPlan(
+  liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
+  repo: ReturnType<typeof collectRepoMetadata>
+) {
+  if (!liveRunPlans.sourceFiles.liveRunPlan) {
+    return [];
+  }
+
+  const issues: string[] = [];
+  const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
+  const commit = extractLiveRunPlanCommit(liveRunPlan);
+
+  if (isPartialLiveRunPlan(liveRunPlan)) {
+    issues.push(
+      "qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"
+    );
+  }
+
+  if (!commit || commit === "unknown") {
+    issues.push("qa/live-run-plan.txt is missing commit metadata; rerun live:prepare -- --out qa/live-run-plan.txt");
+  } else if (repo.commit && commit !== repo.commit) {
+    issues.push(
+      `qa/live-run-plan.txt was generated for commit ${commit}, but current commit is ${repo.commit}; rerun live:prepare -- --out qa/live-run-plan.txt`
+    );
+  }
+
+  return issues;
+}
+
+function extractLiveRunPlanCommit(content: string) {
+  return content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
 }
 
 function isPartialLiveRunPlan(content: string) {

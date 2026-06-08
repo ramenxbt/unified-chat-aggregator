@@ -37,7 +37,7 @@ npm run live:stack -- --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
-The saved `qa/live-run-plan.txt` file keeps the exact commands, OBS URLs, tunnel health check, evidence commands, and replay export commands available during setup.
+The saved `qa/live-run-plan.txt` file keeps the exact commands, OBS URLs, tunnel health check, evidence commands, replay export commands, and repo commit metadata available during setup.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 If a default port, evidence path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --proof-timeout-ms 300000`.
@@ -50,7 +50,7 @@ npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
-Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`; `submission:bundle` will fail with a run-sheet issue if that file still contains partial-mode proof commands.
+Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`; `submission:bundle` will fail with a run-sheet issue if that file still contains partial-mode proof commands or was generated for an older commit.
 
 ## 2. Kick Tunnel
 
@@ -163,6 +163,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Live dashboard recording with source labels visible.
 - OBS overlay recording with source labels visible.
 - Passing final local rehearsal report from `qa/final-report.md`.
+- Final `qa/live-run-plan.txt` regenerated after the final commit.
 - Visual QA screenshots from `qa/visual/`.
 - Passing stress output from the final QA run.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.

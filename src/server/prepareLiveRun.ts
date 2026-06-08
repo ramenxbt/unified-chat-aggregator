@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -10,7 +11,7 @@ import type { LivePreflightEnv } from "./livePreflight";
 export async function prepareLiveRun(env: LivePreflightEnv, args: string[] = []) {
   const options = parseLivePrepareCliArgs(args);
   const plan = buildLiveRunPlan(env, options);
-  const output = formatLiveRunPlan(plan);
+  const output = formatLiveRunSheet(formatLiveRunPlan(plan), collectLiveRunMetadata());
 
   if (options.outPath) {
     await writeLiveRunPlan(options.outPath, output);
@@ -21,6 +22,46 @@ export async function prepareLiveRun(env: LivePreflightEnv, args: string[] = [])
     output,
     outPath: options.outPath
   };
+}
+
+type LiveRunMetadata = {
+  generatedAt: string;
+  commit: string | null;
+  branch: string | null;
+  remote: string | null;
+};
+
+function formatLiveRunSheet(planOutput: string, metadata: LiveRunMetadata) {
+  return [
+    "Live run sheet:",
+    `generated at: ${metadata.generatedAt}`,
+    `commit: ${metadata.commit ?? "unknown"}`,
+    `branch: ${metadata.branch ?? "unknown"}`,
+    `remote: ${metadata.remote ?? "unknown"}`,
+    "",
+    planOutput
+  ].join("\n");
+}
+
+function collectLiveRunMetadata(): LiveRunMetadata {
+  return {
+    generatedAt: new Date().toISOString(),
+    commit: runGit(["rev-parse", "--short", "HEAD"]),
+    branch: runGit(["branch", "--show-current"]),
+    remote: runGit(["remote", "get-url", "origin"])
+  };
+}
+
+function runGit(args: string[]) {
+  try {
+    return execFileSync("git", args, {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return null;
+  }
 }
 
 async function writeLiveRunPlan(outPath: string, output: string) {

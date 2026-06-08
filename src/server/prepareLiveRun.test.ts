@@ -38,6 +38,10 @@ describe("prepare live run", () => {
 
     expect(result.plan.ok).toBe(true);
     expect(result.outPath).toBe(outPath);
+    expect(savedPlan).toContain("Live run sheet:");
+    expect(savedPlan).toMatch(/^generated at: \d{4}-\d{2}-\d{2}T/m);
+    expect(savedPlan).toMatch(/^commit: \S+/m);
+    expect(savedPlan).toMatch(/^branch: \S+/m);
     expect(savedPlan).toContain("Live preflight: ready");
     expect(savedPlan).toContain("OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(savedPlan).toContain(

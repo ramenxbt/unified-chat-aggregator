@@ -15,7 +15,7 @@ describe("submission bundle", () => {
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), "Live preflight: ready\n", "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
 
     const result = await createSubmissionBundle({
       archiveDir,
@@ -104,7 +104,7 @@ describe("submission bundle", () => {
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(
       path.join(liveRunPlanDir, "live-run-plan.txt"),
-      "Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n",
+      createLiveRunPlan("Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n"),
       "utf8"
     );
 
@@ -172,6 +172,50 @@ describe("submission bundle", () => {
 
     expect(result.ok).toBe(false);
     expect(result.artifactIssues.some((issue) => issue.includes("was generated for commit stale123"))).toBe(true);
+  });
+
+  it("flags a stale live run sheet commit in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-stale-run-sheet");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(liveRunPlanDir, "live-run-plan.txt"), createLiveRunPlan("Live preflight: ready\n", "stale123"), "utf8");
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: liveRunPlanDir,
+      liveRunPlanDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues.some((issue) => issue.includes("qa/live-run-plan.txt was generated for commit stale123"))).toBe(
+      true
+    );
+  });
+
+  it("flags a live run sheet without commit metadata in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-missing-run-sheet-metadata");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(liveRunPlanDir, "live-run-plan.txt"), "Live preflight: ready\n", "utf8");
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: liveRunPlanDir,
+      liveRunPlanDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing commit metadata; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
   });
 
   it("flags a dirty-worktree final QA report in a strict final bundle", async () => {
@@ -253,4 +297,10 @@ function createFinalQaReport({ commit = currentCommit(), trackedFilesClean = tru
 
 function currentCommit() {
   return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+}
+
+function createLiveRunPlan(body = "Live preflight: ready\n", commit = currentCommit()) {
+  return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${commit}`, "branch: main", "", body].join(
+    "\n"
+  );
 }
