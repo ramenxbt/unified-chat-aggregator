@@ -35,7 +35,19 @@ describe("clip queue", () => {
     const restoredClips = readClipQueue();
 
     expect(restoredClips).toHaveLength(24);
-    expect(restoredClips[0].event.id).toBe(clips[0].event.id);
-    expect(restoredClips.at(-1)?.event.id).toBe(clips[23].event.id);
+    expect(restoredClips[0].event.id).toBe(clips[25].event.id);
+    expect(restoredClips.at(-1)?.event.id).toBe(clips[2].event.id);
+  });
+
+  it("normalizes restored clips to newest first", () => {
+    const clips = [createClip(1), createClip(3), createClip(2)];
+
+    writeClipQueue(clips);
+
+    expect(readClipQueue().map((clip) => clip.event.id)).toEqual([
+      clips[1].event.id,
+      clips[2].event.id,
+      clips[0].event.id
+    ]);
   });
 });

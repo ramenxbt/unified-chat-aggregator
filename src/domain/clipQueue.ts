@@ -24,14 +24,14 @@ export function readClipQueue(storage = getStorage()): ClipItem[] {
 
     if (!rawQueue) return [];
 
-    return clipQueueSchema.parse(JSON.parse(rawQueue)).clips.slice(0, maxClipQueueItems);
+    return normalizeClipQueue(clipQueueSchema.parse(JSON.parse(rawQueue)).clips);
   } catch {
     return [];
   }
 }
 
 export function writeClipQueue(clips: ClipItem[], storage = getStorage()) {
-  const cappedClips = clips.slice(0, maxClipQueueItems);
+  const cappedClips = normalizeClipQueue(clips);
 
   if (!storage) return cappedClips;
 
@@ -44,6 +44,12 @@ export function writeClipQueue(clips: ClipItem[], storage = getStorage()) {
   );
 
   return cappedClips;
+}
+
+function normalizeClipQueue(clips: ClipItem[]) {
+  return [...clips]
+    .sort((left, right) => Date.parse(right.clippedAt) - Date.parse(left.clippedAt))
+    .slice(0, maxClipQueueItems);
 }
 
 function getStorage() {
