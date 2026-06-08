@@ -42,6 +42,8 @@ describe("final recording readiness", () => {
 
     expect(report.ok).toBe(true);
     expect(formatted).toContain("Final recording readiness: ready");
+    expect(formatted).toContain(`Repo commit: ${currentCommit()}`);
+    expect(formatted).toMatch(/Checked at: \d{4}-\d{2}-\d{2}T/);
     expect(formatted).toContain("PASS Strict connector preflight");
     expect(formatted).toContain("PASS Target source labels");
     expect(formatted).toContain("KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)");

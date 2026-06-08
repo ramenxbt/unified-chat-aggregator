@@ -18,7 +18,11 @@ describe("submission bundle", () => {
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(path.join(finalQaReportDir, "final-readiness.txt"), "Final recording readiness: ready\n", "utf8");
+    await writeFile(
+      path.join(finalQaReportDir, "final-readiness.txt"),
+      `Final recording readiness: ready\nRepo commit: ${currentCommit()}\nChecked at: 2026-06-08T16:00:00.000Z\n`,
+      "utf8"
+    );
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
     await writeVisualQaManifest(visualQaDir);
@@ -87,6 +91,8 @@ describe("submission bundle", () => {
       }
     });
     expect(finalReadinessReport).toContain("Final recording readiness: ready");
+    expect(finalReadinessReport).toContain(`Repo commit: ${currentCommit()}`);
+    expect(finalReadinessReport).toContain("Checked at: 2026-06-08T16:00:00.000Z");
     expect(liveRunPlan).toContain("Live preflight: ready");
     expect(obsHandoffMarkdown).toContain("OBS Browser Source Handoff");
     expect(obsHandoffJson.sources[0]).toMatchObject({
@@ -189,7 +195,11 @@ describe("submission bundle", () => {
     await mkdir(qaDir, { recursive: true });
     await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(path.join(qaDir, "final-readiness.txt"), "Final recording readiness: ready\n", "utf8");
+    await writeFile(
+      path.join(qaDir, "final-readiness.txt"),
+      `Final recording readiness: ready\nRepo commit: ${currentCommit()}\nChecked at: 2026-06-08T16:00:00.000Z\n`,
+      "utf8"
+    );
     await writeFile(
       path.join(qaDir, "live-run-plan.txt"),
       createLiveRunPlan(undefined, undefined, undefined, undefined, undefined, defaultSubmissionBundleCommandForQa(qaDir)),
@@ -255,6 +265,36 @@ describe("submission bundle", () => {
       evidenceOk: true,
       artifactIssues: result.artifactIssues
     });
+  });
+
+  it("flags a stale final readiness proof when it is bundled", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-stale-readiness");
+    await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(qaDir, "final-readiness.txt"),
+      "Final recording readiness: ready\nRepo commit: stale123\nChecked at: 2026-06-08T16:00:00.000Z\n",
+      "utf8"
+    );
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      `qa/final-readiness.txt was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run live:ready -- --out qa/final-readiness.txt`
+    );
   });
 
   it("requires a Kick tunnel proof for a strict final bundle", async () => {

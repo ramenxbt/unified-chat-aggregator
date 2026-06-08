@@ -88,6 +88,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const artifactIssues = [
     ...(await validateCopiedArtifacts(
       finalQaReports,
+      finalReadinessReport,
       liveRunPlans,
       obsHandoff,
       visualQaManifest,
@@ -443,6 +444,7 @@ async function validateClipQueue(clipQueue: Awaited<ReturnType<typeof findClipQu
 
 async function validateCopiedArtifacts(
   finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
+  finalReadinessReport: Awaited<ReturnType<typeof findFinalReadinessReport>>,
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
   obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
   visualQaManifest: Awaited<ReturnType<typeof findVisualQaManifest>>,
@@ -458,6 +460,7 @@ async function validateCopiedArtifacts(
   const liveRunPlanValidation = await validateLiveRunPlan(liveRunPlans, repo);
 
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
+  issues.push(...(await validateFinalReadinessReport(finalReadinessReport, repo)));
   issues.push(...liveRunPlanValidation.issues);
   issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl, repo)));
   issues.push(...(await validateVisualQaManifest(visualQaManifest, repo)));
@@ -502,6 +505,39 @@ async function validateFinalQaReport(
     }
   } catch {
     issues.push(`${reportPath} could not be parsed; rerun npm run qa:final before creating the final bundle`);
+  }
+
+  return issues;
+}
+
+async function validateFinalReadinessReport(
+  finalReadinessReport: Awaited<ReturnType<typeof findFinalReadinessReport>>,
+  repo: ReturnType<typeof collectRepoMetadata>
+) {
+  if (!finalReadinessReport.sourceFiles.finalReadinessReport) {
+    return [];
+  }
+
+  const reportPath = displayPath(finalReadinessReport.sourceFiles.finalReadinessReport);
+  const content = await readFile(finalReadinessReport.sourceFiles.finalReadinessReport, "utf8");
+  const commit = content.match(/^Repo commit:\s*(\S+)/m)?.[1] ?? null;
+  const checkedAt = content.match(/^Checked at:\s*(\S+)/m)?.[1] ?? null;
+  const issues: string[] = [];
+
+  if (!/^Final recording readiness:\s*ready$/m.test(content)) {
+    issues.push(`${reportPath} does not say Final recording readiness: ready; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+  }
+
+  if (!commit || commit === "unknown") {
+    issues.push(`${reportPath} is missing commit metadata; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+  } else if (repo.commit && commit !== repo.commit) {
+    issues.push(
+      `${reportPath} was generated for commit ${commit}, but current commit is ${repo.commit}; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`
+    );
+  }
+
+  if (!checkedAt) {
+    issues.push(`${reportPath} is missing timestamp metadata; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
   }
 
   return issues;

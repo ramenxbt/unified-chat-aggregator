@@ -16,8 +16,12 @@ export type FinalReadinessCheck = {
 
 export type FinalReadinessReport = {
   ok: boolean;
+  generatedAt: string;
   checks: FinalReadinessCheck[];
   plan: LiveRunPlan;
+  repo: {
+    commit: string | null;
+  };
   requiredCommands: {
     finalQa: string;
     livePrepare: string;
@@ -85,8 +89,10 @@ export async function buildFinalReadinessReport(
 
   return {
     ok: checks.every((check) => check.state === "ready"),
+    generatedAt: new Date().toISOString(),
     checks,
     plan,
+    repo,
     requiredCommands: buildRequiredCommands(plan, options, qaDir, obsHandoffDir)
   };
 }
@@ -94,6 +100,8 @@ export async function buildFinalReadinessReport(
 export function formatFinalReadinessReport(report: FinalReadinessReport) {
   const lines = [
     `Final recording readiness: ${report.ok ? "ready" : "needs setup"}`,
+    `Repo commit: ${report.repo.commit ?? "unknown"}`,
+    `Checked at: ${report.generatedAt}`,
     "",
     "Checks:",
     ...report.checks.map((check) => `  ${check.state === "ready" ? "PASS" : "MISS"} ${check.name}: ${check.detail}`),
