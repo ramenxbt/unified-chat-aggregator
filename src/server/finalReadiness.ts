@@ -138,6 +138,7 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
   if (options.archiveDir !== undefined) args.push("--archive-dir", shellQuote(options.archiveDir));
   if (options.databasePath !== undefined) args.push("--db", shellQuote(options.databasePath));
   if (options.clipQueuePath !== undefined) args.push("--clips", shellQuote(options.clipQueuePath));
+  if (options.qaDir !== undefined) args.push("--qa-dir", shellQuote(options.qaDir));
   if (options.kickTunnelCheckPath !== undefined) args.push("--kick-tunnel-check", shellQuote(options.kickTunnelCheckPath));
   if (options.proofTimeoutMs !== undefined) args.push("--proof-timeout-ms", shellQuote(String(options.proofTimeoutMs)));
   if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));
@@ -309,7 +310,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the feed command; rerun live:prepare -- --out qa/live-run-plan.txt.`
+        detail: `${runSheetPath} is missing the feed command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`
       };
     }
 
@@ -325,7 +326,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the dashboard command; rerun live:prepare -- --out qa/live-run-plan.txt.`
+        detail: `${runSheetPath} is missing the dashboard command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`
       };
     }
 
@@ -341,7 +342,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt.`
+        detail: `${runSheetPath} is missing the OBS all-source URL; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`
       };
     }
 
@@ -358,7 +359,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the live proof gate command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        detail: `${runSheetPath} is missing the live proof gate command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`,
         expectedObsAllSourcesUrl
       };
     }
@@ -376,7 +377,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        detail: `${runSheetPath} is missing the evidence check command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`,
         expectedObsAllSourcesUrl
       };
     }
@@ -394,7 +395,7 @@ async function checkLiveRunPlan(
       return {
         name: "Final live run sheet",
         state: "setup",
-        detail: `${runSheetPath} is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        detail: `${runSheetPath} is missing the submission bundle command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`,
         expectedObsAllSourcesUrl
       };
     }
@@ -418,7 +419,7 @@ async function checkLiveRunPlan(
     return {
       name: "Final live run sheet",
       state: "setup",
-      detail: `${runSheetPath} is missing; run npm run live:prepare -- --out qa/live-run-plan.txt.`
+      detail: `${runSheetPath} is missing; run npm run live:prepare -- --out ${shellQuote(runSheetPath)}.`
     };
   }
 }
@@ -481,7 +482,7 @@ async function checkObsHandoff(
       return {
         name: "OBS handoff",
         state: "setup",
-        detail: `${obsHandoffDir} is malformed; run npm run obs:handoff -- --out qa/obs.`
+        detail: `${obsHandoffDir} is malformed; run npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}.`
       };
     }
 
@@ -510,7 +511,7 @@ async function checkObsHandoff(
     return {
       name: "OBS handoff",
       state: "setup",
-      detail: `${obsHandoffDir} is missing or unreadable; run npm run obs:handoff -- --out qa/obs.`
+      detail: `${obsHandoffDir} is missing or unreadable; run npm run obs:handoff -- --out ${shellQuote(obsHandoffDir)}.`
     };
   }
 }

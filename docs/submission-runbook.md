@@ -150,7 +150,7 @@ Check the archive and database evidence:
 
 ```bash
 npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite
-npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt
+npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt
 ```
 
 These commands use the newest archive session. Pass `--archive data/feed-sessions/<session-id>` instead when reviewing an older run.

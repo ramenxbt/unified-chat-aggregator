@@ -185,7 +185,7 @@ describe("final recording readiness", () => {
     const formatted = formatFinalReadinessReport(report);
 
     expect(formatted).toContain(
-      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --kick-tunnel-check '${path.join(
+      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(
         qaDir,
         "kick-tunnel-check.txt"
       )}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --out '${path.join(
@@ -199,7 +199,7 @@ describe("final recording readiness", () => {
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
-      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
+      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
     );
   });
 
@@ -333,7 +333,9 @@ async function createReadyQaDir({
 }
 
 function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
-  return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check ${shellQuote(
+  return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
+    path.dirname(kickTunnelCheckPath)
+  )} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
   )}`;
 }

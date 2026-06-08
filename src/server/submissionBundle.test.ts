@@ -175,6 +175,37 @@ describe("submission bundle", () => {
     );
   });
 
+  it("uses qaDir as the default source for final evidence artifacts", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "final qa");
+    const outputDir = path.join(baseDir, "bundle-custom-qa");
+    await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(qaDir, "live-run-plan.txt"),
+      createLiveRunPlan(undefined, undefined, undefined, undefined, undefined, defaultSubmissionBundleCommandForQa(qaDir)),
+      "utf8"
+    );
+    await writeObsHandoff(path.join(qaDir, "obs"));
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.files.finalQaReportJson).toBe(path.join(outputDir, "final-qa-report.json"));
+    expect(result.files.liveRunPlan).toBe(path.join(outputDir, "live-run-plan.txt"));
+    expect(result.files.obsHandoffJson).toBe(path.join(outputDir, "obs-browser-sources.json"));
+    expect(result.files.visualQaManifestJson).toBe(path.join(outputDir, "visual-qa-manifest.json"));
+    expect(result.files.kickTunnelCheck).toBe(path.join(outputDir, "kick-tunnel-check.txt"));
+  });
+
   it("flags a partial live run sheet in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");
@@ -751,7 +782,14 @@ function defaultEvidenceCheckCommand() {
 }
 
 function defaultSubmissionBundleCommand() {
-  return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt";
+  return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt";
+}
+
+function defaultSubmissionBundleCommandForQa(qaDir: string) {
+  return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(
+    qaDir,
+    "kick-tunnel-check.txt"
+  )}'`;
 }
 
 function defaultFeedCommand() {

@@ -16,6 +16,7 @@ export type SubmissionBundleOptions = {
   databasePath?: string;
   outputDir: string;
   requireAllPlatforms?: boolean;
+  qaDir?: string;
   finalQaReportDir?: string;
   liveRunPlanDir?: string;
   obsHandoffDir?: string;
@@ -72,10 +73,11 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const repo = collectRepoMetadata();
   const externalArtifacts = buildExternalArtifactChecklist();
   const bundleDir = path.resolve(options.outputDir);
-  const finalQaReportDir = options.finalQaReportDir ?? "qa";
+  const qaDir = options.qaDir ?? "qa";
+  const finalQaReportDir = options.finalQaReportDir ?? qaDir;
   const finalQaReports = await findFinalQaReports(finalQaReportDir, bundleDir);
-  const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
-  const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join("qa", "obs"), bundleDir);
+  const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? qaDir, bundleDir);
+  const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join(qaDir, "obs"), bundleDir);
   const visualQaManifest = await findVisualQaManifest(options.visualQaDir ?? path.join(finalQaReportDir, "visual"), bundleDir);
   const kickTunnelCheck = await findKickTunnelCheck(options.kickTunnelCheckPath ?? path.join(finalQaReportDir, "kick-tunnel-check.txt"), bundleDir);
   const clipQueue = await findClipQueue(options.clipQueuePath, bundleDir);
@@ -741,7 +743,7 @@ async function runCli() {
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--kick-tunnel-check qa/kick-tunnel-check.txt] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--qa-dir qa] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--kick-tunnel-check qa/kick-tunnel-check.txt] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -753,6 +755,7 @@ async function runCli() {
     databasePath: args.databasePath,
     outputDir: args.outputDir ?? "submission-bundle",
     requireAllPlatforms: !args.allowPartial,
+    qaDir: args.qaDir,
     obsHandoffDir: args.obsHandoffDir,
     visualQaDir: args.visualQaDir,
     kickTunnelCheckPath: args.kickTunnelCheckPath,
@@ -771,6 +774,7 @@ type ParsedArgs = {
   archiveDir: string | null;
   databasePath?: string;
   outputDir?: string;
+  qaDir?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
   kickTunnelCheckPath?: string;
@@ -808,6 +812,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--out") {
       parsed.outputDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--qa-dir") {
+      parsed.qaDir = args[index + 1];
       index += 1;
       continue;
     }

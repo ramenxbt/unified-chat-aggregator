@@ -50,6 +50,12 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
       continue;
     }
 
+    if (arg === "--qa-dir") {
+      parsed.qaDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (arg === "--kick-tunnel-check") {
       parsed.kickTunnelCheckPath = args[index + 1];
       index += 1;
@@ -100,12 +106,6 @@ export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-
-    if (arg === "--qa-dir") {
-      parsed.qaDir = args[index + 1];
-      index += 1;
-      continue;
-    }
 
     if (arg === "--obs-handoff-dir") {
       parsed.obsHandoffDir = args[index + 1];
