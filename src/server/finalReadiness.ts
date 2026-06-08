@@ -7,6 +7,7 @@ import { parseLiveRunCliArgs } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import { formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
+import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type FinalReadinessCheck = {
   name: string;
@@ -288,11 +289,31 @@ async function checkVisualQaManifest(visualQaDir: string, currentCommit: string 
       };
     }
 
-    if (currentCommit && manifest.repo?.commit !== currentCommit) {
+    const freshness = currentCommit ? checkVisualQaFreshness(manifest.repo?.commit, currentCommit, runGit) : null;
+
+    if (freshness?.state === "unknown") {
       return {
         name: "Visual QA manifest",
         state: "setup",
         detail: `${visualQaDir} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${currentCommit}.`
+      };
+    }
+
+    if (freshness?.state === "stale") {
+      const changedFiles = freshness.changedFiles.slice(0, 3).join(", ");
+
+      return {
+        name: "Visual QA manifest",
+        state: "setup",
+        detail: `${visualQaDir} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but UI-relevant files changed before current commit ${currentCommit}: ${changedFiles}.`
+      };
+    }
+
+    if (freshness?.state === "unchanged") {
+      return {
+        name: "Visual QA manifest",
+        state: "ready",
+        detail: `${visualQaDir} has ${manifest.captures.length} captures from ${manifest.repo?.commit}; no UI-relevant files changed since.`
       };
     }
 

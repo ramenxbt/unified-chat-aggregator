@@ -9,6 +9,7 @@ import { buildEvidenceReport, formatEvidenceReport, type EvidenceReport } from "
 import { resolveArchivePath } from "./feedArchiveLookup";
 import { clipItemSchema } from "../domain/clipQueue";
 import { formatPlatformSourceLabel } from "../domain/unifiedEvent";
+import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type SubmissionBundleOptions = {
   archivePath?: string;
@@ -830,9 +831,18 @@ async function validateVisualQaManifest(
       captures?: unknown[];
     };
 
-    if (repo.commit && manifest.repo?.commit !== repo.commit) {
+    const freshness = repo.commit ? checkVisualQaFreshness(manifest.repo?.commit, repo.commit, runGit) : null;
+
+    if (freshness?.state === "unknown") {
       issues.push(
         `${visualJsonPath} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run qa:visual`
+      );
+    }
+
+    if (freshness?.state === "stale") {
+      const changedFiles = freshness.changedFiles.slice(0, 3).join(", ");
+      issues.push(
+        `${visualJsonPath} was generated for commit ${manifest.repo?.commit ?? "unknown"}, but UI-relevant files changed before current commit ${repo.commit}: ${changedFiles}; rerun npm run qa:visual`
       );
     }
 

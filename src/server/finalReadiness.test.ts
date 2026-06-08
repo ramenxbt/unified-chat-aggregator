@@ -151,6 +151,16 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("was generated for commit stale123");
   });
 
+  it("accepts an older visual QA manifest when no UI-relevant files changed", async () => {
+    const qaDir = await createReadyQaDir({ visualQaCommit: previousCommit() });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(true);
+    expect(formatted).toContain("PASS Visual QA manifest");
+    expect(formatted).toContain("no UI-relevant files changed since");
+  });
+
   it("fails when the final run sheet is missing the OBS all-source URL", async () => {
     const qaDir = await createReadyQaDir({ obsAllSourcesUrl: null });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir });
@@ -550,4 +560,12 @@ function createVisualQaManifestJson(commit: string) {
 
 function currentCommit() {
   return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+}
+
+function previousCommit() {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD~1"], { encoding: "utf8" }).trim();
+  } catch {
+    return currentCommit();
+  }
 }

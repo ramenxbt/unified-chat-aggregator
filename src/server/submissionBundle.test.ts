@@ -848,6 +848,32 @@ describe("submission bundle", () => {
       `qa/visual/manifest.json was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run qa:visual`
     );
   });
+
+  it("accepts an older visual QA manifest when no UI-relevant files changed", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const visualQaDir = path.join(finalQaReportDir, "visual");
+    const outputDir = path.join(baseDir, "bundle-unchanged-visual");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(visualQaDir, createVisualQaManifestJson({ commit: previousCommit() }));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.artifactIssues).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("rerun npm run qa:visual")])
+    );
+  });
 });
 
 async function createBundleFixture() {
@@ -918,6 +944,14 @@ function createClipQueueExport() {
 
 function currentCommit() {
   return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+}
+
+function previousCommit() {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD~1"], { encoding: "utf8" }).trim();
+  } catch {
+    return currentCommit();
+  }
 }
 
 function createLiveRunPlan(
