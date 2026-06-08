@@ -180,9 +180,11 @@ describe("final recording readiness", () => {
   it("prints required final commands with the current path and port overrides", async () => {
     const qaDir = await mkdtemp(path.join(os.tmpdir(), "final readiness custom-"));
     const obsHandoffDir = path.join(qaDir, "obs handoff");
+    const visualQaDir = path.join(qaDir, "visual proof");
     const report = await buildFinalReadinessReport(completeEnv, {
       qaDir,
       obsHandoffDir,
+      visualQaDir,
       feedPort: 8899,
       appPort: 5260,
       archiveDir: "data/final sessions",
@@ -208,10 +210,10 @@ describe("final recording readiness", () => {
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
-      `npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
+      `npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
     );
     expect(formatted).toContain(
-      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
+      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
     );
     expect(formatted).toContain(
       `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`

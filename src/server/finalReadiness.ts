@@ -143,8 +143,8 @@ function buildRequiredCommands(
     obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
     kickTunnelCheck: plan.urls.kickWebhookHealthCommand,
     proofGate: plan.evidence.proofGateCommand,
-    submissionFinalize: plan.evidence.submissionFinalizeCommand,
-    submissionBundle: plan.evidence.submissionBundleCommand,
+    submissionFinalize: appendFinalArtifactArgs(plan.evidence.submissionFinalizeCommand, options),
+    submissionBundle: appendFinalArtifactArgs(plan.evidence.submissionBundleCommand, options),
     captureStack: [
       "npm run live:stack --",
       ...formatLiveStackOptionArgs(options),
@@ -152,6 +152,15 @@ function buildRequiredCommands(
       "--with-proof-gate"
     ].join(" ")
   };
+}
+
+function appendFinalArtifactArgs(command: string, options: FinalReadinessOptions) {
+  const args: string[] = [];
+
+  if (options.obsHandoffDir !== undefined) args.push("--obs-handoff-dir", shellQuote(options.obsHandoffDir));
+  if (options.visualQaDir !== undefined) args.push("--visual-qa-dir", shellQuote(options.visualQaDir));
+
+  return args.length > 0 ? [command, ...args].join(" ") : command;
 }
 
 function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
