@@ -56,9 +56,14 @@ describe("final recording readiness", () => {
       },
       { qaDir }
     );
+    const formatted = formatFinalReadinessReport(report);
 
     expect(report.ok).toBe(false);
-    expect(formatFinalReadinessReport(report)).toContain("MISS Strict connector preflight");
+    expect(formatted).toContain("MISS Strict connector preflight");
+    expect(formatted).toContain("Connector setup details:");
+    expect(formatted).toContain("Stream-day .env checklist:");
+    expect(formatted).toContain("TWITCH_CLIENT_ID=");
+    expect(formatted).toContain("KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick");
   });
 
   it("fails when the final run sheet is stale", async () => {

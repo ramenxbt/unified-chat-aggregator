@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import { parseLiveRunCliArgs } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
-import type { LivePreflightEnv } from "./livePreflight";
+import { formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
 
 export type FinalReadinessCheck = {
   name: string;
@@ -71,7 +71,7 @@ export async function buildFinalReadinessReport(
 }
 
 export function formatFinalReadinessReport(report: FinalReadinessReport) {
-  return [
+  const lines = [
     `Final recording readiness: ${report.ok ? "ready" : "needs setup"}`,
     "",
     "Checks:",
@@ -83,7 +83,13 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
     "  npm run obs:handoff -- --out qa/obs",
     `  ${report.plan.evidence.proofGateCommand}`,
     `  ${report.plan.evidence.submissionBundleCommand}`
-  ].join("\n");
+  ];
+
+  if (!report.plan.report.ok) {
+    lines.push("", "Connector setup details:", indentBlock(formatLivePreflightReport(report.plan.report), "  "));
+  }
+
+  return lines.join("\n");
 }
 
 async function checkFinalQaReport(reportPath: string, currentCommit: string | null): Promise<FinalReadinessCheck> {
@@ -298,6 +304,13 @@ function extractRunSheetCommand(content: string, label: string) {
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function indentBlock(content: string, prefix: string) {
+  return content
+    .split("\n")
+    .map((line) => `${prefix}${line}`)
+    .join("\n");
 }
 
 async function checkObsHandoff(
