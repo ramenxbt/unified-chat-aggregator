@@ -340,6 +340,7 @@ async function validateLiveRunPlan(
   const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
   const commit = extractLiveRunPlanCommit(liveRunPlan);
   const expectedObsAllSourcesUrl = extractLiveRunPlanObsAllSourcesUrl(liveRunPlan);
+  const expectedProofGateCommand = extractLiveRunPlanProofGateCommand(liveRunPlan);
 
   if (isPartialLiveRunPlan(liveRunPlan)) {
     issues.push(
@@ -359,6 +360,10 @@ async function validateLiveRunPlan(
     issues.push("qa/live-run-plan.txt is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt");
   }
 
+  if (!expectedProofGateCommand) {
+    issues.push("qa/live-run-plan.txt is missing the live proof gate command; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
   return {
     issues,
     expectedObsAllSourcesUrl
@@ -371,6 +376,10 @@ function extractLiveRunPlanCommit(content: string) {
 
 function extractLiveRunPlanObsAllSourcesUrl(content: string) {
   return content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
+}
+
+function extractLiveRunPlanProofGateCommand(content: string) {
+  return content.match(/^\s*live proof gate:\s*(.+)$/m)?.[1];
 }
 
 function isPartialLiveRunPlan(content: string) {

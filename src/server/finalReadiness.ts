@@ -37,7 +37,12 @@ export async function buildFinalReadinessReport(
   const qaDir = options.qaDir ?? "qa";
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
   const repo = collectRepoMetadata();
-  const liveRunPlanCheck = await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit, plan.urls.obsAllSources);
+  const liveRunPlanCheck = await checkLiveRunPlan(
+    path.join(qaDir, "live-run-plan.txt"),
+    repo.commit,
+    plan.urls.obsAllSources,
+    plan.evidence.proofGateCommand
+  );
   const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl, repo.commit);
   const checks = [
     {
@@ -126,12 +131,14 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
 async function checkLiveRunPlan(
   runSheetPath: string,
   currentCommit: string | null,
-  currentObsAllSourcesUrl: string
+  currentObsAllSourcesUrl: string,
+  currentProofGateCommand: string
 ): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
     const commit = content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
     const expectedObsAllSourcesUrl = content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
+    const expectedProofGateCommand = content.match(/^\s*live proof gate:\s*(.+)$/m)?.[1];
 
     if (content.includes("--allow-partial") || content.includes("Platform requirement: at least one live connector")) {
       return {
@@ -170,6 +177,24 @@ async function checkLiveRunPlan(
         name: "Final live run sheet",
         state: "setup",
         detail: `${runSheetPath} expects ${expectedObsAllSourcesUrl}, but current live:ready options expect ${currentObsAllSourcesUrl}.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (!expectedProofGateCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the live proof gate command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (expectedProofGateCommand !== currentProofGateCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} proof gate command does not match current live:ready thresholds.`,
         expectedObsAllSourcesUrl
       };
     }

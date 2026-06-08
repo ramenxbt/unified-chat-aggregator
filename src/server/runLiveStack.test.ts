@@ -26,6 +26,9 @@ const completeEnv: LivePreflightEnv = {
   FEED_DB_PATH: "data/feed.sqlite"
 };
 
+const defaultProofGateCommand =
+  "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
+
 describe("live stack runner", () => {
   it("builds feed and dashboard launch commands from the checked live plan", async () => {
     const plan = await buildLiveStackLaunchPlan(completeEnv, {
@@ -281,7 +284,10 @@ function createLiveRunPlan() {
     "Live preflight: ready",
     "",
     "Open:",
-    "  OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+    "  OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
+    "",
+    "Evidence outputs:",
+    `  live proof gate: ${defaultProofGateCommand}`
   ].join("\n");
 }
 
