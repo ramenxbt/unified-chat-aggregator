@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EventEmitter } from "node:events";
 import { buildLiveStackLaunchPlan, runLiveStack } from "./runLiveStack";
 import type { LiveDoctorCheck } from "./liveDoctor";
 import type { LivePreflightEnv } from "./livePreflight";
@@ -132,6 +133,37 @@ describe("live stack runner", () => {
     expect(plan.processes.proofGate.args).toContain("--allow-partial");
   });
 
+  it("keeps the feed and dashboard running when the proof gate exits non-zero", async () => {
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const children: FakeChildProcess[] = [];
+    const spawnProcess = vi.fn((command: string, args: string[]) => {
+      const child = new FakeChildProcess(command, args);
+      children.push(child);
+      return child;
+    });
+    const runPromise = runLiveStack(completeEnv, {
+      withProofGate: true,
+      spawnProcess: spawnProcess as never,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+
+    await waitFor(() => children.length === 3);
+    expect(children).toHaveLength(3);
+
+    children[2].emitExit(1);
+    await Promise.resolve();
+
+    expect(children[0].killed).toBe(false);
+    expect(children[1].killed).toBe(false);
+    expect(stderr.mock.calls.flat().join("\n")).toContain("Feed and dashboard remain running for capture.");
+
+    children[0].emitExit(0);
+    expect(await runPromise).toBe(0);
+
+    stderr.mockRestore();
+  });
+
   it("refuses to launch when the doctor report is not ready", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const exitCode = await runLiveStack(
@@ -167,4 +199,43 @@ async function readyDirectoryCheck(label: string, directoryPath: string): Promis
     state: "ready",
     detail: `${directoryPath} is writable.`
   };
+}
+
+class FakeChildProcess extends EventEmitter {
+  readonly stdout = new EventEmitter();
+  readonly stderr = new EventEmitter();
+  killed = false;
+  exitCode: number | null = null;
+
+  constructor(
+    readonly command: string,
+    readonly args: string[]
+  ) {
+    super();
+  }
+
+  kill() {
+    this.killed = true;
+    this.exitCode = this.exitCode ?? 143;
+
+    return true;
+  }
+
+  emitExit(code: number) {
+    this.exitCode = code;
+    this.emit("exit", code);
+  }
+}
+
+async function waitFor(predicate: () => boolean) {
+  const deadline = Date.now() + 1000;
+
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
+  }
+
+  throw new Error("Timed out waiting for test condition");
 }

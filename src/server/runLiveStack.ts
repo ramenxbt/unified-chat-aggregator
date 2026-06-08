@@ -167,7 +167,9 @@ function waitForStackExit(
 
     proofGate?.once("exit", (code) => {
       if (code && code !== 0) {
-        shutdown(code);
+        console.error(
+          `[proof] Live proof gate exited with code ${code}. Feed and dashboard remain running for capture.`
+        );
         return;
       }
 
