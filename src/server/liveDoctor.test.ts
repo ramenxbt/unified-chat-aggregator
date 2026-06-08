@@ -35,6 +35,7 @@ describe("live doctor", () => {
     expect(formatted).toContain("PASS Dashboard dev port");
     expect(formatted).toContain("PASS Kick webhook port");
     expect(formatted).toContain("PASS QA evidence directory");
+    expect(formatted).toContain("PASS Evidence proof directory");
     expect(formatted).toContain("PASS Submission bundle directory");
     expect(formatted).toContain("Final run commands:");
   });
@@ -115,6 +116,21 @@ describe("live doctor", () => {
 
     expect(report.ok).toBe(false);
     expect(formatLiveDoctorReport(report)).toContain("MISS QA evidence directory: locked-qa is not writable.");
+  });
+
+  it("checks a custom evidence proof directory", async () => {
+    const report = await buildLiveDoctorReport(completeEnv, {
+      evidenceCheckPath: "locked-proof/evidence-check.txt",
+      checkPort: readyPortCheck,
+      checkWritableDirectory: async (label, directoryPath) => ({
+        name: label,
+        state: label === "Evidence proof directory" ? "setup" : "ready",
+        detail: label === "Evidence proof directory" ? `${directoryPath} is not writable.` : `${directoryPath} is writable.`
+      })
+    });
+
+    expect(report.ok).toBe(false);
+    expect(formatLiveDoctorReport(report)).toContain("MISS Evidence proof directory: locked-proof is not writable.");
   });
 
   it("fails when the submission bundle directory is not writable", async () => {
