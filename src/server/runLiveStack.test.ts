@@ -285,6 +285,9 @@ async function writeObsHandoff(obsHandoffDir: string) {
 
 function createObsHandoffJson() {
   return {
+    repo: {
+      commit: currentCommit()
+    },
     browserSourceSettings: {
       width: 1280,
       height: 720,
