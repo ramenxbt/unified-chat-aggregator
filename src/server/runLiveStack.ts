@@ -29,6 +29,7 @@ type RunLiveStackOptions = LiveDoctorOptions & {
   obsHandoffDir?: string;
   qaDir?: string;
   requireReady?: boolean;
+  visualQaDir?: string;
   withProofGate?: boolean;
   spawnProcess?: typeof spawn;
 };

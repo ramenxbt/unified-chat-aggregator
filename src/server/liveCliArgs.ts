@@ -5,6 +5,7 @@ export type LiveStackCliOptions = LiveRunPlanOptions & {
   obsHandoffDir?: string;
   qaDir?: string;
   requireReady: boolean;
+  visualQaDir?: string;
   withProofGate: boolean;
 };
 
@@ -116,6 +117,13 @@ export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
     if (arg === "--obs-handoff-dir") {
       parsed.obsHandoffDir = args[index + 1];
       index += 1;
+      continue;
+    }
+
+    if (arg === "--visual-qa-dir") {
+      parsed.visualQaDir = args[index + 1];
+      index += 1;
+      continue;
     }
   }
 

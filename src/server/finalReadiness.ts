@@ -184,6 +184,7 @@ function formatLiveStackOptionArgs(options: FinalReadinessOptions) {
   const args = formatLiveRunOptionArgs(options);
 
   if (options.obsHandoffDir !== undefined) args.push("--obs-handoff-dir", shellQuote(options.obsHandoffDir));
+  if (options.visualQaDir !== undefined) args.push("--visual-qa-dir", shellQuote(options.visualQaDir));
 
   return args;
 }

@@ -49,6 +49,8 @@ describe("live CLI args", () => {
         "qa/final",
         "--obs-handoff-dir",
         "qa/final-obs",
+        "--visual-qa-dir",
+        "qa/final-visual",
         "--database-path",
         "data/live.sqlite",
         "--feed-port",
@@ -61,6 +63,7 @@ describe("live CLI args", () => {
       withProofGate: true,
       qaDir: "qa/final",
       obsHandoffDir: "qa/final-obs",
+      visualQaDir: "qa/final-visual",
       databasePath: "data/live.sqlite",
       feedPort: 8789
     });

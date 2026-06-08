@@ -217,7 +217,7 @@ describe("final recording readiness", () => {
       `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
     );
     expect(formatted).toContain(
-      `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`
+      `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}' --require-ready --with-proof-gate`
     );
   });
 

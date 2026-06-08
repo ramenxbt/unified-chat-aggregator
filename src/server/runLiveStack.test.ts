@@ -151,6 +151,29 @@ describe("live stack runner", () => {
     log.mockRestore();
   });
 
+  it("passes custom visual QA directory into required final readiness", async () => {
+    const qaDir = await createReadyQaDir({ withDefaultVisualQa: false });
+    const visualQaDir = path.join(qaDir, "custom visual");
+    await writeVisualQaManifest(visualQaDir);
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    const exitCode = await runLiveStack(completeEnv, {
+      dryRun: true,
+      requireReady: true,
+      qaDir,
+      visualQaDir,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+    const output = log.mock.calls.flat().join("\n");
+
+    expect(exitCode).toBe(0);
+    expect(output).toContain("PASS Visual QA manifest");
+    expect(output).toContain("Live stack dry run: ready");
+
+    log.mockRestore();
+  });
+
   it("refuses to launch when final readiness is required but artifacts are missing", async () => {
     const qaDir = await mkdtemp(path.join(os.tmpdir(), "live-stack-missing-ready-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -256,13 +279,15 @@ async function readyDirectoryCheck(label: string, directoryPath: string): Promis
   };
 }
 
-async function createReadyQaDir() {
+async function createReadyQaDir({ withDefaultVisualQa = true } = {}) {
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "live-stack-ready-"));
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(qaDir), "utf8");
   await writeObsHandoff(path.join(qaDir, "obs"));
-  await writeVisualQaManifest(path.join(qaDir, "visual"));
+  if (withDefaultVisualQa) {
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+  }
 
   return qaDir;
 }
