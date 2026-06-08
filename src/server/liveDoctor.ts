@@ -34,6 +34,7 @@ export async function buildLiveDoctorReport(
   const appPort = options.appPort ?? Number(env.VITE_DEV_SERVER_PORT ?? 5173);
   const archiveDir = options.archiveDir ?? env.FEED_ARCHIVE_DIR ?? "data/feed-sessions";
   const databasePath = options.databasePath ?? env.FEED_DB_PATH ?? "data/feed.sqlite";
+  const qaDir = options.qaDir ?? "qa";
   const checkPort = options.checkPort ?? checkPortAvailability;
   const checkWritableDirectory = options.checkWritableDirectory ?? checkDirectoryWritable;
   const portClaims = [
@@ -80,6 +81,8 @@ export async function buildLiveDoctorReport(
       detail: "FEED_DB_PATH is not set. JSONL evidence will still work, but the final run loses queryable proof."
     });
   }
+
+  checks.push(await checkWritableDirectory("QA evidence directory", qaDir));
 
   return {
     ok: plan.ok && checks.every((check) => check.state === "ready" || check.state === "attention"),

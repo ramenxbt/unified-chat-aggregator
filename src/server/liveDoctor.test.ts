@@ -34,6 +34,7 @@ describe("live doctor", () => {
     expect(formatted).toContain("PASS Feed WebSocket port");
     expect(formatted).toContain("PASS Dashboard dev port");
     expect(formatted).toContain("PASS Kick webhook port");
+    expect(formatted).toContain("PASS QA evidence directory");
     expect(formatted).toContain("Final run commands:");
   });
 
@@ -98,6 +99,21 @@ describe("live doctor", () => {
 
     expect(report.ok).toBe(false);
     expect(formatLiveDoctorReport(report)).toContain("FEED_ARCHIVE_ENABLED=false disables the JSONL evidence archive");
+  });
+
+  it("fails when the QA evidence directory is not writable", async () => {
+    const report = await buildLiveDoctorReport(completeEnv, {
+      qaDir: "locked-qa",
+      checkPort: readyPortCheck,
+      checkWritableDirectory: async (label, directoryPath) => ({
+        name: label,
+        state: label === "QA evidence directory" ? "setup" : "ready",
+        detail: label === "QA evidence directory" ? `${directoryPath} is not writable.` : `${directoryPath} is writable.`
+      })
+    });
+
+    expect(report.ok).toBe(false);
+    expect(formatLiveDoctorReport(report)).toContain("MISS QA evidence directory: locked-qa is not writable.");
   });
 });
 
