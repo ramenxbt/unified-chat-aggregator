@@ -16,7 +16,7 @@ describe("submission bundle", () => {
     const clipQueuePath = path.join(baseDir, "clip-queue-export.json");
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
-    await writeFile(path.join(finalQaReportDir, "evidence-check.txt"), "Evidence check: ready\n", "utf8");
+    await writeEvidenceCheckProof(path.join(finalQaReportDir, "evidence-check.txt"));
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFinalReadinessProof(path.join(finalQaReportDir, "final-readiness.txt"));
@@ -197,7 +197,7 @@ describe("submission bundle", () => {
     const qaDir = path.join(baseDir, "final qa");
     const outputDir = path.join(baseDir, "bundle-custom-qa");
     await mkdir(qaDir, { recursive: true });
-    await writeFile(path.join(qaDir, "evidence-check.txt"), "Evidence check: ready\n", "utf8");
+    await writeEvidenceCheckProof(path.join(qaDir, "evidence-check.txt"));
     await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
@@ -233,6 +233,7 @@ describe("submission bundle", () => {
     const obsHandoffDir = path.join(liveRunPlanDir, "obs");
     const outputDir = path.join(baseDir, "bundle-partial-plan");
     await mkdir(liveRunPlanDir, { recursive: true });
+    await writeEvidenceCheckProof(path.join(liveRunPlanDir, "evidence-check.txt"));
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFinalReadinessProof(path.join(liveRunPlanDir, "final-readiness.txt"));
     await writeFile(
@@ -293,6 +294,62 @@ describe("submission bundle", () => {
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
       `qa/final-readiness.txt was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run live:ready -- --out qa/final-readiness.txt`
+    );
+  });
+
+  it("requires saved evidence proof for a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-evidence-proof");
+    await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/evidence-check.txt is missing; run npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt before creating the final bundle"
+    );
+  });
+
+  it("flags non-ready saved evidence proof in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-bad-evidence-proof");
+    await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "evidence-check.txt"), "Evidence check: needs attention\n", "utf8");
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/evidence-check.txt does not say Evidence check: ready; rerun npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/evidence-check.txt is missing throughput or latency metrics; rerun npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt"
     );
   });
 
@@ -892,6 +949,25 @@ async function writeFinalReadinessProof(filePath: string, { commit = currentComm
       `Final recording readiness: ${ready ? "ready" : "needs setup"}`,
       `Repo commit: ${commit}`,
       "Checked at: 2026-06-08T16:00:00.000Z"
+    ].join("\n"),
+    "utf8"
+  );
+}
+
+async function writeEvidenceCheckProof(filePath: string) {
+  await writeFile(
+    filePath,
+    [
+      "Evidence check: ready",
+      "Session: 2026-06-04T23-00-00-000Z-connectors",
+      "Mode: connectors",
+      "Archive: data/feed-sessions/2026-06-04T23-00-00-000Z-connectors",
+      "Events: 3",
+      "Statuses: 3",
+      "Duration: 10s",
+      "Throughput: 0.3 events/s",
+      "Average latency: 100ms",
+      "P95 latency: 150ms"
     ].join("\n"),
     "utf8"
   );

@@ -89,6 +89,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
   const artifactIssues = [
     ...(await validateCopiedArtifacts(
+      evidenceCheckReport,
       finalQaReports,
       finalReadinessReport,
       liveRunPlans,
@@ -453,6 +454,7 @@ async function validateClipQueue(clipQueue: Awaited<ReturnType<typeof findClipQu
 }
 
 async function validateCopiedArtifacts(
+  evidenceCheckReport: Awaited<ReturnType<typeof findEvidenceCheckReport>>,
   finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
   finalReadinessReport: Awaited<ReturnType<typeof findFinalReadinessReport>>,
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
@@ -469,12 +471,46 @@ async function validateCopiedArtifacts(
   const issues: string[] = [];
   const liveRunPlanValidation = await validateLiveRunPlan(liveRunPlans, repo);
 
+  issues.push(...(await validateEvidenceCheckReport(evidenceCheckReport)));
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
   issues.push(...(await validateFinalReadinessReport(finalReadinessReport, repo)));
   issues.push(...liveRunPlanValidation.issues);
   issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl, repo)));
   issues.push(...(await validateVisualQaManifest(visualQaManifest, repo)));
   issues.push(...(await validateKickTunnelCheck(kickTunnelCheck, repo)));
+
+  return issues;
+}
+
+async function validateEvidenceCheckReport(evidenceCheckReport: Awaited<ReturnType<typeof findEvidenceCheckReport>>) {
+  const reportPath = displayPath(evidenceCheckReport.sourceFiles.evidenceCheckReport ?? evidenceCheckReport.expectedFiles.evidenceCheckReport);
+
+  if (!evidenceCheckReport.sourceFiles.evidenceCheckReport) {
+    return [
+      `${reportPath} is missing; run npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out ${shellQuote(
+        reportPath
+      )} before creating the final bundle`
+    ];
+  }
+
+  const content = await readFile(evidenceCheckReport.sourceFiles.evidenceCheckReport, "utf8");
+  const issues: string[] = [];
+
+  if (!/^Evidence check:\s*ready$/m.test(content)) {
+    issues.push(
+      `${reportPath} does not say Evidence check: ready; rerun npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out ${shellQuote(
+        reportPath
+      )}`
+    );
+  }
+
+  if (!/^Throughput:\s*\S+/m.test(content) || !/^P95 latency:\s*\S+/m.test(content)) {
+    issues.push(
+      `${reportPath} is missing throughput or latency metrics; rerun npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out ${shellQuote(
+        reportPath
+      )}`
+    );
+  }
 
   return issues;
 }

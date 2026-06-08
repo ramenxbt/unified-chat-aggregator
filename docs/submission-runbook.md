@@ -60,7 +60,7 @@ npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
-Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`, save `qa/final-readiness.txt`, rerun `npm run obs:handoff -- --out qa/obs`, and save `qa/kick-tunnel-check.txt` from the running capture stack; `submission:bundle` will fail with an artifact issue if the final readiness proof is missing or stale, if the run sheet is partial, stale, or missing launch/evidence commands, if the OBS handoff files are stale, missing, or malformed, if the visual QA manifest is stale or malformed, if the Kick tunnel proof is missing or stale, or if the OBS handoff URL does not match the run sheet.
+Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`, save `qa/final-readiness.txt`, rerun `npm run obs:handoff -- --out qa/obs`, save `qa/evidence-check.txt`, and save `qa/kick-tunnel-check.txt` from the running capture stack; `submission:bundle` will fail with an artifact issue if the saved evidence proof is missing or non-ready, if the final readiness proof is missing or stale, if the run sheet is partial, stale, or missing launch/evidence commands, if the OBS handoff files are stale, missing, or malformed, if the visual QA manifest is stale or malformed, if the Kick tunnel proof is missing or stale, or if the OBS handoff URL does not match the run sheet.
 
 ## 2. Kick Tunnel
 
