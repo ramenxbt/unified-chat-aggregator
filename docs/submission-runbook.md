@@ -33,11 +33,13 @@ Run the strict connector check next:
 ```bash
 npm run preflight
 npm run live:prepare -- --out qa/live-run-plan.txt
+npm run obs:handoff -- --out qa/obs
 npm run live:stack -- --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
 The saved `qa/live-run-plan.txt` file keeps the exact commands, OBS URLs, tunnel health check, evidence commands, replay export commands, and repo commit metadata available during setup.
+The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-sources.json` with the browser source URLs, settings, and focused proof shots for the same app port.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 If a default port, evidence path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --proof-timeout-ms 300000`.
@@ -116,8 +118,8 @@ Strict proof requires `Mode: connectors`. A fixture-mode archive is rehearsal pr
 
 1. Click `Record`.
 2. Let live events arrive from the stream.
-3. Open the `All sources` OBS preset from the diagnostics rail.
-4. Add that URL as an OBS browser source.
+3. Open `qa/obs/obs-browser-sources.md`.
+4. Add `Unified Chat - All Sources` as an OBS browser source.
 5. Apply the `OBS browser source settings` from `npm run live:prepare`.
 6. Record the overlay plus the real Market Bubble stream.
 7. Stop recording in the dashboard.
@@ -164,6 +166,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - OBS overlay recording with source labels visible.
 - Passing final local rehearsal report from `qa/final-report.md`.
 - Final `qa/live-run-plan.txt` regenerated after the final commit.
+- OBS browser source handoff files in `qa/obs/`.
 - Visual QA screenshots from `qa/visual/`.
 - Passing stress output from the final QA run.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.

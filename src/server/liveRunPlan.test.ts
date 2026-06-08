@@ -52,6 +52,7 @@ describe("live run plan", () => {
     expect(formatted).toContain("source type: Browser Source");
     expect(formatted).toContain("size: 1280x720");
     expect(formatted).toContain("custom CSS: body { background: rgba(0, 0, 0, 0); overflow: hidden; }");
+    expect(formatted).toContain("OBS handoff files: npm run obs:handoff -- --app-port 5173 --out qa/obs");
     expect(formatted).toContain("database: data/feed.sqlite");
     expect(formatted).toContain(
       "live proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000"

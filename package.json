@@ -11,6 +11,7 @@
     "live:doctor": "tsx src/server/liveDoctor.ts",
     "live:prepare": "tsx src/server/prepareLiveRun.ts",
     "live:stack": "tsx src/server/runLiveStack.ts",
+    "obs:handoff": "tsx src/server/obsHandoff.ts",
     "preflight": "tsx src/server/preflight.ts",
     "proof:gate": "tsx src/server/liveProofGate.ts",
     "submission:bundle": "tsx src/server/submissionBundle.ts",

@@ -42,6 +42,7 @@ export type LiveRunPlan = {
     shutdownWhenNotVisible: string;
     refreshWhenActive: string;
     customCss: string;
+    handoffCommand: string;
   };
   evidence: {
     archiveDir: string;
@@ -106,7 +107,8 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       background: "transparent",
       shutdownWhenNotVisible: "off",
       refreshWhenActive: "off",
-      customCss: "body { background: rgba(0, 0, 0, 0); overflow: hidden; }"
+      customCss: "body { background: rgba(0, 0, 0, 0); overflow: hidden; }",
+      handoffCommand: `npm run obs:handoff -- --app-port ${shellQuote(String(appPort))} --out qa/obs`
     },
     evidence: {
       archiveDir,
@@ -156,6 +158,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     `  shutdown when not visible: ${plan.obs.shutdownWhenNotVisible}`,
     `  refresh browser when scene becomes active: ${plan.obs.refreshWhenActive}`,
     `  custom CSS: ${plan.obs.customCss}`,
+    `  OBS handoff files: ${plan.obs.handoffCommand}`,
     "",
     "Evidence outputs:",
     `  latest archive directory: ${plan.evidence.archiveDir}`,

@@ -24,6 +24,7 @@ Use this contract for the final visual polish pass. The app is functionally stab
 - Readiness panel with missing env vars and Kick tunnel guidance.
 - Author and selected-event diagnostics with raw IDs.
 - OBS preset links in the diagnostics rail.
+- OBS handoff generation through `npm run obs:handoff`.
 - Submission mode hiding operator rails.
 - OBS route at `/?obs=1`, including `sources`, `q`, `signal`, and `limit` URL presets.
 - Transparent OBS body background.

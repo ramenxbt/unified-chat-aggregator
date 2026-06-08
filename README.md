@@ -46,6 +46,8 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, proof gate thresholds, and replay export commands. Add `--out qa/live-run-plan.txt` to save that exact run sheet for the stream setup. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only; the printed proof, evidence, and bundle commands will include `--allow-partial`.
 
+`npm run obs:handoff -- --out qa/obs` writes `obs-browser-sources.md` and `obs-browser-sources.json` with OBS browser source names, URLs, dimensions, FPS, transparent CSS, and focused Twitch/Kick/X proof shots. Run it after choosing the same `--app-port` used by `live:prepare`.
+
 `npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only. Add `--with-proof-gate` to launch the live proof gate alongside the feed and dashboard; when the gate reports ready, the capture stack keeps running. If the proof gate times out or exits non-zero, feed and dashboard still stay up so the live capture is not interrupted.
 
 `live:doctor`, `live:prepare`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, and `--db` overrides. Use these instead of hand-editing commands when a port or evidence path needs to change right before recording.
@@ -103,6 +105,7 @@ http://127.0.0.1:5173/?obs=1&signal=1&limit=10
 ```
 
 The diagnostics rail also shows ready-to-open OBS preset links while the dashboard is not in submission mode.
+For stream-day setup files, run `npm run obs:handoff -- --out qa/obs` and add `Unified Chat - All Sources` as the primary OBS browser source.
 
 During a recording, scroll the feed to inspect older messages. The toolbar switches from `Live` to `Jump live` so you can return to the newest events immediately. Use the `Newest first` / `Oldest first` control to switch between live monitoring and chronological replay review.
 
