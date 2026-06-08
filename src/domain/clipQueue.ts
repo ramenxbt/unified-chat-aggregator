@@ -47,10 +47,8 @@ export function writeClipQueue(clips: ClipItem[], storage = getStorage()) {
 }
 
 function getStorage() {
-  if (typeof window === "undefined") return null;
-
   try {
-    return window.localStorage;
+    return (globalThis as typeof globalThis & { localStorage?: Storage }).localStorage ?? null;
   } catch {
     return null;
   }

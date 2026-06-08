@@ -3,9 +3,12 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { z } from "zod";
 import { archiveRecordingToCsv, readArchiveRecording } from "./exportFeedArchive";
 import { buildEvidenceReport, formatEvidenceReport, type EvidenceReport } from "./evidenceReport";
 import { resolveArchivePath } from "./feedArchiveLookup";
+import { clipItemSchema } from "../domain/clipQueue";
+import { formatPlatformSourceLabel } from "../domain/unifiedEvent";
 
 export type SubmissionBundleOptions = {
   archivePath?: string;
@@ -16,6 +19,7 @@ export type SubmissionBundleOptions = {
   finalQaReportDir?: string;
   liveRunPlanDir?: string;
   obsHandoffDir?: string;
+  clipQueuePath?: string;
 };
 
 export type SubmissionBundleResult = {
@@ -33,9 +37,23 @@ export type SubmissionBundleResult = {
     partialLiveRunPlan?: string;
     obsHandoffMarkdown?: string;
     obsHandoffJson?: string;
+    clipQueueJson?: string;
   };
   evidence: EvidenceReport;
   artifactIssues: string[];
+};
+
+const clipQueueExportSchema = z.object({
+  exportedAt: z.string().datetime(),
+  source: z.string(),
+  transportState: z.string(),
+  clipCount: z.number().int().nonnegative(),
+  clips: z.array(clipItemSchema)
+});
+
+type ClipQueueSummary = {
+  clipCount: number;
+  sourceLabels: string[];
 };
 
 export async function createSubmissionBundle(options: SubmissionBundleOptions): Promise<SubmissionBundleResult> {
@@ -52,8 +70,13 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
   const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join("qa", "obs"), bundleDir);
+  const clipQueue = await findClipQueue(options.clipQueuePath, bundleDir);
+  const clipQueueValidation = await validateClipQueue(clipQueue);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
-  const artifactIssues = await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, requireAllPlatforms, repo);
+  const artifactIssues = [
+    ...(await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, requireAllPlatforms, repo)),
+    ...clipQueueValidation.issues
+  ];
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
@@ -62,7 +85,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     summary: path.join(bundleDir, "summary.json"),
     ...finalQaReports.files,
     ...liveRunPlans.files,
-    ...obsHandoff.files
+    ...obsHandoff.files,
+    ...clipQueue.files
   };
 
   await mkdir(bundleDir, { recursive: true });
@@ -70,7 +94,11 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     writeFile(files.evidenceReport, `${formatEvidenceReport(evidence)}\n`, "utf8"),
     writeFile(files.replayJson, `${JSON.stringify(recording, null, 2)}\n`, "utf8"),
     writeFile(files.replayCsv, archiveRecordingToCsv(recording), "utf8"),
-    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence, repo, externalArtifacts, artifactIssues)}\n`, "utf8"),
+    writeFile(
+      files.submissionNotes,
+      `${formatSubmissionNotes(evidence, repo, externalArtifacts, artifactIssues, clipQueueValidation.summary)}\n`,
+      "utf8"
+    ),
     writeFile(
       files.summary,
       `${JSON.stringify(
@@ -88,6 +116,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
           statusPlatforms: evidence.statusPlatforms,
           sourceLabels: evidence.sourceLabels,
           performance: evidence.performance,
+          clipQueue: clipQueueValidation.summary,
           externalArtifacts,
           artifactIssues,
           files
@@ -99,7 +128,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     ),
     ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
     ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
-    ...obsHandoff.copyTasks.map((copyTask) => copyTask())
+    ...obsHandoff.copyTasks.map((copyTask) => copyTask()),
+    ...clipQueue.copyTasks.map((copyTask) => copyTask())
   ]);
 
   return {
@@ -125,7 +155,8 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     ...(result.files.liveRunPlan ? [`Live run plan: ${result.files.liveRunPlan}`] : []),
     ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : []),
     ...(result.files.obsHandoffMarkdown ? [`OBS handoff: ${result.files.obsHandoffMarkdown}`] : []),
-    ...(result.files.obsHandoffJson ? [`OBS handoff JSON: ${result.files.obsHandoffJson}`] : [])
+    ...(result.files.obsHandoffJson ? [`OBS handoff JSON: ${result.files.obsHandoffJson}`] : []),
+    ...(result.files.clipQueueJson ? [`Clip queue JSON: ${result.files.clipQueueJson}`] : [])
   ];
 
   const issues = [...result.evidence.issues, ...result.artifactIssues];
@@ -141,7 +172,8 @@ export function formatSubmissionNotes(
   evidence: EvidenceReport,
   repo = collectRepoMetadata(),
   externalArtifacts = buildExternalArtifactChecklist(),
-  artifactIssues: string[] = []
+  artifactIssues: string[] = [],
+  clipQueue?: ClipQueueSummary
 ) {
   const ready = evidence.ok && artifactIssues.length === 0;
   const lines = [
@@ -171,6 +203,17 @@ export function formatSubmissionNotes(
     ...(evidence.sourceLabels.length > 0
       ? evidence.sourceLabels.map((label) => `- ${label}`)
       : ["- No source labels captured"]),
+    ...(clipQueue
+      ? [
+          "",
+          "## Clip Queue",
+          "",
+          `- Clips marked: ${clipQueue.clipCount}`,
+          ...(clipQueue.sourceLabels.length > 0
+            ? clipQueue.sourceLabels.map((label) => `- ${label}`)
+            : ["- No clip source labels captured"])
+        ]
+      : []),
     "",
     "## Evidence Files",
     "",
@@ -217,7 +260,7 @@ function buildExternalArtifactChecklist() {
   return [
     "OBS overlay recording with Twitch, Kick, and X source labels visible",
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
-    "Exported dashboard recording JSON and CSV, if captured from the browser",
+    "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
     "Final live run sheet from qa/live-run-plan.txt",
     "OBS browser source handoff from qa/obs/obs-browser-sources.md",
     "Final local rehearsal report from qa/final-report.md"
@@ -245,6 +288,33 @@ async function findObsHandoff(reportDir: string, bundleDir: string) {
   ]);
 }
 
+async function findClipQueue(clipQueuePath: string | undefined, bundleDir: string) {
+  if (!clipQueuePath) {
+    return {
+      files: {} as Record<string, string>,
+      sourceFiles: {} as Record<string, string>,
+      copyTasks: [] as Array<() => Promise<void>>
+    };
+  }
+
+  const sourcePath = path.resolve(clipQueuePath);
+  const targetPath = path.join(bundleDir, "clip-queue.json");
+
+  if (!(await pathExists(sourcePath))) {
+    return {
+      files: {} as Record<string, string>,
+      sourceFiles: { clipQueueJson: sourcePath },
+      copyTasks: [] as Array<() => Promise<void>>
+    };
+  }
+
+  return {
+    files: { clipQueueJson: targetPath },
+    sourceFiles: { clipQueueJson: sourcePath },
+    copyTasks: [() => copyFile(sourcePath, targetPath)]
+  };
+}
+
 async function findOptionalFiles(
   sourceDir: string,
   bundleDir: string,
@@ -266,6 +336,44 @@ async function findOptionalFiles(
   }
 
   return { files, sourceFiles, copyTasks };
+}
+
+async function validateClipQueue(clipQueue: Awaited<ReturnType<typeof findClipQueue>>) {
+  if (!clipQueue.sourceFiles.clipQueueJson) {
+    return { issues: [], summary: undefined };
+  }
+
+  if (!clipQueue.files.clipQueueJson) {
+    return {
+      issues: [`clip queue JSON ${clipQueue.sourceFiles.clipQueueJson} is missing; export the clip queue from the dashboard first`],
+      summary: undefined
+    };
+  }
+
+  try {
+    const parsed = clipQueueExportSchema.parse(JSON.parse(await readFile(clipQueue.sourceFiles.clipQueueJson, "utf8")));
+    const sourceLabels = [...new Set(parsed.clips.map((clip) => formatPlatformSourceLabel(clip.event)))].sort();
+
+    if (parsed.clipCount !== parsed.clips.length) {
+      return {
+        issues: [`clip queue JSON clipCount ${parsed.clipCount} does not match ${parsed.clips.length} clips`],
+        summary: undefined
+      };
+    }
+
+    return {
+      issues: [],
+      summary: {
+        clipCount: parsed.clips.length,
+        sourceLabels
+      }
+    };
+  } catch {
+    return {
+      issues: [`clip queue JSON ${clipQueue.sourceFiles.clipQueueJson} could not be parsed; export it again from the dashboard`],
+      summary: undefined
+    };
+  }
 }
 
 async function validateCopiedArtifacts(
@@ -507,7 +615,7 @@ async function runCli() {
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -519,7 +627,8 @@ async function runCli() {
     databasePath: args.databasePath,
     outputDir: args.outputDir ?? "submission-bundle",
     requireAllPlatforms: !args.allowPartial,
-    obsHandoffDir: args.obsHandoffDir
+    obsHandoffDir: args.obsHandoffDir,
+    clipQueuePath: args.clipQueuePath
   });
 
   console.log(formatSubmissionBundleResult(result));
@@ -535,6 +644,7 @@ type ParsedArgs = {
   databasePath?: string;
   outputDir?: string;
   obsHandoffDir?: string;
+  clipQueuePath?: string;
   allowPartial: boolean;
 };
 
@@ -574,6 +684,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--obs-handoff-dir") {
       parsed.obsHandoffDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--clips") {
+      parsed.clipQueuePath = args[index + 1];
       index += 1;
       continue;
     }

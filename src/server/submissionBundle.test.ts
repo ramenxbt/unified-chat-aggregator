@@ -12,12 +12,14 @@ describe("submission bundle", () => {
     const { archiveDir, archivePath, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
     const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const clipQueuePath = path.join(baseDir, "clip-queue-export.json");
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
+    await writeFile(clipQueuePath, JSON.stringify(createClipQueueExport()), "utf8");
 
     const result = await createSubmissionBundle({
       archiveDir,
@@ -25,7 +27,8 @@ describe("submission bundle", () => {
       outputDir,
       finalQaReportDir,
       liveRunPlanDir: finalQaReportDir,
-      obsHandoffDir
+      obsHandoffDir,
+      clipQueuePath
     });
 
     expect(result.ok).toBe(true);
@@ -40,11 +43,13 @@ describe("submission bundle", () => {
     expect(result.files.liveRunPlan).toBeDefined();
     expect(result.files.obsHandoffMarkdown).toBeDefined();
     expect(result.files.obsHandoffJson).toBeDefined();
+    expect(result.files.clipQueueJson).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
     const liveRunPlan = await readFile(result.files.liveRunPlan as string, "utf8");
     const obsHandoffMarkdown = await readFile(result.files.obsHandoffMarkdown as string, "utf8");
     const obsHandoffJson = JSON.parse(await readFile(result.files.obsHandoffJson as string, "utf8"));
+    const clipQueueJson = JSON.parse(await readFile(result.files.clipQueueJson as string, "utf8"));
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
     expect(evidenceReport).toContain("Evidence check: ready");
@@ -56,6 +61,9 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("Repo commit:");
     expect(submissionNotes).toContain("## External Artifacts To Attach");
     expect(submissionNotes).toContain("OBS overlay recording with Twitch, Kick, and X source labels visible");
+    expect(submissionNotes).toContain("## Clip Queue");
+    expect(submissionNotes).toContain("- Clips marked: 2");
+    expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(finalQaReport).toContain("Status: passed");
@@ -71,6 +79,7 @@ describe("submission bundle", () => {
       name: "Unified Chat - All Sources",
       url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
     });
+    expect(clipQueueJson.clipCount).toBe(2);
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
       evidenceOk: true,
@@ -94,22 +103,55 @@ describe("submission bundle", () => {
       externalArtifacts: [
         "OBS overlay recording with Twitch, Kick, and X source labels visible",
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
-        "Exported dashboard recording JSON and CSV, if captured from the browser",
+        "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
         "Final live run sheet from qa/live-run-plan.txt",
         "OBS browser source handoff from qa/obs/obs-browser-sources.md",
         "Final local rehearsal report from qa/final-report.md"
       ],
+      clipQueue: {
+        clipCount: 2,
+        sourceLabels: ["KICK (MARKETBUBBLE)", "TWITCH (ANSEM)"]
+      },
       files: {
         finalQaReportMarkdown: result.files.finalQaReportMarkdown,
         finalQaReportJson: result.files.finalQaReportJson,
         liveRunPlan: result.files.liveRunPlan,
         obsHandoffMarkdown: result.files.obsHandoffMarkdown,
-        obsHandoffJson: result.files.obsHandoffJson
+        obsHandoffJson: result.files.obsHandoffJson,
+        clipQueueJson: result.files.clipQueueJson
       }
     });
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
     expect(formatSubmissionBundleResult(result)).toContain("OBS handoff:");
+    expect(formatSubmissionBundleResult(result)).toContain("Clip queue JSON:");
+  });
+
+  it("flags a missing provided clip queue export", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const missingClipQueuePath = path.join(baseDir, "missing-clip-queue.json");
+    const outputDir = path.join(baseDir, "bundle-missing-clips");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir,
+      clipQueuePath: missingClipQueuePath
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      `clip queue JSON ${missingClipQueuePath} is missing; export the clip queue from the dashboard first`
+    );
   });
 
   it("flags a partial live run sheet in a strict final bundle", async () => {
@@ -533,6 +575,21 @@ function createFinalQaReport({ commit = currentCommit(), trackedFilesClean = tru
       commit,
       trackedFilesClean
     }
+  };
+}
+
+function createClipQueueExport() {
+  const clips = [createFixtureEvent(0), createFixtureEvent(2)].map((event, index) => ({
+    clippedAt: new Date(Date.UTC(2026, 5, 4, 23, index)).toISOString(),
+    event
+  }));
+
+  return {
+    exportedAt: "2026-06-04T23:00:03.000Z",
+    source: "Live feed server",
+    transportState: "live",
+    clipCount: clips.length,
+    clips
   };
 }
 
