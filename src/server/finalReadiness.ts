@@ -18,6 +18,13 @@ export type FinalReadinessReport = {
   ok: boolean;
   checks: FinalReadinessCheck[];
   plan: LiveRunPlan;
+  requiredCommands: {
+    finalQa: string;
+    livePrepare: string;
+    obsHandoff: string;
+    proofGate: string;
+    submissionBundle: string;
+  };
 };
 
 export type FinalReadinessOptions = LiveRunPlanOptions & {
@@ -66,7 +73,8 @@ export async function buildFinalReadinessReport(
   return {
     ok: checks.every((check) => check.state === "ready"),
     checks,
-    plan
+    plan,
+    requiredCommands: buildRequiredCommands(plan, options, qaDir, obsHandoffDir)
   };
 }
 
@@ -78,11 +86,11 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
     ...report.checks.map((check) => `  ${check.state === "ready" ? "PASS" : "MISS"} ${check.name}: ${check.detail}`),
     "",
     "Required final commands:",
-    "  npm run qa:final",
-    "  npm run live:prepare -- --out qa/live-run-plan.txt",
-    "  npm run obs:handoff -- --out qa/obs",
-    `  ${report.plan.evidence.proofGateCommand}`,
-    `  ${report.plan.evidence.submissionBundleCommand}`
+    `  ${report.requiredCommands.finalQa}`,
+    `  ${report.requiredCommands.livePrepare}`,
+    `  ${report.requiredCommands.obsHandoff}`,
+    `  ${report.requiredCommands.proofGate}`,
+    `  ${report.requiredCommands.submissionBundle}`
   ];
 
   if (!report.plan.report.ok) {
@@ -90,6 +98,35 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
   }
 
   return lines.join("\n");
+}
+
+function buildRequiredCommands(
+  plan: LiveRunPlan,
+  options: FinalReadinessOptions,
+  qaDir: string,
+  obsHandoffDir: string
+): FinalReadinessReport["requiredCommands"] {
+  return {
+    finalQa: "npm run qa:final",
+    livePrepare: ["npm run live:prepare --", ...formatLiveRunOptionArgs(options), "--out", shellQuote(path.join(qaDir, "live-run-plan.txt"))].join(" "),
+    obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
+    proofGate: plan.evidence.proofGateCommand,
+    submissionBundle: plan.evidence.submissionBundleCommand
+  };
+}
+
+function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
+  const args: string[] = [];
+
+  if (options.feedPort !== undefined) args.push("--feed-port", shellQuote(String(options.feedPort)));
+  if (options.appPort !== undefined) args.push("--app-port", shellQuote(String(options.appPort)));
+  if (options.archiveDir !== undefined) args.push("--archive-dir", shellQuote(options.archiveDir));
+  if (options.databasePath !== undefined) args.push("--db", shellQuote(options.databasePath));
+  if (options.clipQueuePath !== undefined) args.push("--clips", shellQuote(options.clipQueuePath));
+  if (options.proofTimeoutMs !== undefined) args.push("--proof-timeout-ms", shellQuote(String(options.proofTimeoutMs)));
+  if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));
+
+  return args;
 }
 
 async function checkFinalQaReport(reportPath: string, currentCommit: string | null): Promise<FinalReadinessCheck> {
@@ -311,6 +348,14 @@ function indentBlock(content: string, prefix: string) {
     .split("\n")
     .map((line) => `${prefix}${line}`)
     .join("\n");
+}
+
+function shellQuote(value: string) {
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(value)) {
+    return value;
+  }
+
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 async function checkObsHandoff(

@@ -125,6 +125,37 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("feed command does not match current live:ready launch options");
   });
 
+  it("prints required final commands with the current path and port overrides", async () => {
+    const qaDir = await mkdtemp(path.join(os.tmpdir(), "final readiness custom-"));
+    const obsHandoffDir = path.join(qaDir, "obs handoff");
+    const report = await buildFinalReadinessReport(completeEnv, {
+      qaDir,
+      obsHandoffDir,
+      feedPort: 8899,
+      appPort: 5260,
+      archiveDir: "data/final sessions",
+      databasePath: "data/final proof.sqlite",
+      clipQueuePath: "exports/final clips.json",
+      proofTimeoutMs: 300000,
+      proofIntervalMs: 2000
+    });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(formatted).toContain(
+      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --proof-timeout-ms 300000 --proof-interval-ms 2000 --out '${path.join(
+        qaDir,
+        "live-run-plan.txt"
+      )}'`
+    );
+    expect(formatted).toContain(`npm run obs:handoff -- --app-port 5260 --out '${obsHandoffDir}'`);
+    expect(formatted).toContain(
+      "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
+    );
+    expect(formatted).toContain(
+      "npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json'"
+    );
+  });
+
   it("fails when the final run sheet is missing the live proof gate command", async () => {
     const qaDir = await createReadyQaDir({ proofGateCommand: null });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir });
