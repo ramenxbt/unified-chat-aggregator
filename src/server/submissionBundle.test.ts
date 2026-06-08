@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -13,7 +14,7 @@ describe("submission bundle", () => {
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
-    await writeFile(path.join(finalQaReportDir, "final-report.json"), "{\"status\":\"passed\"}\n", "utf8");
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), "Live preflight: ready\n", "utf8");
 
     const result = await createSubmissionBundle({
@@ -51,7 +52,12 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(finalQaReport).toContain("Status: passed");
-    expect(finalQaReportJson).toMatchObject({ status: "passed" });
+    expect(finalQaReportJson).toMatchObject({
+      status: "passed",
+      repo: {
+        commit: expect.any(String)
+      }
+    });
     expect(liveRunPlan).toContain("Live preflight: ready");
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
@@ -95,6 +101,7 @@ describe("submission bundle", () => {
     const liveRunPlanDir = path.join(baseDir, "qa");
     const outputDir = path.join(baseDir, "bundle-partial-plan");
     await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(
       path.join(liveRunPlanDir, "live-run-plan.txt"),
       "Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n",
@@ -105,6 +112,7 @@ describe("submission bundle", () => {
       archiveDir,
       databasePath,
       outputDir,
+      finalQaReportDir: liveRunPlanDir,
       liveRunPlanDir
     });
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
@@ -124,6 +132,46 @@ describe("submission bundle", () => {
       evidenceOk: true,
       artifactIssues: result.artifactIssues
     });
+  });
+
+  it("requires a final QA report for a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const outputDir = path.join(baseDir, "bundle-missing-qa");
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: path.join(baseDir, "missing-qa"),
+      liveRunPlanDir: path.join(baseDir, "missing-qa")
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-report.json is missing; run npm run qa:final before creating the final bundle"
+    );
+  });
+
+  it("flags a stale final QA report commit in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-stale-qa");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(
+      path.join(finalQaReportDir, "final-report.json"),
+      JSON.stringify(createFinalQaReport({ commit: "stale123" })),
+      "utf8"
+    );
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues.some((issue) => issue.includes("was generated for commit stale123"))).toBe(true);
   });
 });
 
@@ -166,4 +214,17 @@ async function createBundleFixture() {
     databasePath,
     baseDir
   };
+}
+
+function createFinalQaReport({ commit = currentCommit() } = {}) {
+  return {
+    status: "passed",
+    repo: {
+      commit
+    }
+  };
+}
+
+function currentCommit() {
+  return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 }

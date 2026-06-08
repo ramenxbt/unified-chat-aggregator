@@ -49,7 +49,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
-  const artifactIssues = await validateCopiedArtifacts(liveRunPlans, requireAllPlatforms);
+  const artifactIssues = await validateCopiedArtifacts(finalQaReports, liveRunPlans, requireAllPlatforms, repo);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
@@ -253,18 +253,64 @@ async function findOptionalFiles(
 }
 
 async function validateCopiedArtifacts(
+  finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
-  requireAllPlatforms: boolean
+  requireAllPlatforms: boolean,
+  repo: ReturnType<typeof collectRepoMetadata>
 ) {
-  if (!requireAllPlatforms || !liveRunPlans.sourceFiles.liveRunPlan) {
+  if (!requireAllPlatforms) {
     return [];
   }
 
-  const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
+  const issues: string[] = [];
 
-  return isPartialLiveRunPlan(liveRunPlan)
-    ? ["qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"]
-    : [];
+  issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
+
+  if (liveRunPlans.sourceFiles.liveRunPlan) {
+    const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
+
+    if (isPartialLiveRunPlan(liveRunPlan)) {
+      issues.push(
+        "qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"
+      );
+    }
+  }
+
+  return issues;
+}
+
+async function validateFinalQaReport(
+  finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
+  repo: ReturnType<typeof collectRepoMetadata>
+) {
+  if (!finalQaReports.sourceFiles.finalQaReportJson) {
+    return ["qa/final-report.json is missing; run npm run qa:final before creating the final bundle"];
+  }
+
+  const issues: string[] = [];
+
+  try {
+    const report = JSON.parse(await readFile(finalQaReports.sourceFiles.finalQaReportJson, "utf8")) as {
+      status?: string;
+      repo?: {
+        commit?: string | null;
+      };
+    };
+
+    if (report.status !== "passed") {
+      issues.push(`qa/final-report.json status is ${report.status ?? "unknown"}; rerun npm run qa:final and resolve failures`);
+    }
+
+    if (report.repo?.commit && repo.commit && report.repo.commit !== repo.commit) {
+      issues.push(
+        `qa/final-report.json was generated for commit ${report.repo.commit}, but current commit is ${repo.commit}; rerun npm run qa:final`
+      );
+    }
+  } catch {
+    issues.push("qa/final-report.json could not be parsed; rerun npm run qa:final before creating the final bundle");
+  }
+
+  return issues;
 }
 
 function isPartialLiveRunPlan(content: string) {
