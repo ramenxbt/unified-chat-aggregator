@@ -135,11 +135,17 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
 
 function checkTargetSourceLabels(targetSourceLabels: string[]): FinalReadinessCheck {
   if (targetSourceLabels.length < 3) {
+    const missingAssignments = [
+      targetSourceLabels.some((label) => label.startsWith("TWITCH (")) ? null : "TWITCH_BROADCASTER_LOGIN=marketbubble",
+      targetSourceLabels.some((label) => label.startsWith("KICK (")) ? null : "KICK_BROADCASTER_SLUG=marketbubble",
+      targetSourceLabels.some((label) => label.startsWith("X (")) ? null : "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
+    ].filter((assignment): assignment is string => Boolean(assignment));
+    const currentLabels = targetSourceLabels.length > 0 ? targetSourceLabels.join(", ") : "none";
+
     return {
       name: "Target source labels",
       state: "setup",
-      detail:
-        "Set TWITCH_BROADCASTER_LOGIN, KICK_BROADCASTER_SLUG, and X_FILTER_RULES or X_SPACES_QUERY so the final feed can show account-qualified labels."
+      detail: `Add ${missingAssignments.join(", ")} so the final feed can show account-qualified labels. Current target labels: ${currentLabels}.`
     };
   }
 

@@ -13,8 +13,10 @@ describe("live setup checklist", () => {
       "TWITCH_ACCESS_TOKEN=",
       "TWITCH_BROADCASTER_USER_ID=",
       "TWITCH_BOT_USER_ID=",
+      "TWITCH_BROADCASTER_LOGIN=marketbubble",
       "KICK_WEBHOOK_ENABLED=true",
       "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick",
+      "KICK_BROADCASTER_SLUG=marketbubble",
       "X_BEARER_TOKEN=",
       "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble",
       "X_SPACES_QUERY=Market Bubble"
@@ -35,7 +37,9 @@ describe("live setup checklist", () => {
 
   it("lists per-platform dashboard readiness requirements", () => {
     expect(readinessRequirements.twitch).toContain("TWITCH_ACCESS_TOKEN");
+    expect(readinessRequirements.twitch).toContain("TWITCH_BROADCASTER_LOGIN for source labels");
     expect(readinessRequirements.kick).toContain("public /webhooks/kick URL");
+    expect(readinessRequirements.kick).toContain("KICK_BROADCASTER_SLUG for source labels");
     expect(readinessRequirements.x).toContain("X_BEARER_TOKEN");
   });
 });

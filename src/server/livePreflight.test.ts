@@ -30,7 +30,9 @@ describe("live preflight", () => {
     expect(formatLivePreflightReport(report)).toContain("missing: TWITCH_CLIENT_ID");
     expect(formatLivePreflightReport(report)).toContain("Stream-day .env checklist:");
     expect(formatLivePreflightReport(report)).toContain("TWITCH_CLIENT_ID=");
+    expect(formatLivePreflightReport(report)).toContain("TWITCH_BROADCASTER_LOGIN=marketbubble");
     expect(formatLivePreflightReport(report)).toContain("KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick");
+    expect(formatLivePreflightReport(report)).toContain("KICK_BROADCASTER_SLUG=marketbubble");
   });
 
   it("passes when Twitch, Kick, and X are ready", () => {

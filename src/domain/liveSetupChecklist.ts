@@ -1,8 +1,19 @@
 import type { SourcePlatform } from "./unifiedEvent";
 
 export const readinessRequirements: Record<SourcePlatform, string[]> = {
-  twitch: ["TWITCH_CLIENT_ID", "TWITCH_ACCESS_TOKEN", "TWITCH_BROADCASTER_USER_ID", "TWITCH_BOT_USER_ID"],
-  kick: ["KICK_WEBHOOK_ENABLED=true", "public /webhooks/kick URL", "KICK_ACCESS_TOKEN for auto subscribe"],
+  twitch: [
+    "TWITCH_CLIENT_ID",
+    "TWITCH_ACCESS_TOKEN",
+    "TWITCH_BROADCASTER_USER_ID",
+    "TWITCH_BOT_USER_ID",
+    "TWITCH_BROADCASTER_LOGIN for source labels"
+  ],
+  kick: [
+    "KICK_WEBHOOK_ENABLED=true",
+    "public /webhooks/kick URL",
+    "KICK_BROADCASTER_SLUG for source labels",
+    "KICK_ACCESS_TOKEN for auto subscribe"
+  ],
   x: ["X_BEARER_TOKEN", "X_FILTER_RULES or X_SPACES_QUERY"]
 };
 
@@ -11,8 +22,10 @@ export const streamDayEnvChecklist = [
   "TWITCH_ACCESS_TOKEN=",
   "TWITCH_BROADCASTER_USER_ID=",
   "TWITCH_BOT_USER_ID=",
+  "TWITCH_BROADCASTER_LOGIN=marketbubble",
   "KICK_WEBHOOK_ENABLED=true",
   "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick",
+  "KICK_BROADCASTER_SLUG=marketbubble",
   "X_BEARER_TOKEN=",
   "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble",
   "X_SPACES_QUERY=Market Bubble"

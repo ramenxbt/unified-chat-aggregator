@@ -86,7 +86,8 @@ describe("final recording readiness", () => {
     expect(report.ok).toBe(false);
     expect(formatted).toContain("PASS Strict connector preflight");
     expect(formatted).toContain("MISS Target source labels");
-    expect(formatted).toContain("Set TWITCH_BROADCASTER_LOGIN, KICK_BROADCASTER_SLUG");
+    expect(formatted).toContain("Add TWITCH_BROADCASTER_LOGIN=marketbubble, KICK_BROADCASTER_SLUG=marketbubble");
+    expect(formatted).toContain("Current target labels: X (@MARKETBUBBLE)");
   });
 
   it("fails when the final run sheet is stale", async () => {

@@ -219,6 +219,14 @@ function buildCredentialChecklist(report: LivePreflightReport) {
         assignments.set(key, value);
       }
     }
+
+    if (check.platform === "twitch" && check.details.includes("source: not configured")) {
+      assignments.set("TWITCH_BROADCASTER_LOGIN", "marketbubble");
+    }
+
+    if (check.platform === "kick" && check.details.includes("source: not configured")) {
+      assignments.set("KICK_BROADCASTER_SLUG", "marketbubble");
+    }
   }
 
   return [...assignments.entries()].map(([key, value]) => `${key}=${value}`);
