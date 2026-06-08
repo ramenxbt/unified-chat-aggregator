@@ -69,6 +69,16 @@ describe("final recording readiness", () => {
     expect(formatFinalReadinessReport(report)).toContain("MISS OBS handoff");
   });
 
+  it("fails when the final run sheet is missing the OBS all-source URL", async () => {
+    const qaDir = await createReadyQaDir({ obsAllSourcesUrl: null });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("is missing the OBS all-source URL");
+  });
+
   it("fails when OBS handoff URLs do not match the final run sheet", async () => {
     const qaDir = await createReadyQaDir({
       obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
@@ -98,7 +108,7 @@ async function createReadyQaDir({
   runSheetCommit = currentCommit(),
   withObsHandoff = true
 }: {
-  obsAllSourcesUrl?: string;
+  obsAllSourcesUrl?: string | null;
   obsHandoffCommit?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
@@ -125,18 +135,21 @@ function createFinalQaReport() {
   };
 }
 
-function createLiveRunPlan(commit: string, obsAllSourcesUrl: string) {
-  return [
+function createLiveRunPlan(commit: string, obsAllSourcesUrl: string | null) {
+  const lines = [
     "Live run sheet:",
     "generated at: 2026-06-08T00:00:00.000Z",
     `commit: ${commit}`,
     "branch: main",
     "",
-    "Live preflight: ready",
-    "",
-    "Open:",
-    `  OBS all sources: ${obsAllSourcesUrl}`
-  ].join("\n");
+    "Live preflight: ready"
+  ];
+
+  if (obsAllSourcesUrl) {
+    lines.push("", "Open:", `  OBS all sources: ${obsAllSourcesUrl}`);
+  }
+
+  return lines.join("\n");
 }
 
 async function writeObsHandoff(obsHandoffDir: string, commit: string) {

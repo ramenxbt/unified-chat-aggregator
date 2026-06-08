@@ -153,6 +153,14 @@ async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | nu
       };
     }
 
+    if (!expectedObsAllSourcesUrl) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt.`
+      };
+    }
+
     return {
       name: "Final live run sheet",
       state: "ready",

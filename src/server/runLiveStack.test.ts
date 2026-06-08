@@ -272,9 +272,17 @@ function createFinalQaReport() {
 }
 
 function createLiveRunPlan() {
-  return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${currentCommit()}`, "branch: main", "", "Live preflight: ready"].join(
-    "\n"
-  );
+  return [
+    "Live run sheet:",
+    "generated at: 2026-06-08T00:00:00.000Z",
+    `commit: ${currentCommit()}`,
+    "branch: main",
+    "",
+    "Live preflight: ready",
+    "",
+    "Open:",
+    "  OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+  ].join("\n");
 }
 
 async function writeObsHandoff(obsHandoffDir: string) {
