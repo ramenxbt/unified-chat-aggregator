@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -9,11 +9,17 @@ import { createSubmissionBundle, formatSubmissionBundleResult } from "./submissi
 describe("submission bundle", () => {
   it("writes evidence, replay, csv, and summary files", async () => {
     const { archiveDir, archivePath, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
     const outputDir = path.join(baseDir, "bundle");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), "{\"status\":\"passed\"}\n", "utf8");
+
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
-      outputDir
+      outputDir,
+      finalQaReportDir
     });
 
     expect(result.ok).toBe(true);
@@ -23,6 +29,10 @@ describe("submission bundle", () => {
     const replayJson = JSON.parse(await readFile(result.files.replayJson, "utf8"));
     const replayCsv = await readFile(result.files.replayCsv, "utf8");
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
+    expect(result.files.finalQaReportMarkdown).toBeDefined();
+    expect(result.files.finalQaReportJson).toBeDefined();
+    const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
+    const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
     expect(evidenceReport).toContain("Evidence check: ready");
@@ -36,6 +46,8 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("OBS overlay recording with Twitch, Kick, and X source labels visible");
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
+    expect(finalQaReport).toContain("Status: passed");
+    expect(finalQaReportJson).toMatchObject({ status: "passed" });
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
       evidenceOk: true,
@@ -61,8 +73,13 @@ describe("submission bundle", () => {
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
         "Exported dashboard recording JSON and CSV, if captured from the browser",
         "Final local rehearsal report from qa/final-report.md"
-      ]
+      ],
+      files: {
+        finalQaReportMarkdown: result.files.finalQaReportMarkdown,
+        finalQaReportJson: result.files.finalQaReportJson
+      }
     });
+    expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
   });
 });
 

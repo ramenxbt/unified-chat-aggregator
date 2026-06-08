@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
@@ -13,6 +13,7 @@ export type SubmissionBundleOptions = {
   databasePath?: string;
   outputDir: string;
   requireAllPlatforms?: boolean;
+  finalQaReportDir?: string;
 };
 
 export type SubmissionBundleResult = {
@@ -24,6 +25,8 @@ export type SubmissionBundleResult = {
     replayCsv: string;
     submissionNotes: string;
     summary: string;
+    finalQaReportMarkdown?: string;
+    finalQaReportJson?: string;
   };
   evidence: EvidenceReport;
 };
@@ -39,12 +42,14 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const repo = collectRepoMetadata();
   const externalArtifacts = buildExternalArtifactChecklist();
   const bundleDir = path.resolve(options.outputDir);
+  const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
     replayCsv: path.join(bundleDir, "replay.csv"),
     submissionNotes: path.join(bundleDir, "submission-notes.md"),
-    summary: path.join(bundleDir, "summary.json")
+    summary: path.join(bundleDir, "summary.json"),
+    ...finalQaReports.files
   };
 
   await mkdir(bundleDir, { recursive: true });
@@ -77,7 +82,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
         2
       )}\n`,
       "utf8"
-    )
+    ),
+    ...finalQaReports.copyTasks.map((copyTask) => copyTask())
   ]);
 
   return {
@@ -96,7 +102,9 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     `Replay JSON: ${result.files.replayJson}`,
     `Replay CSV: ${result.files.replayCsv}`,
     `Submission notes: ${result.files.submissionNotes}`,
-    `Summary: ${result.files.summary}`
+    `Summary: ${result.files.summary}`,
+    ...(result.files.finalQaReportMarkdown ? [`Final QA report: ${result.files.finalQaReportMarkdown}`] : []),
+    ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : [])
   ];
 
   if (result.evidence.issues.length > 0) {
@@ -183,6 +191,39 @@ function buildExternalArtifactChecklist() {
     "Exported dashboard recording JSON and CSV, if captured from the browser",
     "Final local rehearsal report from qa/final-report.md"
   ];
+}
+
+async function findFinalQaReports(reportDir: string, bundleDir: string) {
+  const sourceMarkdown = path.resolve(reportDir, "final-report.md");
+  const sourceJson = path.resolve(reportDir, "final-report.json");
+  const targetMarkdown = path.join(bundleDir, "final-qa-report.md");
+  const targetJson = path.join(bundleDir, "final-qa-report.json");
+  const files: {
+    finalQaReportMarkdown?: string;
+    finalQaReportJson?: string;
+  } = {};
+  const copyTasks: Array<() => Promise<void>> = [];
+
+  if (await pathExists(sourceMarkdown)) {
+    files.finalQaReportMarkdown = targetMarkdown;
+    copyTasks.push(() => copyFile(sourceMarkdown, targetMarkdown));
+  }
+
+  if (await pathExists(sourceJson)) {
+    files.finalQaReportJson = targetJson;
+    copyTasks.push(() => copyFile(sourceJson, targetJson));
+  }
+
+  return { files, copyTasks };
+}
+
+async function pathExists(filePath: string) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function formatNumber(value: number) {

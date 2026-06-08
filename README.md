@@ -73,7 +73,7 @@ Set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `
 
 The evidence commands use the newest session in `data/feed-sessions` by default. Pass `--archive data/feed-sessions/<session-id>` instead when you need to inspect an older run. The evidence check validates the archive manifest, parsed events, connector statuses, required Twitch/Kick/X coverage, source labels, ingest duration, throughput, latency, and optional SQLite database rows before you package the final submission.
 
-The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, and `summary.json` into one folder for the final handoff. The notes file gives a human-readable proof summary, repo commit, and external artifact checklist, while the JSON summary keeps platform counts, source labels, throughput, latency metrics, and repo metadata from the recorded run.
+The submission bundle command writes `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, and `summary.json` into one folder for the final handoff. If `qa/final-report.md` or `qa/final-report.json` exists, it also copies them into the bundle as `final-qa-report.md` and `final-qa-report.json`. The notes file gives a human-readable proof summary, repo commit, and external artifact checklist, while the JSON summary keeps platform counts, source labels, throughput, latency metrics, and repo metadata from the recorded run.
 
 Kick live setup:
 
