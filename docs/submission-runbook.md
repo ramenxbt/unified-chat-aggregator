@@ -47,7 +47,7 @@ npm run preflight -- --allow-partial
 npm run live:prepare -- --allow-partial
 ```
 
-Do not treat partial mode as final proof. It is only for connector smoke testing.
+Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
 
 ## 2. Kick Tunnel
 
@@ -76,7 +76,7 @@ Manual fallback:
 Terminal 1:
 
 ```bash
-FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed
+FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed
 ```
 
 Confirm the feed server prints:
@@ -89,7 +89,7 @@ For the final evidence run, start the feed server with `FEED_DB_PATH=data/feed.s
 Terminal 2:
 
 ```bash
-VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
+VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Open:

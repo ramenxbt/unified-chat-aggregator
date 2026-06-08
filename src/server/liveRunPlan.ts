@@ -60,6 +60,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
     minSourceLabels: parsePositiveNumber(env.PROOF_MIN_SOURCE_LABELS, 3),
     maxP95LatencyMs: parsePositiveNumber(env.PROOF_MAX_P95_LATENCY_MS, 5000)
   };
+  const partialFlag = options.allowPartial ? " --allow-partial" : "";
   const kickWebhookPort = env.KICK_WEBHOOK_PORT ?? "8788";
   const kickWebhookPath = env.KICK_WEBHOOK_PATH ?? "/webhooks/kick";
   const dashboardUrl = `http://127.0.0.1:${appPort}/`;
@@ -110,10 +111,10 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         "--watch",
         `--min-events ${proofGate.minEvents}`,
         `--min-source-labels ${proofGate.minSourceLabels}`,
-        `--max-p95-latency-ms ${proofGate.maxP95LatencyMs}`
+        `--max-p95-latency-ms ${proofGate.maxP95LatencyMs}${partialFlag}`
       ].join(" "),
-      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}`,
-      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle`,
+      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}${partialFlag}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle${partialFlag}`,
       replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
       replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`
     }

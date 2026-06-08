@@ -119,5 +119,8 @@ describe("live run plan", () => {
 
     expect(plan.ok).toBe(true);
     expect(plan.report.requireAllPlatforms).toBe(false);
+    expect(plan.evidence.proofGateCommand).toContain("--allow-partial");
+    expect(plan.evidence.evidenceCheckCommand).toContain("--allow-partial");
+    expect(plan.evidence.submissionBundleCommand).toContain("--allow-partial");
   });
 });

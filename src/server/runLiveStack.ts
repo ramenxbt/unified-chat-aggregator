@@ -37,6 +37,25 @@ export async function buildLiveStackLaunchPlan(
   const appPort = options.appPort ?? Number(env.VITE_DEV_SERVER_PORT ?? 5173);
   const feedWsUrl = `ws://127.0.0.1:${feedPort}`;
 
+  const proofGateArgs = [
+    "run",
+    "proof:gate",
+    "--",
+    "--archive-dir",
+    doctor.plan.evidence.archiveDir,
+    "--watch",
+    "--min-events",
+    String(doctor.plan.proofGate.minEvents),
+    "--min-source-labels",
+    String(doctor.plan.proofGate.minSourceLabels),
+    "--max-p95-latency-ms",
+    String(doctor.plan.proofGate.maxP95LatencyMs)
+  ];
+
+  if (options.allowPartial) {
+    proofGateArgs.push("--allow-partial");
+  }
+
   return {
     ok: doctor.ok,
     doctor,
@@ -62,20 +81,7 @@ export async function buildLiveStackLaunchPlan(
       proofGate: {
         name: "proof",
         command: "npm",
-        args: [
-          "run",
-          "proof:gate",
-          "--",
-          "--archive-dir",
-          doctor.plan.evidence.archiveDir,
-          "--watch",
-          "--min-events",
-          String(doctor.plan.proofGate.minEvents),
-          "--min-source-labels",
-          String(doctor.plan.proofGate.minSourceLabels),
-          "--max-p95-latency-ms",
-          String(doctor.plan.proofGate.maxP95LatencyMs)
-        ],
+        args: proofGateArgs,
         env: {}
       }
     }

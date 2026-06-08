@@ -110,6 +110,23 @@ describe("live stack runner", () => {
     log.mockRestore();
   });
 
+  it("passes partial mode through to the proof gate launch plan", async () => {
+    const plan = await buildLiveStackLaunchPlan(
+      {
+        X_BEARER_TOKEN: "x-token",
+        X_SPACES_QUERY: "Market Bubble"
+      },
+      {
+        allowPartial: true,
+        checkPort: readyPortCheck,
+        checkWritableDirectory: readyDirectoryCheck
+      }
+    );
+
+    expect(plan.ok).toBe(true);
+    expect(plan.processes.proofGate.args).toContain("--allow-partial");
+  });
+
   it("refuses to launch when the doctor report is not ready", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const exitCode = await runLiveStack(
