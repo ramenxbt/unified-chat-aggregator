@@ -41,6 +41,7 @@ export async function finalizeSubmission(args: string[] = []): Promise<FinalizeS
     outputDir: parsed.outputDir ?? "submission-bundle",
     requireAllPlatforms,
     qaDir,
+    evidenceCheckPath: evidenceOutputPath,
     obsHandoffDir: parsed.obsHandoffDir,
     visualQaDir: parsed.visualQaDir,
     kickTunnelCheckPath: parsed.kickTunnelCheckPath,

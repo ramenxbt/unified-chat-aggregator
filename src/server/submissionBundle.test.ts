@@ -227,6 +227,35 @@ describe("submission bundle", () => {
     expect(result.files.kickTunnelCheck).toBe(path.join(outputDir, "kick-tunnel-check.txt"));
   });
 
+  it("uses an explicit evidence proof path when provided", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const evidenceCheckPath = path.join(baseDir, "custom evidence", "proof.txt");
+    const outputDir = path.join(baseDir, "bundle-custom-evidence-proof");
+    await mkdir(path.dirname(evidenceCheckPath), { recursive: true });
+    await mkdir(qaDir, { recursive: true });
+    await writeEvidenceCheckProof(evidenceCheckPath);
+    await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(path.join(qaDir, "obs"));
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir,
+      evidenceCheckPath
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.files.evidenceCheckReport).toBe(path.join(outputDir, "evidence-check.txt"));
+    expect(await readFile(result.files.evidenceCheckReport as string, "utf8")).toContain("Evidence check: ready");
+  });
+
   it("flags a partial live run sheet in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");

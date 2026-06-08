@@ -111,6 +111,36 @@ describe("submission finalizer", () => {
     expect(await readFile(result.bundle.files.obsHandoffMarkdown as string, "utf8")).toContain("OBS Browser Source Handoff");
     expect(await readFile(result.bundle.files.visualQaManifestMarkdown as string, "utf8")).toContain("Visual QA Manifest");
   });
+
+  it("copies a custom evidence proof path into the final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createFinalizerFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const evidenceOutputPath = path.join(baseDir, "custom evidence", "proof.txt");
+    const outputDir = path.join(baseDir, "submission-bundle");
+
+    await writeStrictQaArtifacts(qaDir);
+
+    const result = await finalizeSubmission([
+      "--archive-dir",
+      archiveDir,
+      "--db",
+      databasePath,
+      "--out",
+      outputDir,
+      "--qa-dir",
+      qaDir,
+      "--evidence-out",
+      evidenceOutputPath,
+      "--kick-tunnel-check",
+      path.join(qaDir, "kick-tunnel-check.txt")
+    ]);
+
+    expect(result.bundle.ok).toBe(true);
+    expect(result.evidenceOutputPath).toBe(evidenceOutputPath);
+    expect(await readFile(evidenceOutputPath, "utf8")).toContain("Evidence check: ready");
+    expect(result.bundle.files.evidenceCheckReport).toBe(path.join(outputDir, "evidence-check.txt"));
+    expect(await readFile(result.bundle.files.evidenceCheckReport as string, "utf8")).toContain("Throughput:");
+  });
 });
 
 async function createFinalizerFixture() {

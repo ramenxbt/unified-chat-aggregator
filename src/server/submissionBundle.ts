@@ -18,6 +18,7 @@ export type SubmissionBundleOptions = {
   requireAllPlatforms?: boolean;
   qaDir?: string;
   finalQaReportDir?: string;
+  evidenceCheckPath?: string;
   liveRunPlanDir?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
@@ -77,7 +78,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const bundleDir = path.resolve(options.outputDir);
   const qaDir = options.qaDir ?? "qa";
   const finalQaReportDir = options.finalQaReportDir ?? qaDir;
-  const evidenceCheckReport = await findEvidenceCheckReport(finalQaReportDir, bundleDir);
+  const evidenceCheckReport = await findEvidenceCheckReport(finalQaReportDir, bundleDir, options.evidenceCheckPath);
   const finalQaReports = await findFinalQaReports(finalQaReportDir, bundleDir);
   const finalReadinessReport = await findFinalReadinessReport(finalQaReportDir, bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? qaDir, bundleDir);
@@ -308,7 +309,28 @@ function buildExternalArtifactChecklist() {
   ];
 }
 
-async function findEvidenceCheckReport(reportDir: string, bundleDir: string) {
+async function findEvidenceCheckReport(reportDir: string, bundleDir: string, evidenceCheckPath?: string) {
+  if (evidenceCheckPath) {
+    const sourcePath = path.resolve(evidenceCheckPath);
+    const targetPath = path.join(bundleDir, "evidence-check.txt");
+
+    if (!(await pathExists(sourcePath))) {
+      return {
+        files: {} as Record<string, string>,
+        sourceFiles: {} as Record<string, string>,
+        expectedFiles: { evidenceCheckReport: sourcePath },
+        copyTasks: [] as Array<() => Promise<void>>
+      };
+    }
+
+    return {
+      files: { evidenceCheckReport: targetPath },
+      sourceFiles: { evidenceCheckReport: sourcePath },
+      expectedFiles: { evidenceCheckReport: sourcePath },
+      copyTasks: [() => copyFile(sourcePath, targetPath)]
+    };
+  }
+
   return findOptionalFiles(reportDir, bundleDir, [["evidence-check.txt", "evidence-check.txt", "evidenceCheckReport"]]);
 }
 
@@ -886,7 +908,7 @@ async function runCli() {
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--qa-dir qa] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--kick-tunnel-check qa/kick-tunnel-check.txt] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--qa-dir qa] [--evidence-check qa/evidence-check.txt] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--kick-tunnel-check qa/kick-tunnel-check.txt] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -899,6 +921,7 @@ async function runCli() {
     outputDir: args.outputDir ?? "submission-bundle",
     requireAllPlatforms: !args.allowPartial,
     qaDir: args.qaDir,
+    evidenceCheckPath: args.evidenceCheckPath,
     obsHandoffDir: args.obsHandoffDir,
     visualQaDir: args.visualQaDir,
     kickTunnelCheckPath: args.kickTunnelCheckPath,
@@ -918,6 +941,7 @@ type ParsedArgs = {
   databasePath?: string;
   outputDir?: string;
   qaDir?: string;
+  evidenceCheckPath?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
   kickTunnelCheckPath?: string;
@@ -961,6 +985,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--qa-dir") {
       parsed.qaDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--evidence-check" || arg === "--evidence-out") {
+      parsed.evidenceCheckPath = args[index + 1];
       index += 1;
       continue;
     }
