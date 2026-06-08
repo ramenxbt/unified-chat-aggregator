@@ -39,6 +39,8 @@ npm run live:stack -- --require-ready --with-proof-gate --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
+If setup is incomplete, the preflight output includes a `Stream-day .env checklist` block with the exact missing values to add before rerunning it.
+Strict final mode requires `KICK_WEBHOOK_PUBLIC_URL` to be a public HTTPS URL ending in `/webhooks/kick`; use `--allow-partial` only for local-only Kick receiver smoke tests.
 The saved `qa/live-run-plan.txt` file keeps the exact commands, OBS URLs, tunnel health check, evidence commands, clip-aware bundle command, replay export commands, and repo commit metadata available during setup.
 The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-sources.json` with the browser source URLs, settings, and focused proof shots for the same app port.
 The final `live:ready` gate checks strict connector preflight, current final QA, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup.

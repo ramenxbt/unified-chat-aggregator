@@ -24,7 +24,7 @@ export function evaluateLivePreflight(
   options: { requireAllPlatforms?: boolean } = {}
 ): LivePreflightReport {
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
-  const checks = [checkTwitch(env), checkKick(env), checkX(env)];
+  const checks = [checkTwitch(env), checkKick(env, { requirePublicDelivery: requireAllPlatforms }), checkX(env)];
   const mode = checks.some((check) => check.willStart) ? "connectors" : "fixture";
   const ok = requireAllPlatforms ? checks.every((check) => check.ready) : checks.some((check) => check.ready);
 
@@ -60,6 +60,18 @@ export function formatLivePreflightReport(report: LivePreflightReport): string {
     lines.push("");
   }
 
+  const credentialChecklist = buildCredentialChecklist(report);
+  if (credentialChecklist.length > 0) {
+    lines.push("Stream-day .env checklist:");
+    lines.push("  Add or update these values in .env, then rerun npm run preflight:");
+
+    for (const line of credentialChecklist) {
+      lines.push(`  ${line}`);
+    }
+
+    lines.push("");
+  }
+
   return lines.join("\n").trimEnd();
 }
 
@@ -84,7 +96,7 @@ function checkTwitch(env: LivePreflightEnv): PlatformPreflight {
   };
 }
 
-function checkKick(env: LivePreflightEnv): PlatformPreflight {
+function checkKick(env: LivePreflightEnv, options: { requirePublicDelivery: boolean }): PlatformPreflight {
   const webhookEnabled = env.KICK_WEBHOOK_ENABLED === "true" || Boolean(env.KICK_WEBHOOK_PUBLIC_URL);
   const subscribeOnStart = env.KICK_SUBSCRIBE_ON_START === "true";
   const missing = webhookEnabled ? [] : ["KICK_WEBHOOK_ENABLED=true or KICK_WEBHOOK_PUBLIC_URL"];
@@ -95,7 +107,9 @@ function checkKick(env: LivePreflightEnv): PlatformPreflight {
     ? validateKickWebhookPublicUrl(env.KICK_WEBHOOK_PUBLIC_URL, path)
     : null;
 
-  if (webhookEnabled && !env.KICK_WEBHOOK_PUBLIC_URL) {
+  if (webhookEnabled && !env.KICK_WEBHOOK_PUBLIC_URL && options.requirePublicDelivery) {
+    missing.push("KICK_WEBHOOK_PUBLIC_URL");
+  } else if (webhookEnabled && !env.KICK_WEBHOOK_PUBLIC_URL) {
     warnings.push(`expose http://127.0.0.1:${port}${path} through a public tunnel for Kick delivery`);
   }
 
@@ -189,4 +203,54 @@ function parseEnvList(value: string | undefined) {
       .map((item) => item.trim())
       .filter(Boolean) ?? []
   );
+}
+
+function buildCredentialChecklist(report: LivePreflightReport) {
+  if (report.ok) {
+    return [];
+  }
+
+  const assignments = new Map<string, string>();
+
+  for (const check of report.checks) {
+    for (const missing of check.missing) {
+      for (const [key, value] of credentialAssignmentCandidates(missing)) {
+        assignments.set(key, value);
+      }
+    }
+  }
+
+  return [...assignments.entries()].map(([key, value]) => `${key}=${value}`);
+}
+
+function credentialAssignmentCandidates(missing: string): Array<[key: string, value: string]> {
+  if (missing === "KICK_WEBHOOK_ENABLED=true or KICK_WEBHOOK_PUBLIC_URL") {
+    return [
+      ["KICK_WEBHOOK_ENABLED", "true"],
+      ["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]
+    ];
+  }
+
+  if (
+    missing === "KICK_WEBHOOK_PUBLIC_URL" ||
+    missing === "valid KICK_WEBHOOK_PUBLIC_URL" ||
+    missing === "HTTPS KICK_WEBHOOK_PUBLIC_URL" ||
+    missing === "public KICK_WEBHOOK_PUBLIC_URL host" ||
+    missing.startsWith("KICK_WEBHOOK_PUBLIC_URL ending in")
+  ) {
+    return [["KICK_WEBHOOK_PUBLIC_URL", "https://YOUR-TUNNEL.example/webhooks/kick"]];
+  }
+
+  if (/^[A-Z0-9_]+$/.test(missing)) {
+    return [[missing, ""]];
+  }
+
+  if (missing === "X_FILTER_RULES or X_SPACES_QUERY") {
+    return [
+      ["X_FILTER_RULES", "Market Bubble,marketbubble"],
+      ["X_SPACES_QUERY", "Market Bubble"]
+    ];
+  }
+
+  return [];
 }

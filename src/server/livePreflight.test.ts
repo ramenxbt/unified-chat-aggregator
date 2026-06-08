@@ -28,6 +28,9 @@ describe("live preflight", () => {
     });
     expect(report.checks.every((check) => check.ready)).toBe(false);
     expect(formatLivePreflightReport(report)).toContain("missing: TWITCH_CLIENT_ID");
+    expect(formatLivePreflightReport(report)).toContain("Stream-day .env checklist:");
+    expect(formatLivePreflightReport(report)).toContain("TWITCH_CLIENT_ID=");
+    expect(formatLivePreflightReport(report)).toContain("KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick");
   });
 
   it("passes when Twitch, Kick, and X are ready", () => {
@@ -82,6 +85,23 @@ describe("live preflight", () => {
       willStart: true,
       warnings: ["expose http://127.0.0.1:8788/webhooks/kick through a public tunnel for Kick delivery"]
     });
+  });
+
+  it("requires a public Kick delivery URL for strict final readiness", () => {
+    const report = evaluateLivePreflight({
+      ...completeEnv,
+      KICK_WEBHOOK_PUBLIC_URL: undefined
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.checks.find((check) => check.platform === "kick")).toMatchObject({
+      ready: false,
+      willStart: true,
+      missing: ["KICK_WEBHOOK_PUBLIC_URL"]
+    });
+    expect(formatLivePreflightReport(report)).toContain(
+      "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick"
+    );
   });
 
   it("fails Kick readiness when the public webhook URL is not an HTTPS tunnel URL", () => {
