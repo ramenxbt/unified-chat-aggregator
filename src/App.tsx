@@ -9,6 +9,7 @@ import {
   BookmarkPlus,
   CheckCircle2,
   Circle,
+  Copy,
   Download,
   FolderOpen,
   Gauge,
@@ -65,6 +66,18 @@ const readinessRequirements: Record<SourcePlatform, string[]> = {
   kick: ["KICK_WEBHOOK_ENABLED=true", "public /webhooks/kick URL", "KICK_ACCESS_TOKEN for auto subscribe"],
   x: ["X_BEARER_TOKEN", "X_FILTER_RULES or X_SPACES_QUERY"]
 };
+
+const streamDayEnvChecklist = [
+  "TWITCH_CLIENT_ID=",
+  "TWITCH_ACCESS_TOKEN=",
+  "TWITCH_BROADCASTER_USER_ID=",
+  "TWITCH_BOT_USER_ID=",
+  "KICK_WEBHOOK_ENABLED=true",
+  "KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick",
+  "X_BEARER_TOKEN=",
+  "X_FILTER_RULES=Market Bubble,marketbubble",
+  "X_SPACES_QUERY=Market Bubble"
+];
 
 export function App() {
   const [viewPreset] = useState(readViewPreset);
@@ -1532,6 +1545,23 @@ function ReadinessPanel({
   items: ReadinessItem[];
   transportState: AppTransportState;
 }) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const setupChecklist = streamDayEnvChecklist.join("\n");
+
+  async function copySetupChecklist() {
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus("Clipboard unavailable");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(setupChecklist);
+      setCopyStatus("Checklist copied");
+    } catch {
+      setCopyStatus("Copy failed");
+    }
+  }
+
   return (
     <div className="readiness-panel">
       <p className="readiness-summary">
@@ -1556,6 +1586,16 @@ function ReadinessPanel({
             </div>
           </div>
         ))}
+      </div>
+      <div className="setup-checklist" aria-label="Stream-day env checklist">
+        <div className="setup-checklist-heading">
+          <span>Stream-day .env checklist</span>
+          <button className="mini-copy-button" onClick={() => void copySetupChecklist()} type="button">
+            <Copy size={13} />
+            <span>{copyStatus ?? "Copy"}</span>
+          </button>
+        </div>
+        <pre>{setupChecklist}</pre>
       </div>
     </div>
   );

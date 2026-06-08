@@ -1132,6 +1132,53 @@ button {
   font-size: 10px;
 }
 
+.setup-checklist {
+  margin-top: 10px;
+  border: 1px solid rgba(229, 196, 107, 0.28);
+  border-radius: 8px;
+  padding: 9px;
+  background: rgba(229, 196, 107, 0.045);
+}
+
+.setup-checklist-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.mini-copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 25px;
+  border: 1px solid rgba(229, 196, 107, 0.3);
+  border-radius: 6px;
+  padding: 0 7px;
+  color: var(--soft);
+  background: rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.mini-copy-button:hover {
+  border-color: rgba(229, 196, 107, 0.5);
+  background: rgba(229, 196, 107, 0.09);
+}
+
+.setup-checklist pre {
+  overflow-x: auto;
+  margin: 8px 0 0;
+  color: var(--soft);
+  font-size: 10px;
+  line-height: 1.55;
+  white-space: pre;
+}
+
 .selected-event {
   min-height: 292px;
 }
