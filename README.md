@@ -31,6 +31,7 @@ Live feed server mode:
 
 ```bash
 npm run live:doctor
+npm run qa:quick
 npm run preflight
 npm run live:prepare
 npm run live:ready
@@ -41,7 +42,9 @@ VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 
 If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. If `KICK_WEBHOOK_ENABLED=true` or `KICK_WEBHOOK_PUBLIC_URL` is set, it also starts the Kick webhook receiver at `http://127.0.0.1:8788/webhooks/kick` by default. If `X_BEARER_TOKEN` is set with `X_FILTER_RULES` or `X_SPACES_QUERY`, it also runs the X filtered stream or Spaces poller. Without connector credentials it runs fixture mode.
 
-`npm run live:doctor` runs the strict connector preflight plus local recording checks for available feed/dashboard/Kick ports, enabled server archive output, and writable archive/database paths. It exits non-zero on stream-day blockers before you start the capture stack.
+`npm run live:doctor` runs the strict connector preflight plus local recording checks for available feed/dashboard/Kick ports, enabled server archive output, and writable archive/database/QA artifact paths. It exits non-zero on stream-day blockers before you start the capture stack.
+
+`npm run qa:quick` runs the low-usage non-visual gate for active development: repository hygiene, unit/integration tests, lint, production build, connector rehearsal, and live stack rehearsal. It writes `qa/quick-report.md` and `qa/quick-report.json`. Use `npm run qa:final` only when you need the full submission evidence set, including browser workflows, stress rehearsal, and visual QA artifacts.
 
 `npm run preflight` checks the live environment for Twitch, Kick, and X before you start the feed server. It exits non-zero until all three platforms are ready and Kick has a public HTTPS webhook URL for final delivery. When setup is incomplete, it prints a copy-ready `.env` checklist for the missing values. Use `npm run preflight -- --allow-partial` when intentionally testing only one live connector or a local-only Kick receiver.
 

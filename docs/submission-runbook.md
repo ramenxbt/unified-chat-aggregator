@@ -15,10 +15,13 @@ The dashboard reads `VITE_*` values from `.env`. Server-side commands such as `f
 Run the fixture rehearsal once before connecting real credentials:
 
 ```bash
+npm run qa:quick
 npm run qa:final
 ```
 
-This checks tracked files for accidental live credentials or attribution issues, then proves tests, lint, build, browser workflows, connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, SQLite archive path, high-volume burst handling, and visual captures work together. It writes `qa/final-report.md` and `qa/final-report.json` for the final evidence packet.
+`npm run qa:quick` is the low-usage non-visual gate for iteration. It checks tracked files for accidental live credentials or attribution issues, then proves tests, lint, build, connector paths against local Twitch/Kick/X mocks, the feed WebSocket, dashboard transport, server archive path, and SQLite archive path. It writes `qa/quick-report.md` and `qa/quick-report.json`.
+
+`npm run qa:final` adds browser workflows, high-volume burst handling, and visual captures for the final evidence packet. It writes `qa/final-report.md` and `qa/final-report.json`, and `live:ready` expects this strict final report before recording.
 
 Run the local doctor first:
 
@@ -26,7 +29,7 @@ Run the local doctor first:
 npm run live:doctor
 ```
 
-This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database paths.
+This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database/QA artifact paths.
 
 Run the strict connector check next:
 

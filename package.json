@@ -23,6 +23,7 @@
     "qa:connectors": "tsx scripts/rehearseConnectorStack.ts",
     "qa:stress": "tsx scripts/stressLiveStack.ts",
     "qa:visual": "tsx scripts/captureVisualQa.ts",
+    "qa:quick": "tsx scripts/runQuickQa.ts",
     "qa:repo": "tsx scripts/checkRepoHygiene.ts",
     "qa:final": "tsx scripts/runFinalQa.ts",
     "test": "vitest run",
