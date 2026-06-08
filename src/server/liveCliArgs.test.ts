@@ -16,6 +16,8 @@ describe("live CLI args", () => {
         "data/final proof.sqlite",
         "--qa-dir",
         "qa/final",
+        "--evidence-check",
+        "qa/final evidence.txt",
         "--kick-tunnel-check",
         "qa/final kick tunnel.txt",
         "--proof-timeout-ms",
@@ -30,6 +32,7 @@ describe("live CLI args", () => {
       archiveDir: "data/final sessions",
       databasePath: "data/final proof.sqlite",
       qaDir: "qa/final",
+      evidenceCheckPath: "qa/final evidence.txt",
       kickTunnelCheckPath: "qa/final kick tunnel.txt",
       proofTimeoutMs: 300000,
       proofIntervalMs: 2000

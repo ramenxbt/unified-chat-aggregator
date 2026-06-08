@@ -9,6 +9,7 @@ export type LiveRunPlanOptions = {
   databasePath?: string;
   clipQueuePath?: string;
   qaDir?: string;
+  evidenceCheckPath?: string;
   kickTunnelCheckPath?: string;
   proofTimeoutMs?: number;
   proofIntervalMs?: number;
@@ -69,6 +70,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   const databasePath = options.databasePath ?? env.FEED_DB_PATH ?? "data/feed.sqlite";
   const clipQueuePath = options.clipQueuePath ?? env.CLIP_QUEUE_PATH ?? "clip-queue.json";
   const qaDir = options.qaDir ?? "qa";
+  const evidenceCheckPath = options.evidenceCheckPath ?? `${qaDir}/evidence-check.txt`;
   const kickTunnelCheckPath = options.kickTunnelCheckPath ?? `${qaDir}/kick-tunnel-check.txt`;
   const proofGate = {
     minEvents: parsePositiveNumber(env.PROOF_MIN_EVENTS, 25),
@@ -136,9 +138,9 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         `--timeout-ms ${proofGate.timeoutMs}`,
         `--interval-ms ${proofGate.intervalMs}${partialFlag}`
       ].join(" "),
-      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out ${shellQuote(`${qaDir}/evidence-check.txt`)}${partialFlag}`,
-      submissionFinalizeCommand: `npm run submission:finalize -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
-      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
+      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out ${shellQuote(evidenceCheckPath)}${partialFlag}`,
+      submissionFinalizeCommand: `npm run submission:finalize -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --evidence-out ${shellQuote(evidenceCheckPath)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --evidence-check ${shellQuote(evidenceCheckPath)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
       replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
       replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`
     }

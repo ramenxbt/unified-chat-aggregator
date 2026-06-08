@@ -64,10 +64,10 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
-      "submission finalize: npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission finalize: npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --evidence-out qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --evidence-check qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
 
@@ -102,14 +102,14 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
-      "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --evidence-out qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --evidence-check qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
 
-  it("uses a configured clip queue export path in the bundle command", () => {
+  it("uses a configured clip queue export path in the final packaging commands", () => {
     const plan = buildLiveRunPlan(completeEnv, {
       clipQueuePath: "exports/final clips.json"
     });
@@ -118,14 +118,24 @@ describe("live run plan", () => {
     expect(plan.evidence.submissionBundleCommand).toContain("--clips 'exports/final clips.json'");
   });
 
+  it("uses a configured evidence proof path in final packaging commands", () => {
+    const plan = buildLiveRunPlan(completeEnv, {
+      evidenceCheckPath: "qa/final evidence.txt"
+    });
+
+    expect(plan.evidence.evidenceCheckCommand).toContain("--out 'qa/final evidence.txt'");
+    expect(plan.evidence.submissionFinalizeCommand).toContain("--evidence-out 'qa/final evidence.txt'");
+    expect(plan.evidence.submissionBundleCommand).toContain("--evidence-check 'qa/final evidence.txt'");
+  });
+
   it("uses a configured Kick tunnel proof path in final run commands", () => {
     const plan = buildLiveRunPlan(completeEnv, {
       kickTunnelCheckPath: "qa/final kick tunnel.txt"
     });
 
     expect(plan.urls.kickWebhookHealthCommand).toBe("npm run live:tunnel -- --out 'qa/final kick tunnel.txt'");
-    expect(plan.evidence.submissionFinalizeCommand).toContain("--qa-dir qa --kick-tunnel-check 'qa/final kick tunnel.txt'");
-    expect(plan.evidence.submissionBundleCommand).toContain("--qa-dir qa --kick-tunnel-check 'qa/final kick tunnel.txt'");
+    expect(plan.evidence.submissionFinalizeCommand).toContain("--qa-dir qa --evidence-out qa/evidence-check.txt --kick-tunnel-check 'qa/final kick tunnel.txt'");
+    expect(plan.evidence.submissionBundleCommand).toContain("--qa-dir qa --evidence-check qa/evidence-check.txt --kick-tunnel-check 'qa/final kick tunnel.txt'");
   });
 
   it("surfaces missing strict requirements while still printing setup commands", () => {

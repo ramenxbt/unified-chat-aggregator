@@ -190,13 +190,14 @@ describe("final recording readiness", () => {
       archiveDir: "data/final sessions",
       databasePath: "data/final proof.sqlite",
       clipQueuePath: "exports/final clips.json",
+      evidenceCheckPath: "qa/final evidence.txt",
       proofTimeoutMs: 300000,
       proofIntervalMs: 2000
     });
     const formatted = formatFinalReadinessReport(report);
 
     expect(formatted).toContain(
-      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(
+      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --kick-tunnel-check '${path.join(
         qaDir,
         "kick-tunnel-check.txt"
       )}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --out '${path.join(
@@ -210,13 +211,13 @@ describe("final recording readiness", () => {
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
-      `npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
+      `npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-out 'qa/final evidence.txt' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
     );
     expect(formatted).toContain(
-      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
+      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}' --obs-handoff-dir '${obsHandoffDir}' --visual-qa-dir '${visualQaDir}'`
     );
     expect(formatted).toContain(
-      `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`
+      `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --evidence-check 'qa/final evidence.txt' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`
     );
   });
 
@@ -381,7 +382,7 @@ async function createReadyQaDir({
 function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
   return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
-  )} --kick-tunnel-check ${shellQuote(
+  )} --evidence-check ${shellQuote(path.join(path.dirname(kickTunnelCheckPath), "evidence-check.txt"))} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
   )}`;
 }
@@ -389,7 +390,7 @@ function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
 function defaultSubmissionFinalizeCommand(kickTunnelCheckPath: string) {
   return `npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
-  )} --kick-tunnel-check ${shellQuote(
+  )} --evidence-out ${shellQuote(path.join(path.dirname(kickTunnelCheckPath), "evidence-check.txt"))} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
   )}`;
 }

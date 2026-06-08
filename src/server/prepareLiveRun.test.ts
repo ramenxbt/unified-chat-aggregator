@@ -51,10 +51,10 @@ describe("prepare live run", () => {
     expect(savedPlan).toContain("X (@MARKETBUBBLE)");
     expect(savedPlan).toContain("OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(savedPlan).toContain(
-      "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json' --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json' --qa-dir qa --evidence-out qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
     expect(savedPlan).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json' --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json' --qa-dir qa --evidence-check qa/evidence-check.txt --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
 });

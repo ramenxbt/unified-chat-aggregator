@@ -304,7 +304,7 @@ function createLiveRunPlan(qaDir: string) {
 function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
   return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
-  )} --kick-tunnel-check ${shellQuote(
+  )} --evidence-check ${shellQuote(path.join(path.dirname(kickTunnelCheckPath), "evidence-check.txt"))} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
   )}`;
 }
@@ -312,7 +312,7 @@ function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
 function defaultSubmissionFinalizeCommand(kickTunnelCheckPath: string) {
   return `npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
-  )} --kick-tunnel-check ${shellQuote(
+  )} --evidence-out ${shellQuote(path.join(path.dirname(kickTunnelCheckPath), "evidence-check.txt"))} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
   )}`;
 }

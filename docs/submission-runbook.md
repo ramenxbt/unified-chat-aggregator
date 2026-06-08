@@ -156,7 +156,7 @@ npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.s
 ```
 
 This command uses the newest archive session, saves `qa/evidence-check.txt`, then builds `submission-bundle/`. Pass `--archive data/feed-sessions/<session-id>` instead when reviewing an older run.
-If you save the proof somewhere else, add `--evidence-out <path>` to `submission:finalize`; for the manual fallback, pass the same file to `submission:bundle` with `--evidence-check <path>`.
+If you save the proof somewhere else, add `--evidence-check <path>` to `live:prepare` and `live:ready`; they will print matching `--evidence-out <path>` and `--evidence-check <path>` packaging commands. For the manual fallback, pass the same file to `submission:bundle` with `--evidence-check <path>`.
 
 Manual fallback:
 

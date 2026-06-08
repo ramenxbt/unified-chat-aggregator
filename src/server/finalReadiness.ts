@@ -172,6 +172,7 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
   if (options.databasePath !== undefined) args.push("--db", shellQuote(options.databasePath));
   if (options.clipQueuePath !== undefined) args.push("--clips", shellQuote(options.clipQueuePath));
   if (options.qaDir !== undefined) args.push("--qa-dir", shellQuote(options.qaDir));
+  if (options.evidenceCheckPath !== undefined) args.push("--evidence-check", shellQuote(options.evidenceCheckPath));
   if (options.kickTunnelCheckPath !== undefined) args.push("--kick-tunnel-check", shellQuote(options.kickTunnelCheckPath));
   if (options.proofTimeoutMs !== undefined) args.push("--proof-timeout-ms", shellQuote(String(options.proofTimeoutMs)));
   if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));

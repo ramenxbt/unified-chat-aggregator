@@ -56,6 +56,12 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
       continue;
     }
 
+    if (arg === "--evidence-check" || arg === "--evidence-out") {
+      parsed.evidenceCheckPath = args[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (arg === "--kick-tunnel-check") {
       parsed.kickTunnelCheckPath = args[index + 1];
       index += 1;
