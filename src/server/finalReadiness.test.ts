@@ -47,6 +47,8 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("npm run live:tunnel -- --out");
     expect(formatted).toContain("npm run proof:gate --");
     expect(formatted).toContain("npm run submission:bundle --");
+    expect(formatted).toContain("npm run live:stack -- --qa-dir");
+    expect(formatted).toContain("--require-ready --with-proof-gate");
   });
 
   it("fails when strict connector credentials are missing", async () => {
@@ -200,6 +202,9 @@ describe("final recording readiness", () => {
     );
     expect(formatted).toContain(
       `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
+    );
+    expect(formatted).toContain(
+      `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`
     );
   });
 

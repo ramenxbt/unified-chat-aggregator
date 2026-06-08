@@ -25,6 +25,7 @@ export type FinalReadinessReport = {
     kickTunnelCheck: string;
     proofGate: string;
     submissionBundle: string;
+    captureStack: string;
   };
 };
 
@@ -99,7 +100,8 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
     `  ${report.requiredCommands.obsHandoff}`,
     `  ${report.requiredCommands.kickTunnelCheck}`,
     `  ${report.requiredCommands.proofGate}`,
-    `  ${report.requiredCommands.submissionBundle}`
+    `  ${report.requiredCommands.submissionBundle}`,
+    `  ${report.requiredCommands.captureStack}`
   ];
 
   if (!report.plan.report.ok) {
@@ -126,7 +128,13 @@ function buildRequiredCommands(
     obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
     kickTunnelCheck: plan.urls.kickWebhookHealthCommand,
     proofGate: plan.evidence.proofGateCommand,
-    submissionBundle: plan.evidence.submissionBundleCommand
+    submissionBundle: plan.evidence.submissionBundleCommand,
+    captureStack: [
+      "npm run live:stack --",
+      ...formatLiveStackOptionArgs(options),
+      "--require-ready",
+      "--with-proof-gate"
+    ].join(" ")
   };
 }
 
@@ -142,6 +150,14 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
   if (options.kickTunnelCheckPath !== undefined) args.push("--kick-tunnel-check", shellQuote(options.kickTunnelCheckPath));
   if (options.proofTimeoutMs !== undefined) args.push("--proof-timeout-ms", shellQuote(String(options.proofTimeoutMs)));
   if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));
+
+  return args;
+}
+
+function formatLiveStackOptionArgs(options: FinalReadinessOptions) {
+  const args = formatLiveRunOptionArgs(options);
+
+  if (options.obsHandoffDir !== undefined) args.push("--obs-handoff-dir", shellQuote(options.obsHandoffDir));
 
   return args;
 }
