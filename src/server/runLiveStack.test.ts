@@ -29,8 +29,6 @@ const completeEnv: LivePreflightEnv = {
 const defaultProofGateCommand =
   "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
 const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
-const defaultSubmissionBundleCommand =
-  "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json";
 const defaultFeedCommand = "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
 const defaultDashboardCommand = "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 
@@ -263,7 +261,7 @@ async function createReadyQaDir() {
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "live-stack-ready-"));
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(qaDir), "utf8");
   await writeObsHandoff(path.join(qaDir, "obs"));
   await writeVisualQaManifest(path.join(qaDir, "visual"));
 
@@ -280,7 +278,7 @@ function createFinalQaReport() {
   };
 }
 
-function createLiveRunPlan() {
+function createLiveRunPlan(qaDir: string) {
   return [
     "Live run sheet:",
     "generated at: 2026-06-08T00:00:00.000Z",
@@ -299,8 +297,22 @@ function createLiveRunPlan() {
     "Evidence outputs:",
     `  live proof gate: ${defaultProofGateCommand}`,
     `  evidence check: ${defaultEvidenceCheckCommand}`,
-    `  submission bundle: ${defaultSubmissionBundleCommand}`
+    `  submission bundle: ${defaultSubmissionBundleCommand(path.join(qaDir, "kick-tunnel-check.txt"))}`
   ].join("\n");
+}
+
+function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
+  return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check ${shellQuote(
+    kickTunnelCheckPath
+  )}`;
+}
+
+function shellQuote(value: string) {
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(value)) {
+    return value;
+  }
+
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 async function writeObsHandoff(obsHandoffDir: string) {

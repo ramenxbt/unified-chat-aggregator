@@ -751,7 +751,7 @@ function defaultEvidenceCheckCommand() {
 }
 
 function defaultSubmissionBundleCommand() {
-  return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json";
+  return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt";
 }
 
 function defaultFeedCommand() {

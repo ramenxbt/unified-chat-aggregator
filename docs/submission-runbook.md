@@ -47,7 +47,7 @@ The final `live:ready` gate checks strict connector preflight, three readable ta
 After the feed server is running, use `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` instead of a manual browser check to prove the public Kick tunnel reaches the local `/webhooks/kick` receiver and save the proof file for the submission bundle.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
-If a default port, evidence path, clip queue path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, `live:ready`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --clips exports/final-clips.json --proof-timeout-ms 300000`.
+If a default port, evidence path, clip queue path, tunnel proof path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, `live:ready`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --clips exports/final-clips.json --kick-tunnel-check qa/kick-tunnel-check.txt --proof-timeout-ms 300000`.
 
 For a one-platform dry run, use:
 
@@ -150,7 +150,7 @@ Check the archive and database evidence:
 
 ```bash
 npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite
-npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json
+npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt
 ```
 
 These commands use the newest archive session. Pass `--archive data/feed-sessions/<session-id>` instead when reviewing an older run.

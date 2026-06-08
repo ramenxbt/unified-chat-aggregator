@@ -8,6 +8,7 @@ export type LiveRunPlanOptions = {
   archiveDir?: string;
   databasePath?: string;
   clipQueuePath?: string;
+  kickTunnelCheckPath?: string;
   proofTimeoutMs?: number;
   proofIntervalMs?: number;
 };
@@ -65,6 +66,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   const archiveDir = options.archiveDir ?? env.FEED_ARCHIVE_DIR ?? "data/feed-sessions";
   const databasePath = options.databasePath ?? env.FEED_DB_PATH ?? "data/feed.sqlite";
   const clipQueuePath = options.clipQueuePath ?? env.CLIP_QUEUE_PATH ?? "clip-queue.json";
+  const kickTunnelCheckPath = options.kickTunnelCheckPath ?? "qa/kick-tunnel-check.txt";
   const proofGate = {
     minEvents: parsePositiveNumber(env.PROOF_MIN_EVENTS, 25),
     minSourceLabels: parsePositiveNumber(env.PROOF_MIN_SOURCE_LABELS, 3),
@@ -105,7 +107,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       kickWebhookLocal: `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
       kickWebhookPublic: env.KICK_WEBHOOK_PUBLIC_URL,
       kickWebhookHealth: env.KICK_WEBHOOK_PUBLIC_URL ?? `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
-      kickWebhookHealthCommand: "npm run live:tunnel -- --out qa/kick-tunnel-check.txt"
+      kickWebhookHealthCommand: `npm run live:tunnel -- --out ${shellQuote(kickTunnelCheckPath)}`
     },
     obs: {
       sourceType: "Browser Source",
@@ -132,7 +134,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         `--interval-ms ${proofGate.intervalMs}${partialFlag}`
       ].join(" "),
       evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}${partialFlag}`,
-      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)}${partialFlag}`,
+      submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
       replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
       replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`
     }

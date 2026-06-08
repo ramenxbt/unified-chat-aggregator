@@ -64,7 +64,7 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json"
+      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
 
@@ -99,7 +99,7 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite'"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json"
+      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
 
@@ -109,6 +109,15 @@ describe("live run plan", () => {
     });
 
     expect(plan.evidence.submissionBundleCommand).toContain("--clips 'exports/final clips.json'");
+  });
+
+  it("uses a configured Kick tunnel proof path in final run commands", () => {
+    const plan = buildLiveRunPlan(completeEnv, {
+      kickTunnelCheckPath: "qa/final kick tunnel.txt"
+    });
+
+    expect(plan.urls.kickWebhookHealthCommand).toBe("npm run live:tunnel -- --out 'qa/final kick tunnel.txt'");
+    expect(plan.evidence.submissionBundleCommand).toContain("--kick-tunnel-check 'qa/final kick tunnel.txt'");
   });
 
   it("surfaces missing strict requirements while still printing setup commands", () => {

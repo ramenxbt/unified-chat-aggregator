@@ -42,8 +42,11 @@ export async function buildFinalReadinessReport(
   env: LivePreflightEnv,
   options: FinalReadinessOptions = {}
 ): Promise<FinalReadinessReport> {
-  const plan = buildLiveRunPlan(env, options);
   const qaDir = options.qaDir ?? "qa";
+  const plan = buildLiveRunPlan(env, {
+    ...options,
+    kickTunnelCheckPath: options.kickTunnelCheckPath ?? path.join(qaDir, "kick-tunnel-check.txt")
+  });
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
   const visualQaDir = options.visualQaDir ?? path.join(qaDir, "visual");
   const repo = collectRepoMetadata();
@@ -112,11 +115,16 @@ function buildRequiredCommands(
   qaDir: string,
   obsHandoffDir: string
 ): FinalReadinessReport["requiredCommands"] {
+  const liveRunOptions = {
+    ...options,
+    kickTunnelCheckPath: options.kickTunnelCheckPath ?? path.join(qaDir, "kick-tunnel-check.txt")
+  };
+
   return {
     finalQa: "npm run qa:final",
-    livePrepare: ["npm run live:prepare --", ...formatLiveRunOptionArgs(options), "--out", shellQuote(path.join(qaDir, "live-run-plan.txt"))].join(" "),
+    livePrepare: ["npm run live:prepare --", ...formatLiveRunOptionArgs(liveRunOptions), "--out", shellQuote(path.join(qaDir, "live-run-plan.txt"))].join(" "),
     obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
-    kickTunnelCheck: ["npm run live:tunnel --", "--out", shellQuote(path.join(qaDir, "kick-tunnel-check.txt"))].join(" "),
+    kickTunnelCheck: plan.urls.kickWebhookHealthCommand,
     proofGate: plan.evidence.proofGateCommand,
     submissionBundle: plan.evidence.submissionBundleCommand
   };
@@ -130,6 +138,7 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
   if (options.archiveDir !== undefined) args.push("--archive-dir", shellQuote(options.archiveDir));
   if (options.databasePath !== undefined) args.push("--db", shellQuote(options.databasePath));
   if (options.clipQueuePath !== undefined) args.push("--clips", shellQuote(options.clipQueuePath));
+  if (options.kickTunnelCheckPath !== undefined) args.push("--kick-tunnel-check", shellQuote(options.kickTunnelCheckPath));
   if (options.proofTimeoutMs !== undefined) args.push("--proof-timeout-ms", shellQuote(String(options.proofTimeoutMs)));
   if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));
 

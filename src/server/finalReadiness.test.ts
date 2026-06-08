@@ -26,8 +26,6 @@ const completeEnv: LivePreflightEnv = {
 const defaultProofGateCommand =
   "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
 const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
-const defaultSubmissionBundleCommand =
-  "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json";
 const defaultFeedCommand = "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
 const defaultDashboardCommand = "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 
@@ -187,7 +185,10 @@ describe("final recording readiness", () => {
     const formatted = formatFinalReadinessReport(report);
 
     expect(formatted).toContain(
-      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --proof-timeout-ms 300000 --proof-interval-ms 2000 --out '${path.join(
+      `npm run live:prepare -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --kick-tunnel-check '${path.join(
+        qaDir,
+        "kick-tunnel-check.txt"
+      )}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --out '${path.join(
         qaDir,
         "live-run-plan.txt"
       )}'`
@@ -198,7 +199,7 @@ describe("final recording readiness", () => {
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
-      "npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json'"
+      `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
     );
   });
 
@@ -281,7 +282,7 @@ async function createReadyQaDir({
   dashboardCommand = defaultDashboardCommand,
   proofGateCommand = defaultProofGateCommand,
   evidenceCheckCommand = defaultEvidenceCheckCommand,
-  submissionBundleCommand = defaultSubmissionBundleCommand,
+  submissionBundleCommand,
   obsHandoffCommit = currentCommit(),
   visualQaCommit = currentCommit(),
   runSheetCommit = currentCommit(),
@@ -302,6 +303,8 @@ async function createReadyQaDir({
   withVisualQaManifest?: boolean;
 } = {}) {
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-"));
+  const resolvedSubmissionBundleCommand =
+    submissionBundleCommand === undefined ? defaultSubmissionBundleCommand(path.join(qaDir, "kick-tunnel-check.txt")) : submissionBundleCommand;
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(
@@ -313,7 +316,7 @@ async function createReadyQaDir({
       dashboardCommand,
       proofGateCommand,
       evidenceCheckCommand,
-      submissionBundleCommand
+      resolvedSubmissionBundleCommand
     ),
     "utf8"
   );
@@ -327,6 +330,20 @@ async function createReadyQaDir({
   }
 
   return qaDir;
+}
+
+function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
+  return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --kick-tunnel-check ${shellQuote(
+    kickTunnelCheckPath
+  )}`;
+}
+
+function shellQuote(value: string) {
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(value)) {
+    return value;
+  }
+
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 function createFinalQaReport() {

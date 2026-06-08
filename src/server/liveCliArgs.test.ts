@@ -14,6 +14,8 @@ describe("live CLI args", () => {
         "data/final sessions",
         "--db",
         "data/final proof.sqlite",
+        "--kick-tunnel-check",
+        "qa/final kick tunnel.txt",
         "--proof-timeout-ms",
         "300000",
         "--proof-interval-ms",
@@ -25,6 +27,7 @@ describe("live CLI args", () => {
       appPort: 5260,
       archiveDir: "data/final sessions",
       databasePath: "data/final proof.sqlite",
+      kickTunnelCheckPath: "qa/final kick tunnel.txt",
       proofTimeoutMs: 300000,
       proofIntervalMs: 2000
     });

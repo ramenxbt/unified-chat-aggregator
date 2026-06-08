@@ -50,6 +50,12 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
       continue;
     }
 
+    if (arg === "--kick-tunnel-check") {
+      parsed.kickTunnelCheckPath = args[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (arg === "--proof-timeout-ms" || arg === "--timeout-ms") {
       assignOptionalPositiveNumber(parsed, "proofTimeoutMs", args[index + 1]);
       index += 1;
