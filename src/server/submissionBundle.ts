@@ -14,6 +14,7 @@ export type SubmissionBundleOptions = {
   outputDir: string;
   requireAllPlatforms?: boolean;
   finalQaReportDir?: string;
+  liveRunPlanDir?: string;
 };
 
 export type SubmissionBundleResult = {
@@ -27,6 +28,8 @@ export type SubmissionBundleResult = {
     summary: string;
     finalQaReportMarkdown?: string;
     finalQaReportJson?: string;
+    liveRunPlan?: string;
+    partialLiveRunPlan?: string;
   };
   evidence: EvidenceReport;
 };
@@ -43,13 +46,15 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const externalArtifacts = buildExternalArtifactChecklist();
   const bundleDir = path.resolve(options.outputDir);
   const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
+  const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
     replayCsv: path.join(bundleDir, "replay.csv"),
     submissionNotes: path.join(bundleDir, "submission-notes.md"),
     summary: path.join(bundleDir, "summary.json"),
-    ...finalQaReports.files
+    ...finalQaReports.files,
+    ...liveRunPlans.files
   };
 
   await mkdir(bundleDir, { recursive: true });
@@ -83,7 +88,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       )}\n`,
       "utf8"
     ),
-    ...finalQaReports.copyTasks.map((copyTask) => copyTask())
+    ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
+    ...liveRunPlans.copyTasks.map((copyTask) => copyTask())
   ]);
 
   return {
@@ -104,7 +110,9 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     `Submission notes: ${result.files.submissionNotes}`,
     `Summary: ${result.files.summary}`,
     ...(result.files.finalQaReportMarkdown ? [`Final QA report: ${result.files.finalQaReportMarkdown}`] : []),
-    ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : [])
+    ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : []),
+    ...(result.files.liveRunPlan ? [`Live run plan: ${result.files.liveRunPlan}`] : []),
+    ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : [])
   ];
 
   if (result.evidence.issues.length > 0) {
@@ -189,29 +197,41 @@ function buildExternalArtifactChecklist() {
     "OBS overlay recording with Twitch, Kick, and X source labels visible",
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
     "Exported dashboard recording JSON and CSV, if captured from the browser",
+    "Final live run sheet from qa/live-run-plan.txt",
     "Final local rehearsal report from qa/final-report.md"
   ];
 }
 
 async function findFinalQaReports(reportDir: string, bundleDir: string) {
-  const sourceMarkdown = path.resolve(reportDir, "final-report.md");
-  const sourceJson = path.resolve(reportDir, "final-report.json");
-  const targetMarkdown = path.join(bundleDir, "final-qa-report.md");
-  const targetJson = path.join(bundleDir, "final-qa-report.json");
-  const files: {
-    finalQaReportMarkdown?: string;
-    finalQaReportJson?: string;
-  } = {};
+  return findOptionalFiles(reportDir, bundleDir, [
+    ["final-report.md", "final-qa-report.md", "finalQaReportMarkdown"],
+    ["final-report.json", "final-qa-report.json", "finalQaReportJson"]
+  ]);
+}
+
+async function findLiveRunPlans(reportDir: string, bundleDir: string) {
+  return findOptionalFiles(reportDir, bundleDir, [
+    ["live-run-plan.txt", "live-run-plan.txt", "liveRunPlan"],
+    ["live-run-plan.partial.txt", "live-run-plan.partial.txt", "partialLiveRunPlan"]
+  ]);
+}
+
+async function findOptionalFiles(
+  sourceDir: string,
+  bundleDir: string,
+  candidates: Array<[sourceName: string, targetName: string, key: string]>
+) {
+  const files: Record<string, string> = {};
   const copyTasks: Array<() => Promise<void>> = [];
 
-  if (await pathExists(sourceMarkdown)) {
-    files.finalQaReportMarkdown = targetMarkdown;
-    copyTasks.push(() => copyFile(sourceMarkdown, targetMarkdown));
-  }
+  for (const [sourceName, targetName, key] of candidates) {
+    const sourcePath = path.resolve(sourceDir, sourceName);
+    const targetPath = path.join(bundleDir, targetName);
 
-  if (await pathExists(sourceJson)) {
-    files.finalQaReportJson = targetJson;
-    copyTasks.push(() => copyFile(sourceJson, targetJson));
+    if (await pathExists(sourcePath)) {
+      files[key] = targetPath;
+      copyTasks.push(() => copyFile(sourcePath, targetPath));
+    }
   }
 
   return { files, copyTasks };

@@ -14,12 +14,14 @@ describe("submission bundle", () => {
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), "{\"status\":\"passed\"}\n", "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), "Live preflight: ready\n", "utf8");
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
-      finalQaReportDir
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir
     });
 
     expect(result.ok).toBe(true);
@@ -31,8 +33,10 @@ describe("submission bundle", () => {
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
     expect(result.files.finalQaReportMarkdown).toBeDefined();
     expect(result.files.finalQaReportJson).toBeDefined();
+    expect(result.files.liveRunPlan).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
+    const liveRunPlan = await readFile(result.files.liveRunPlan as string, "utf8");
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
     expect(evidenceReport).toContain("Evidence check: ready");
@@ -48,6 +52,7 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(finalQaReport).toContain("Status: passed");
     expect(finalQaReportJson).toMatchObject({ status: "passed" });
+    expect(liveRunPlan).toContain("Live preflight: ready");
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
       evidenceOk: true,
@@ -72,14 +77,17 @@ describe("submission bundle", () => {
         "OBS overlay recording with Twitch, Kick, and X source labels visible",
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
         "Exported dashboard recording JSON and CSV, if captured from the browser",
+        "Final live run sheet from qa/live-run-plan.txt",
         "Final local rehearsal report from qa/final-report.md"
       ],
       files: {
         finalQaReportMarkdown: result.files.finalQaReportMarkdown,
-        finalQaReportJson: result.files.finalQaReportJson
+        finalQaReportJson: result.files.finalQaReportJson,
+        liveRunPlan: result.files.liveRunPlan
       }
     });
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
+    expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
   });
 });
 
