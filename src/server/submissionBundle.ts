@@ -515,7 +515,13 @@ async function validateFinalReadinessReport(
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
   if (!finalReadinessReport.sourceFiles.finalReadinessReport) {
-    return [];
+    const reportPath = displayPath(
+      finalReadinessReport.sourceFiles.finalReadinessReport ?? finalReadinessReport.expectedFiles.finalReadinessReport
+    );
+
+    return [
+      `${reportPath} is missing; run npm run live:ready -- --out ${shellQuote(reportPath)} before creating the final bundle`
+    ];
   }
 
   const reportPath = displayPath(finalReadinessReport.sourceFiles.finalReadinessReport);

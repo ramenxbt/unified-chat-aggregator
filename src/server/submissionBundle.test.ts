@@ -18,11 +18,7 @@ describe("submission bundle", () => {
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(
-      path.join(finalQaReportDir, "final-readiness.txt"),
-      `Final recording readiness: ready\nRepo commit: ${currentCommit()}\nChecked at: 2026-06-08T16:00:00.000Z\n`,
-      "utf8"
-    );
+    await writeFinalReadinessProof(path.join(finalQaReportDir, "final-readiness.txt"));
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
     await writeVisualQaManifest(visualQaDir);
@@ -195,11 +191,7 @@ describe("submission bundle", () => {
     await mkdir(qaDir, { recursive: true });
     await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(
-      path.join(qaDir, "final-readiness.txt"),
-      `Final recording readiness: ready\nRepo commit: ${currentCommit()}\nChecked at: 2026-06-08T16:00:00.000Z\n`,
-      "utf8"
-    );
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
     await writeFile(
       path.join(qaDir, "live-run-plan.txt"),
       createLiveRunPlan(undefined, undefined, undefined, undefined, undefined, defaultSubmissionBundleCommandForQa(qaDir)),
@@ -232,6 +224,7 @@ describe("submission bundle", () => {
     const outputDir = path.join(baseDir, "bundle-partial-plan");
     await mkdir(liveRunPlanDir, { recursive: true });
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(liveRunPlanDir, "final-readiness.txt"));
     await writeFile(
       path.join(liveRunPlanDir, "live-run-plan.txt"),
       createLiveRunPlan("Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n"),
@@ -274,11 +267,7 @@ describe("submission bundle", () => {
     const outputDir = path.join(baseDir, "bundle-stale-readiness");
     await mkdir(qaDir, { recursive: true });
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-    await writeFile(
-      path.join(qaDir, "final-readiness.txt"),
-      "Final recording readiness: ready\nRepo commit: stale123\nChecked at: 2026-06-08T16:00:00.000Z\n",
-      "utf8"
-    );
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"), { commit: "stale123" });
     await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
     await writeVisualQaManifest(path.join(qaDir, "visual"));
@@ -294,6 +283,31 @@ describe("submission bundle", () => {
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
       `qa/final-readiness.txt was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run live:ready -- --out qa/final-readiness.txt`
+    );
+  });
+
+  it("requires a final readiness proof for a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-readiness");
+    await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing; run npm run live:ready -- --out qa/final-readiness.txt before creating the final bundle"
     );
   });
 
@@ -859,6 +873,18 @@ async function writeVisualQaManifest(visualQaDir: string, json: unknown = create
   await mkdir(visualQaDir, { recursive: true });
   await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
   await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(json), "utf8");
+}
+
+async function writeFinalReadinessProof(filePath: string, { commit = currentCommit(), ready = true } = {}) {
+  await writeFile(
+    filePath,
+    [
+      `Final recording readiness: ${ready ? "ready" : "needs setup"}`,
+      `Repo commit: ${commit}`,
+      "Checked at: 2026-06-08T16:00:00.000Z"
+    ].join("\n"),
+    "utf8"
+  );
 }
 
 async function writeKickTunnelCheck(filePath: string, { commit = currentCommit(), ready = true } = {}) {
