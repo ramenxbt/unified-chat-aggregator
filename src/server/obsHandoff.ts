@@ -90,49 +90,33 @@ export function buildObsHandoff(plan: LiveRunPlan, generatedAt = new Date().toIS
     refreshWhenActive: plan.obs.refreshWhenActive
   };
 
+  const primarySources: ObsBrowserSource[] = [
+    {
+      name: "Unified Chat - All Sources",
+      url: plan.urls.obsAllSources,
+      purpose: "Primary final overlay with Twitch, Kick, and X in one feed.",
+      ...sourceDefaults
+    },
+    {
+      name: "Unified Chat - Twitch + Kick",
+      url: plan.urls.obsTwitchKick,
+      purpose: "Backup overlay for native live-chat comparison shots.",
+      ...sourceDefaults
+    },
+    {
+      name: "Unified Chat - Signals",
+      url: plan.urls.obsSignals,
+      purpose: "High-signal messages and moderated review moments.",
+      ...sourceDefaults
+    }
+  ];
+
   return {
     generatedAt,
     repo: collectRepoMetadata(),
     dashboardUrl: plan.urls.dashboard,
     browserSourceSettings,
-    sources: [
-      {
-        name: "Unified Chat - All Sources",
-        url: plan.urls.obsAllSources,
-        purpose: "Primary final overlay with Twitch, Kick, and X in one feed.",
-        ...sourceDefaults
-      },
-      {
-        name: "Unified Chat - Twitch + Kick",
-        url: plan.urls.obsTwitchKick,
-        purpose: "Backup overlay for native live-chat comparison shots.",
-        ...sourceDefaults
-      },
-      {
-        name: "Unified Chat - Signals",
-        url: plan.urls.obsSignals,
-        purpose: "High-signal messages and moderated review moments.",
-        ...sourceDefaults
-      },
-      {
-        name: "Unified Chat - Twitch Ansem Focus",
-        url: formatObsUrl(plan.urls.dashboard, "sources=twitch&limit=8&q=ansem"),
-        purpose: "Focused Twitch account proof shot.",
-        ...sourceDefaults
-      },
-      {
-        name: "Unified Chat - Kick Ansem Focus",
-        url: formatObsUrl(plan.urls.dashboard, "sources=kick&limit=8&q=ansem"),
-        purpose: "Focused Kick account proof shot.",
-        ...sourceDefaults
-      },
-      {
-        name: "Unified Chat - X Market Bubble Focus",
-        url: formatObsUrl(plan.urls.dashboard, "sources=x&limit=8&q=market%20bubble"),
-        purpose: "Focused X source proof shot.",
-        ...sourceDefaults
-      }
-    ]
+    sources: [...primarySources, ...buildFocusedSources(plan, sourceDefaults)]
   };
 }
 
@@ -187,6 +171,30 @@ export function formatObsHandoffMarkdown(handoff: ObsHandoff) {
 
 function formatObsUrl(dashboardUrl: string, query: string) {
   return `${dashboardUrl}?obs=1&${query}`;
+}
+
+function buildFocusedSources(plan: LiveRunPlan, sourceDefaults: Omit<ObsBrowserSource, "name" | "url" | "purpose">) {
+  return plan.targetSourceLabels
+    .map(parseSourceLabel)
+    .filter((source): source is { platform: string; account: string; query: string } => Boolean(source))
+    .map((source) => ({
+      name: `Unified Chat - ${source.platform.toUpperCase()} ${source.account.toUpperCase()} Focus`,
+      url: formatObsUrl(plan.urls.dashboard, `sources=${source.platform}&limit=8&q=${encodeURIComponent(source.query)}`),
+      purpose: `Focused ${source.platform.toUpperCase()} account proof shot for ${source.account}.`,
+      ...sourceDefaults
+    }));
+}
+
+function parseSourceLabel(label: string) {
+  const match = label.match(/^([A-Z]+)\s+\((.+)\)$/i);
+
+  if (!match) return null;
+
+  const platform = match[1].toLowerCase();
+  const account = match[2];
+  const query = account.startsWith("@") ? account.slice(1) : account;
+
+  return { platform, account, query };
 }
 
 function collectRepoMetadata() {

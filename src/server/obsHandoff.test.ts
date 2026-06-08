@@ -44,12 +44,14 @@ describe("OBS handoff", () => {
       "Unified Chat - All Sources",
       "Unified Chat - Twitch + Kick",
       "Unified Chat - Signals",
-      "Unified Chat - Twitch Ansem Focus",
-      "Unified Chat - Kick Ansem Focus",
-      "Unified Chat - X Market Bubble Focus"
+      "Unified Chat - KICK MARKETBUBBLE Focus",
+      "Unified Chat - TWITCH MARKETBUBBLE Focus",
+      "Unified Chat - X @MARKETBUBBLE Focus"
     ]);
     expect(handoff.sources[0].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14");
-    expect(handoff.sources[3].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch&limit=8&q=ansem");
+    expect(handoff.sources[3].url).toBe("http://127.0.0.1:5260/?obs=1&sources=kick&limit=8&q=MARKETBUBBLE");
+    expect(handoff.sources[4].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch&limit=8&q=MARKETBUBBLE");
+    expect(handoff.sources[5].url).toBe("http://127.0.0.1:5260/?obs=1&sources=x&limit=8&q=MARKETBUBBLE");
     expect(markdown).toContain("# OBS Browser Source Handoff");
     expect(markdown).toContain(`Commit: ${currentCommit()}`);
     expect(markdown).toContain("Unified Chat - All Sources");
