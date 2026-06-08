@@ -35,6 +35,7 @@ export async function buildLiveDoctorReport(
   const archiveDir = options.archiveDir ?? env.FEED_ARCHIVE_DIR ?? "data/feed-sessions";
   const databasePath = options.databasePath ?? env.FEED_DB_PATH ?? "data/feed.sqlite";
   const qaDir = options.qaDir ?? "qa";
+  const submissionBundleDir = "submission-bundle";
   const checkPort = options.checkPort ?? checkPortAvailability;
   const checkWritableDirectory = options.checkWritableDirectory ?? checkDirectoryWritable;
   const portClaims = [
@@ -83,6 +84,7 @@ export async function buildLiveDoctorReport(
   }
 
   checks.push(await checkWritableDirectory("QA evidence directory", qaDir));
+  checks.push(await checkWritableDirectory("Submission bundle directory", submissionBundleDir));
 
   return {
     ok: plan.ok && checks.every((check) => check.state === "ready" || check.state === "attention"),

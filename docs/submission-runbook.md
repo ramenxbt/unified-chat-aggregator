@@ -29,7 +29,7 @@ Run the local doctor first:
 npm run live:doctor
 ```
 
-This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database/QA artifact paths.
+This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database/QA/bundle artifact paths.
 
 Run the strict connector check next:
 

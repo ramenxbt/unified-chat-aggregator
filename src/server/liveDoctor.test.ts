@@ -35,6 +35,7 @@ describe("live doctor", () => {
     expect(formatted).toContain("PASS Dashboard dev port");
     expect(formatted).toContain("PASS Kick webhook port");
     expect(formatted).toContain("PASS QA evidence directory");
+    expect(formatted).toContain("PASS Submission bundle directory");
     expect(formatted).toContain("Final run commands:");
   });
 
@@ -114,6 +115,20 @@ describe("live doctor", () => {
 
     expect(report.ok).toBe(false);
     expect(formatLiveDoctorReport(report)).toContain("MISS QA evidence directory: locked-qa is not writable.");
+  });
+
+  it("fails when the submission bundle directory is not writable", async () => {
+    const report = await buildLiveDoctorReport(completeEnv, {
+      checkPort: readyPortCheck,
+      checkWritableDirectory: async (label, directoryPath) => ({
+        name: label,
+        state: label === "Submission bundle directory" ? "setup" : "ready",
+        detail: label === "Submission bundle directory" ? `${directoryPath} is not writable.` : `${directoryPath} is writable.`
+      })
+    });
+
+    expect(report.ok).toBe(false);
+    expect(formatLiveDoctorReport(report)).toContain("MISS Submission bundle directory: submission-bundle is not writable.");
   });
 });
 
