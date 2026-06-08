@@ -356,6 +356,31 @@ describe("submission bundle", () => {
       "qa/obs/obs-browser-sources.json all-source URL http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14 does not match qa/live-run-plan.txt http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14; rerun npm run obs:handoff -- --out qa/obs with the same app port"
     );
   });
+
+  it("flags OBS handoff files generated from a stale commit", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-stale-obs");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir, createObsHandoffJson({ commit: "stale123" }));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      `qa/obs/obs-browser-sources.json was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run obs:handoff -- --out qa/obs`
+    );
+  });
 });
 
 async function createBundleFixture() {
@@ -437,8 +462,11 @@ async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsH
   await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(json), "utf8");
 }
 
-function createObsHandoffJson() {
+function createObsHandoffJson({ commit = currentCommit() } = {}) {
   return {
+    repo: {
+      commit
+    },
     browserSourceSettings: {
       width: 1280,
       height: 720,

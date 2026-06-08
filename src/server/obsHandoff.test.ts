@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -38,6 +39,7 @@ describe("OBS handoff", () => {
       fps: 30,
       background: "transparent"
     });
+    expect(handoff.repo.commit).toBe(currentCommit());
     expect(handoff.sources.map((source) => source.name)).toEqual([
       "Unified Chat - All Sources",
       "Unified Chat - Twitch + Kick",
@@ -49,6 +51,7 @@ describe("OBS handoff", () => {
     expect(handoff.sources[0].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14");
     expect(handoff.sources[3].url).toBe("http://127.0.0.1:5260/?obs=1&sources=twitch&limit=8&q=ansem");
     expect(markdown).toContain("# OBS Browser Source Handoff");
+    expect(markdown).toContain(`Commit: ${currentCommit()}`);
     expect(markdown).toContain("Unified Chat - All Sources");
     expect(markdown).toContain("Confirm account-qualified labels are visible");
   });
@@ -65,5 +68,10 @@ describe("OBS handoff", () => {
       name: "Unified Chat - All Sources",
       url: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
     });
+    expect(json.repo.commit).toBe(currentCommit());
   });
 });
+
+function currentCommit() {
+  return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+}

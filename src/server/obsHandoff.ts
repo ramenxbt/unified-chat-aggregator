@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -21,6 +22,11 @@ export type ObsBrowserSource = {
 
 export type ObsHandoff = {
   generatedAt: string;
+  repo: {
+    commit: string | null;
+    branch: string | null;
+    remote: string | null;
+  };
   dashboardUrl: string;
   browserSourceSettings: {
     width: number;
@@ -86,6 +92,7 @@ export function buildObsHandoff(plan: LiveRunPlan, generatedAt = new Date().toIS
 
   return {
     generatedAt,
+    repo: collectRepoMetadata(),
     dashboardUrl: plan.urls.dashboard,
     browserSourceSettings,
     sources: [
@@ -134,6 +141,9 @@ export function formatObsHandoffMarkdown(handoff: ObsHandoff) {
     "# OBS Browser Source Handoff",
     "",
     `Generated: ${handoff.generatedAt}`,
+    `Commit: ${handoff.repo.commit ?? "unknown"}`,
+    `Branch: ${handoff.repo.branch ?? "unknown"}`,
+    `Remote: ${handoff.repo.remote ?? "unknown"}`,
     `Dashboard: ${handoff.dashboardUrl}`,
     "",
     "## Browser Source Settings",
@@ -177,6 +187,26 @@ export function formatObsHandoffMarkdown(handoff: ObsHandoff) {
 
 function formatObsUrl(dashboardUrl: string, query: string) {
   return `${dashboardUrl}?obs=1&${query}`;
+}
+
+function collectRepoMetadata() {
+  return {
+    commit: runGit(["rev-parse", "--short", "HEAD"]),
+    branch: runGit(["branch", "--show-current"]),
+    remote: runGit(["remote", "get-url", "origin"])
+  };
+}
+
+function runGit(args: string[]) {
+  try {
+    return execFileSync("git", args, {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return null;
+  }
 }
 
 function parseObsHandoffArgs(args: string[]) {

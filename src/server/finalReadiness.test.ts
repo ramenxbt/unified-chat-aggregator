@@ -80,14 +80,26 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("MISS OBS handoff");
     expect(formatted).toContain("but the run sheet expects http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14");
   });
+
+  it("fails when the OBS handoff was generated from a stale commit", async () => {
+    const qaDir = await createReadyQaDir({ obsHandoffCommit: "stale123" });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS OBS handoff");
+    expect(formatted).toContain("was generated for commit stale123");
+  });
 });
 
 async function createReadyQaDir({
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
+  obsHandoffCommit = currentCommit(),
   runSheetCommit = currentCommit(),
   withObsHandoff = true
 }: {
   obsAllSourcesUrl?: string;
+  obsHandoffCommit?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
 } = {}) {
@@ -97,7 +109,7 @@ async function createReadyQaDir({
   await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(runSheetCommit, obsAllSourcesUrl), "utf8");
 
   if (withObsHandoff) {
-    await writeObsHandoff(path.join(qaDir, "obs"));
+    await writeObsHandoff(path.join(qaDir, "obs"), obsHandoffCommit);
   }
 
   return qaDir;
@@ -127,14 +139,17 @@ function createLiveRunPlan(commit: string, obsAllSourcesUrl: string) {
   ].join("\n");
 }
 
-async function writeObsHandoff(obsHandoffDir: string) {
+async function writeObsHandoff(obsHandoffDir: string, commit: string) {
   await mkdir(obsHandoffDir, { recursive: true });
   await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
-  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson()), "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson(commit)), "utf8");
 }
 
-function createObsHandoffJson() {
+function createObsHandoffJson(commit: string) {
   return {
+    repo: {
+      commit
+    },
     browserSourceSettings: {
       width: 1280,
       height: 720,

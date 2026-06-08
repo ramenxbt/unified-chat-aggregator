@@ -284,7 +284,7 @@ async function validateCopiedArtifacts(
 
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
   issues.push(...liveRunPlanValidation.issues);
-  issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl)));
+  issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl, repo)));
 
   return issues;
 }
@@ -379,7 +379,8 @@ function isPartialLiveRunPlan(content: string) {
 
 async function validateObsHandoff(
   obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
-  expectedObsAllSourcesUrl: string | undefined
+  expectedObsAllSourcesUrl: string | undefined,
+  repo: ReturnType<typeof collectRepoMetadata>
 ) {
   const issues: string[] = [];
 
@@ -404,6 +405,9 @@ async function validateObsHandoff(
         name?: string;
         url?: string;
       }>;
+      repo?: {
+        commit?: string | null;
+      };
     };
 
     if (!Array.isArray(handoff.sources) || handoff.sources.length < 3) {
@@ -419,6 +423,12 @@ async function validateObsHandoff(
     if (expectedObsAllSourcesUrl && allSource?.url && allSource.url !== expectedObsAllSourcesUrl) {
       issues.push(
         `qa/obs/obs-browser-sources.json all-source URL ${allSource.url} does not match qa/live-run-plan.txt ${expectedObsAllSourcesUrl}; rerun npm run obs:handoff -- --out qa/obs with the same app port`
+      );
+    }
+
+    if (repo.commit && handoff.repo?.commit !== repo.commit) {
+      issues.push(
+        `qa/obs/obs-browser-sources.json was generated for commit ${handoff.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run obs:handoff -- --out qa/obs`
       );
     }
 

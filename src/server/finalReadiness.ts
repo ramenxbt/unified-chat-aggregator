@@ -38,7 +38,7 @@ export async function buildFinalReadinessReport(
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
   const repo = collectRepoMetadata();
   const liveRunPlanCheck = await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit);
-  const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl);
+  const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl, repo.commit);
   const checks = [
     {
       name: "Strict connector preflight",
@@ -168,7 +168,11 @@ async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | nu
   }
 }
 
-async function checkObsHandoff(obsHandoffDir: string, expectedObsAllSourcesUrl: string | undefined): Promise<FinalReadinessCheck> {
+async function checkObsHandoff(
+  obsHandoffDir: string,
+  expectedObsAllSourcesUrl: string | undefined,
+  currentCommit: string | null
+): Promise<FinalReadinessCheck> {
   const markdownPath = path.join(obsHandoffDir, "obs-browser-sources.md");
   const jsonPath = path.join(obsHandoffDir, "obs-browser-sources.json");
 
@@ -180,6 +184,9 @@ async function checkObsHandoff(obsHandoffDir: string, expectedObsAllSourcesUrl: 
         height?: number;
         fps?: number;
         customCss?: string;
+      };
+      repo?: {
+        commit?: string | null;
       };
       sources?: Array<{ name?: string; url?: string }>;
     };
@@ -205,6 +212,14 @@ async function checkObsHandoff(obsHandoffDir: string, expectedObsAllSourcesUrl: 
         name: "OBS handoff",
         state: "setup",
         detail: `${obsHandoffDir} uses ${allSource?.url ?? "unknown OBS URL"}, but the run sheet expects ${expectedObsAllSourcesUrl}.`
+      };
+    }
+
+    if (currentCommit && handoff.repo?.commit !== currentCommit) {
+      return {
+        name: "OBS handoff",
+        state: "setup",
+        detail: `${obsHandoffDir} was generated for commit ${handoff.repo?.commit ?? "unknown"}, but current commit is ${currentCommit}.`
       };
     }
 
