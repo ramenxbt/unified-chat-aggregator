@@ -327,6 +327,35 @@ describe("submission bundle", () => {
       "qa/obs/obs-browser-sources.json is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out qa/obs"
     );
   });
+
+  it("flags OBS handoff URLs that do not match the final run sheet", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-mismatched-obs");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(finalQaReportDir, "live-run-plan.txt"),
+      createLiveRunPlan("Live preflight: ready\n", currentCommit(), "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"),
+      "utf8"
+    );
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/obs/obs-browser-sources.json all-source URL http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14 does not match qa/live-run-plan.txt http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14; rerun npm run obs:handoff -- --out qa/obs with the same app port"
+    );
+  });
 });
 
 async function createBundleFixture() {
@@ -384,10 +413,22 @@ function currentCommit() {
   return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 }
 
-function createLiveRunPlan(body = "Live preflight: ready\n", commit = currentCommit()) {
-  return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${commit}`, "branch: main", "", body].join(
-    "\n"
-  );
+function createLiveRunPlan(
+  body = "Live preflight: ready\n",
+  commit = currentCommit(),
+  obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+) {
+  return [
+    "Live run sheet:",
+    "generated at: 2026-06-08T00:00:00.000Z",
+    `commit: ${commit}`,
+    "branch: main",
+    "",
+    body,
+    "",
+    "Open:",
+    `  OBS all sources: ${obsAllSourcesUrl}`
+  ].join("\n");
 }
 
 async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsHandoffJson()) {

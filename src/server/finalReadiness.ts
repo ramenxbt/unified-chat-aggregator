@@ -25,6 +25,10 @@ export type FinalReadinessOptions = LiveRunPlanOptions & {
   obsHandoffDir?: string;
 };
 
+type LiveRunPlanReadinessCheck = FinalReadinessCheck & {
+  expectedObsAllSourcesUrl?: string;
+};
+
 export async function buildFinalReadinessReport(
   env: LivePreflightEnv,
   options: FinalReadinessOptions = {}
@@ -33,6 +37,8 @@ export async function buildFinalReadinessReport(
   const qaDir = options.qaDir ?? "qa";
   const obsHandoffDir = options.obsHandoffDir ?? path.join(qaDir, "obs");
   const repo = collectRepoMetadata();
+  const liveRunPlanCheck = await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit);
+  const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl);
   const checks = [
     {
       name: "Strict connector preflight",
@@ -42,8 +48,8 @@ export async function buildFinalReadinessReport(
         : "Run npm run preflight and resolve missing Twitch, Kick, or X setup before recording."
     } satisfies FinalReadinessCheck,
     await checkFinalQaReport(path.join(qaDir, "final-report.json"), repo.commit),
-    await checkLiveRunPlan(path.join(qaDir, "live-run-plan.txt"), repo.commit),
-    await checkObsHandoff(obsHandoffDir)
+    liveRunPlanCheck,
+    obsHandoffCheck
   ];
 
   return {
@@ -117,10 +123,11 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
   }
 }
 
-async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | null): Promise<FinalReadinessCheck> {
+async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | null): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
     const commit = content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
+    const expectedObsAllSourcesUrl = content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
 
     if (content.includes("--allow-partial") || content.includes("Platform requirement: at least one live connector")) {
       return {
@@ -149,7 +156,8 @@ async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | nu
     return {
       name: "Final live run sheet",
       state: "ready",
-      detail: `${runSheetPath} is strict and current.`
+      detail: `${runSheetPath} is strict and current.`,
+      expectedObsAllSourcesUrl
     };
   } catch {
     return {
@@ -160,7 +168,7 @@ async function checkLiveRunPlan(runSheetPath: string, currentCommit: string | nu
   }
 }
 
-async function checkObsHandoff(obsHandoffDir: string): Promise<FinalReadinessCheck> {
+async function checkObsHandoff(obsHandoffDir: string, expectedObsAllSourcesUrl: string | undefined): Promise<FinalReadinessCheck> {
   const markdownPath = path.join(obsHandoffDir, "obs-browser-sources.md");
   const jsonPath = path.join(obsHandoffDir, "obs-browser-sources.json");
 
@@ -176,7 +184,8 @@ async function checkObsHandoff(obsHandoffDir: string): Promise<FinalReadinessChe
       sources?: Array<{ name?: string; url?: string }>;
     };
     const settings = handoff.browserSourceSettings;
-    const hasAllSource = handoff.sources?.some((source) => source.name === "Unified Chat - All Sources" && source.url?.includes("obs=1"));
+    const allSource = handoff.sources?.find((source) => source.name === "Unified Chat - All Sources");
+    const hasAllSource = Boolean(allSource?.url?.includes("obs=1"));
     const settingsReady =
       settings?.width === 1280 &&
       settings.height === 720 &&
@@ -188,6 +197,14 @@ async function checkObsHandoff(obsHandoffDir: string): Promise<FinalReadinessChe
         name: "OBS handoff",
         state: "setup",
         detail: `${obsHandoffDir} is malformed; run npm run obs:handoff -- --out qa/obs.`
+      };
+    }
+
+    if (expectedObsAllSourcesUrl && allSource?.url !== expectedObsAllSourcesUrl) {
+      return {
+        name: "OBS handoff",
+        state: "setup",
+        detail: `${obsHandoffDir} uses ${allSource?.url ?? "unknown OBS URL"}, but the run sheet expects ${expectedObsAllSourcesUrl}.`
       };
     }
 

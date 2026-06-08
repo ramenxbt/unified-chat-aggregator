@@ -68,19 +68,33 @@ describe("final recording readiness", () => {
     expect(report.ok).toBe(false);
     expect(formatFinalReadinessReport(report)).toContain("MISS OBS handoff");
   });
+
+  it("fails when OBS handoff URLs do not match the final run sheet", async () => {
+    const qaDir = await createReadyQaDir({
+      obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
+    });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS OBS handoff");
+    expect(formatted).toContain("but the run sheet expects http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14");
+  });
 });
 
 async function createReadyQaDir({
+  obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   runSheetCommit = currentCommit(),
   withObsHandoff = true
 }: {
+  obsAllSourcesUrl?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
 } = {}) {
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-"));
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(runSheetCommit), "utf8");
+  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(runSheetCommit, obsAllSourcesUrl), "utf8");
 
   if (withObsHandoff) {
     await writeObsHandoff(path.join(qaDir, "obs"));
@@ -99,10 +113,18 @@ function createFinalQaReport() {
   };
 }
 
-function createLiveRunPlan(commit: string) {
-  return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${commit}`, "branch: main", "", "Live preflight: ready"].join(
-    "\n"
-  );
+function createLiveRunPlan(commit: string, obsAllSourcesUrl: string) {
+  return [
+    "Live run sheet:",
+    "generated at: 2026-06-08T00:00:00.000Z",
+    `commit: ${commit}`,
+    "branch: main",
+    "",
+    "Live preflight: ready",
+    "",
+    "Open:",
+    `  OBS all sources: ${obsAllSourcesUrl}`
+  ].join("\n");
 }
 
 async function writeObsHandoff(obsHandoffDir: string) {

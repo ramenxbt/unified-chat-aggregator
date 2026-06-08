@@ -280,10 +280,11 @@ async function validateCopiedArtifacts(
   }
 
   const issues: string[] = [];
+  const liveRunPlanValidation = await validateLiveRunPlan(liveRunPlans, repo);
 
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
-  issues.push(...(await validateLiveRunPlan(liveRunPlans, repo)));
-  issues.push(...(await validateObsHandoff(obsHandoff)));
+  issues.push(...liveRunPlanValidation.issues);
+  issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl)));
 
   return issues;
 }
@@ -332,12 +333,13 @@ async function validateLiveRunPlan(
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
   if (!liveRunPlans.sourceFiles.liveRunPlan) {
-    return [];
+    return { issues: [] };
   }
 
   const issues: string[] = [];
   const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
   const commit = extractLiveRunPlanCommit(liveRunPlan);
+  const expectedObsAllSourcesUrl = extractLiveRunPlanObsAllSourcesUrl(liveRunPlan);
 
   if (isPartialLiveRunPlan(liveRunPlan)) {
     issues.push(
@@ -353,18 +355,32 @@ async function validateLiveRunPlan(
     );
   }
 
-  return issues;
+  if (!expectedObsAllSourcesUrl) {
+    issues.push("qa/live-run-plan.txt is missing the OBS all-source URL; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
+  return {
+    issues,
+    expectedObsAllSourcesUrl
+  };
 }
 
 function extractLiveRunPlanCommit(content: string) {
   return content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
 }
 
+function extractLiveRunPlanObsAllSourcesUrl(content: string) {
+  return content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
+}
+
 function isPartialLiveRunPlan(content: string) {
   return content.includes("Platform requirement: at least one live connector") || content.includes("--allow-partial");
 }
 
-async function validateObsHandoff(obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>) {
+async function validateObsHandoff(
+  obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
+  expectedObsAllSourcesUrl: string | undefined
+) {
   const issues: string[] = [];
 
   if (!obsHandoff.sourceFiles.obsHandoffMarkdown) {
@@ -394,8 +410,16 @@ async function validateObsHandoff(obsHandoff: Awaited<ReturnType<typeof findObsH
       issues.push("qa/obs/obs-browser-sources.json does not include the expected OBS browser sources; rerun npm run obs:handoff -- --out qa/obs");
     }
 
-    if (!handoff.sources?.some((source) => source.name === "Unified Chat - All Sources" && source.url?.includes("obs=1"))) {
+    const allSource = handoff.sources?.find((source) => source.name === "Unified Chat - All Sources");
+
+    if (!allSource?.url?.includes("obs=1")) {
       issues.push("qa/obs/obs-browser-sources.json is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out qa/obs");
+    }
+
+    if (expectedObsAllSourcesUrl && allSource?.url && allSource.url !== expectedObsAllSourcesUrl) {
+      issues.push(
+        `qa/obs/obs-browser-sources.json all-source URL ${allSource.url} does not match qa/live-run-plan.txt ${expectedObsAllSourcesUrl}; rerun npm run obs:handoff -- --out qa/obs with the same app port`
+      );
     }
 
     const settings = handoff.browserSourceSettings;
