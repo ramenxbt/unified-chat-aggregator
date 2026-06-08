@@ -326,6 +326,36 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a final readiness proof without the required pass checks", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-thin-readiness");
+    await mkdir(qaDir, { recursive: true });
+    await writeEvidenceCheckProof(path.join(qaDir, "evidence-check.txt"));
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"), { withChecks: false });
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing PASS Final live run sheet; rerun npm run live:ready -- --out qa/final-readiness.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing PASS OBS handoff; rerun npm run live:ready -- --out qa/final-readiness.txt"
+    );
+  });
+
   it("requires saved evidence proof for a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const qaDir = path.join(baseDir, "qa");
@@ -983,13 +1013,25 @@ async function writeVisualQaManifest(visualQaDir: string, json: unknown = create
   await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(json), "utf8");
 }
 
-async function writeFinalReadinessProof(filePath: string, { commit = currentCommit(), ready = true } = {}) {
+async function writeFinalReadinessProof(filePath: string, { commit = currentCommit(), ready = true, withChecks = true } = {}) {
   await writeFile(
     filePath,
     [
       `Final recording readiness: ${ready ? "ready" : "needs setup"}`,
       `Repo commit: ${commit}`,
-      "Checked at: 2026-06-08T16:00:00.000Z"
+      "Checked at: 2026-06-08T16:00:00.000Z",
+      ...(withChecks
+        ? [
+            "",
+            "Checks:",
+            "  PASS Strict connector preflight: Twitch, Kick, and X are ready for a connector-mode capture.",
+            "  PASS Target source labels: KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)",
+            "  PASS Final QA report: qa/final-report.json is current and passed.",
+            "  PASS Visual QA manifest: qa/visual/manifest.json is current.",
+            "  PASS Final live run sheet: qa/live-run-plan.txt is current.",
+            "  PASS OBS handoff: qa/obs/obs-browser-sources.json matches the final run sheet."
+          ]
+        : [])
     ].join("\n"),
     "utf8"
   );

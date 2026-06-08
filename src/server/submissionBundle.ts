@@ -60,6 +60,15 @@ const clipQueueExportSchema = z.object({
   clips: z.array(clipItemSchema)
 });
 
+const requiredFinalReadinessChecks = [
+  "Strict connector preflight",
+  "Target source labels",
+  "Final QA report",
+  "Visual QA manifest",
+  "Final live run sheet",
+  "OBS handoff"
+];
+
 type ClipQueueSummary = {
   clipCount: number;
   sourceLabels: string[];
@@ -612,6 +621,12 @@ async function validateFinalReadinessReport(
 
   if (!checkedAt) {
     issues.push(`${reportPath} is missing timestamp metadata; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+  }
+
+  for (const checkName of requiredFinalReadinessChecks) {
+    if (!content.includes(`PASS ${checkName}:`)) {
+      issues.push(`${reportPath} is missing PASS ${checkName}; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+    }
   }
 
   return issues;
