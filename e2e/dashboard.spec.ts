@@ -28,7 +28,9 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
   await expect(page.getByText("KICK_WEBHOOK_ENABLED=true", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Stream-day env checklist")).toContainText("TWITCH_CLIENT_ID=");
   await expect(page.getByLabel("Stream-day env checklist")).toContainText("KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick");
-  await expect(page.getByLabel("Stream-day env checklist")).toContainText("X_FILTER_RULES=Market Bubble,marketbubble");
+  await expect(page.getByLabel("Stream-day env checklist")).toContainText(
+    "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
+  );
   await expect(page.getByText("X_BEARER_TOKEN", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Clip", exact: true }).click();
