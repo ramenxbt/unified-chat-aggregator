@@ -31,6 +31,8 @@ describe("live doctor", () => {
     expect(report.ok).toBe(true);
     expect(formatted).toContain("Live doctor: ready");
     expect(formatted).toContain("PASS Connector preflight");
+    expect(formatted).toContain("PASS Target source labels");
+    expect(formatted).toContain("KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE), X (MARKET BUBBLE)");
     expect(formatted).toContain("PASS Feed WebSocket port");
     expect(formatted).toContain("PASS Dashboard dev port");
     expect(formatted).toContain("PASS Kick webhook port");
@@ -54,6 +56,25 @@ describe("live doctor", () => {
 
     expect(report.ok).toBe(false);
     expect(formatLiveDoctorReport(report)).toContain("Live preflight: needs setup");
+  });
+
+  it("fails before final recording when account label env is missing", async () => {
+    const report = await buildLiveDoctorReport(
+      {
+        ...completeEnv,
+        KICK_BROADCASTER_SLUG: undefined
+      },
+      {
+        checkPort: readyPortCheck,
+        checkWritableDirectory: readyDirectoryCheck
+      }
+    );
+    const formatted = formatLiveDoctorReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("PASS Connector preflight");
+    expect(formatted).toContain("MISS Target source labels");
+    expect(formatted).toContain("Add KICK_BROADCASTER_SLUG=marketbubble before final recording");
   });
 
   it("fails when a required local port is already in use", async () => {

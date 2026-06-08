@@ -51,6 +51,7 @@ export async function buildLiveDoctorReport(
         ? "Connector environment is ready for the requested platform requirement."
         : "Run npm run preflight for missing connector credentials and setup."
     },
+    buildTargetSourceLabelCheck(plan.targetSourceLabels),
     await checkPort("Feed WebSocket port", feedPort),
     await checkPort("Dashboard dev port", appPort)
   ];
@@ -170,6 +171,30 @@ function formatCheckState(state: LiveDoctorCheck["state"]) {
   if (state === "attention") return "WARN";
 
   return "MISS";
+}
+
+function buildTargetSourceLabelCheck(targetSourceLabels: string[]): LiveDoctorCheck {
+  const missingAssignments = [
+    targetSourceLabels.some((label) => label.startsWith("TWITCH (")) ? null : "TWITCH_BROADCASTER_LOGIN=marketbubble",
+    targetSourceLabels.some((label) => label.startsWith("KICK (")) ? null : "KICK_BROADCASTER_SLUG=marketbubble",
+    targetSourceLabels.some((label) => label.startsWith("X (")) ? null : "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
+  ].filter((assignment): assignment is string => Boolean(assignment));
+
+  if (missingAssignments.length > 0) {
+    const currentLabels = targetSourceLabels.length > 0 ? targetSourceLabels.join(", ") : "none";
+
+    return {
+      name: "Target source labels",
+      state: "setup",
+      detail: `Add ${missingAssignments.join(", ")} before final recording. Current target labels: ${currentLabels}.`
+    };
+  }
+
+  return {
+    name: "Target source labels",
+    state: "ready",
+    detail: targetSourceLabels.join(", ")
+  };
 }
 
 function buildPortConflictChecks(portClaims: { label: string; port: number }[]): LiveDoctorCheck[] {
