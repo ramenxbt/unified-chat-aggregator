@@ -48,6 +48,13 @@ class MockConnector {
     reconnectCount: 0
   };
 
+  constructor(sourceName = "marketbubble") {
+    this.health = {
+      ...this.health,
+      sourceName
+    };
+  }
+
   async start() {
     this.health = {
       ...this.health,
@@ -247,6 +254,32 @@ describe("LiveFeedRuntime", () => {
 
     expect(messagesOfType(openClient.messages, "event")).toHaveLength(1);
     expect(messagesOfType(closedClient.messages, "event")).toHaveLength(0);
+  });
+
+  it("includes connector account labels in initial snapshots before messages arrive", async () => {
+    const server = new MockServer();
+    const connector = new MockConnector("banks");
+    const runtime = new LiveFeedRuntime({
+      port: 18808,
+      mode: "connectors",
+      connectors: [connector],
+      webSocketServer: server
+    });
+
+    await runtime.start();
+    const client = server.connect();
+    await runtime.stop();
+
+    expect(client.messages[0]).toMatchObject({
+      type: "snapshot",
+      statuses: [
+        {
+          platform: "twitch",
+          sourceName: "banks",
+          state: "live"
+        }
+      ]
+    });
   });
 
   it("fans out connector events and statuses in connector mode", async () => {
