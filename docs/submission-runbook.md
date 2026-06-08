@@ -184,6 +184,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.
 - `submission-bundle/` containing copied OBS handoff files from `qa/obs/`.
+- `submission-bundle/` containing copied visual QA manifests from `qa/visual/`.
 - `submission-notes.md` reviewed for repo commit, source labels, proof metrics, and external artifacts to attach.
 - Exported recording JSON.
 - Exported recording CSV.

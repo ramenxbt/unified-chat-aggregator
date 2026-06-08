@@ -12,6 +12,7 @@ describe("submission bundle", () => {
     const { archiveDir, archivePath, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
     const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const visualQaDir = path.join(finalQaReportDir, "visual");
     const clipQueuePath = path.join(baseDir, "clip-queue-export.json");
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
@@ -19,6 +20,7 @@ describe("submission bundle", () => {
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(visualQaDir);
     await writeFile(clipQueuePath, JSON.stringify(createClipQueueExport()), "utf8");
 
     const result = await createSubmissionBundle({
@@ -43,12 +45,16 @@ describe("submission bundle", () => {
     expect(result.files.liveRunPlan).toBeDefined();
     expect(result.files.obsHandoffMarkdown).toBeDefined();
     expect(result.files.obsHandoffJson).toBeDefined();
+    expect(result.files.visualQaManifestMarkdown).toBeDefined();
+    expect(result.files.visualQaManifestJson).toBeDefined();
     expect(result.files.clipQueueJson).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
     const liveRunPlan = await readFile(result.files.liveRunPlan as string, "utf8");
     const obsHandoffMarkdown = await readFile(result.files.obsHandoffMarkdown as string, "utf8");
     const obsHandoffJson = JSON.parse(await readFile(result.files.obsHandoffJson as string, "utf8"));
+    const visualQaManifestMarkdown = await readFile(result.files.visualQaManifestMarkdown as string, "utf8");
+    const visualQaManifestJson = JSON.parse(await readFile(result.files.visualQaManifestJson as string, "utf8"));
     const clipQueueJson = JSON.parse(await readFile(result.files.clipQueueJson as string, "utf8"));
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
@@ -80,6 +86,8 @@ describe("submission bundle", () => {
       name: "Unified Chat - All Sources",
       url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
     });
+    expect(visualQaManifestMarkdown).toContain("Visual QA Manifest");
+    expect(visualQaManifestJson.repo.commit).toBe(currentCommit());
     expect(clipQueueJson.clipCount).toBe(2);
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
@@ -120,12 +128,15 @@ describe("submission bundle", () => {
         liveRunPlan: result.files.liveRunPlan,
         obsHandoffMarkdown: result.files.obsHandoffMarkdown,
         obsHandoffJson: result.files.obsHandoffJson,
+        visualQaManifestMarkdown: result.files.visualQaManifestMarkdown,
+        visualQaManifestJson: result.files.visualQaManifestJson,
         clipQueueJson: result.files.clipQueueJson
       }
     });
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
     expect(formatSubmissionBundleResult(result)).toContain("OBS handoff:");
+    expect(formatSubmissionBundleResult(result)).toContain("Visual QA manifest:");
     expect(formatSubmissionBundleResult(result)).toContain("Clip queue JSON:");
   });
 
@@ -527,6 +538,33 @@ describe("submission bundle", () => {
       `qa/obs/obs-browser-sources.json was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run obs:handoff -- --out qa/obs`
     );
   });
+
+  it("flags visual QA manifests generated from a stale commit", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const visualQaDir = path.join(finalQaReportDir, "visual");
+    const outputDir = path.join(baseDir, "bundle-stale-visual");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(visualQaDir, createVisualQaManifestJson({ commit: "stale123" }));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      `qa/visual/manifest.json was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run qa:visual`
+    );
+  });
 });
 
 async function createBundleFixture() {
@@ -668,6 +706,31 @@ async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsH
   await mkdir(obsHandoffDir, { recursive: true });
   await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
   await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(json), "utf8");
+}
+
+async function writeVisualQaManifest(visualQaDir: string, json: unknown = createVisualQaManifestJson()) {
+  await mkdir(visualQaDir, { recursive: true });
+  await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
+  await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(json), "utf8");
+}
+
+function createVisualQaManifestJson({ commit = currentCommit() } = {}) {
+  return {
+    repo: {
+      commit
+    },
+    captures: [
+      {
+        file: "qa/visual/desktop-dashboard.png"
+      },
+      {
+        file: "qa/visual/mobile-dashboard.png"
+      },
+      {
+        file: "qa/visual/obs-overlay.png"
+      }
+    ]
+  };
 }
 
 function createObsHandoffJson({ commit = currentCommit() } = {}) {

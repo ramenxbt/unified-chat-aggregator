@@ -19,6 +19,7 @@ export type SubmissionBundleOptions = {
   finalQaReportDir?: string;
   liveRunPlanDir?: string;
   obsHandoffDir?: string;
+  visualQaDir?: string;
   clipQueuePath?: string;
 };
 
@@ -37,6 +38,8 @@ export type SubmissionBundleResult = {
     partialLiveRunPlan?: string;
     obsHandoffMarkdown?: string;
     obsHandoffJson?: string;
+    visualQaManifestMarkdown?: string;
+    visualQaManifestJson?: string;
     clipQueueJson?: string;
   };
   evidence: EvidenceReport;
@@ -67,14 +70,16 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const repo = collectRepoMetadata();
   const externalArtifacts = buildExternalArtifactChecklist();
   const bundleDir = path.resolve(options.outputDir);
-  const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
+  const finalQaReportDir = options.finalQaReportDir ?? "qa";
+  const finalQaReports = await findFinalQaReports(finalQaReportDir, bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
   const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join("qa", "obs"), bundleDir);
+  const visualQaManifest = await findVisualQaManifest(options.visualQaDir ?? path.join(finalQaReportDir, "visual"), bundleDir);
   const clipQueue = await findClipQueue(options.clipQueuePath, bundleDir);
   const clipQueueValidation = await validateClipQueue(clipQueue);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
   const artifactIssues = [
-    ...(await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, requireAllPlatforms, repo)),
+    ...(await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, visualQaManifest, requireAllPlatforms, repo)),
     ...clipQueueValidation.issues
   ];
   const files = {
@@ -86,6 +91,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     ...finalQaReports.files,
     ...liveRunPlans.files,
     ...obsHandoff.files,
+    ...visualQaManifest.files,
     ...clipQueue.files
   };
 
@@ -129,6 +135,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
     ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
     ...obsHandoff.copyTasks.map((copyTask) => copyTask()),
+    ...visualQaManifest.copyTasks.map((copyTask) => copyTask()),
     ...clipQueue.copyTasks.map((copyTask) => copyTask())
   ]);
 
@@ -156,6 +163,8 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : []),
     ...(result.files.obsHandoffMarkdown ? [`OBS handoff: ${result.files.obsHandoffMarkdown}`] : []),
     ...(result.files.obsHandoffJson ? [`OBS handoff JSON: ${result.files.obsHandoffJson}`] : []),
+    ...(result.files.visualQaManifestMarkdown ? [`Visual QA manifest: ${result.files.visualQaManifestMarkdown}`] : []),
+    ...(result.files.visualQaManifestJson ? [`Visual QA manifest JSON: ${result.files.visualQaManifestJson}`] : []),
     ...(result.files.clipQueueJson ? [`Clip queue JSON: ${result.files.clipQueueJson}`] : [])
   ];
 
@@ -289,6 +298,13 @@ async function findObsHandoff(reportDir: string, bundleDir: string) {
   ]);
 }
 
+async function findVisualQaManifest(reportDir: string, bundleDir: string) {
+  return findOptionalFiles(reportDir, bundleDir, [
+    ["manifest.md", "visual-qa-manifest.md", "visualQaManifestMarkdown"],
+    ["manifest.json", "visual-qa-manifest.json", "visualQaManifestJson"]
+  ]);
+}
+
 async function findClipQueue(clipQueuePath: string | undefined, bundleDir: string) {
   if (!clipQueuePath) {
     return {
@@ -381,6 +397,7 @@ async function validateCopiedArtifacts(
   finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
   obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
+  visualQaManifest: Awaited<ReturnType<typeof findVisualQaManifest>>,
   requireAllPlatforms: boolean,
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
@@ -394,6 +411,7 @@ async function validateCopiedArtifacts(
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
   issues.push(...liveRunPlanValidation.issues);
   issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl, repo)));
+  issues.push(...(await validateVisualQaManifest(visualQaManifest, repo)));
 
   return issues;
 }
@@ -598,6 +616,44 @@ async function validateObsHandoff(
   return issues;
 }
 
+async function validateVisualQaManifest(
+  visualQaManifest: Awaited<ReturnType<typeof findVisualQaManifest>>,
+  repo: ReturnType<typeof collectRepoMetadata>
+) {
+  const issues: string[] = [];
+
+  if (!visualQaManifest.sourceFiles.visualQaManifestJson) {
+    return issues;
+  }
+
+  if (!visualQaManifest.sourceFiles.visualQaManifestMarkdown) {
+    issues.push("qa/visual/manifest.md is missing; rerun npm run qa:visual");
+  }
+
+  try {
+    const manifest = JSON.parse(await readFile(visualQaManifest.sourceFiles.visualQaManifestJson, "utf8")) as {
+      repo?: {
+        commit?: string | null;
+      };
+      captures?: unknown[];
+    };
+
+    if (repo.commit && manifest.repo?.commit !== repo.commit) {
+      issues.push(
+        `qa/visual/manifest.json was generated for commit ${manifest.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run qa:visual`
+      );
+    }
+
+    if (!Array.isArray(manifest.captures) || manifest.captures.length < 3) {
+      issues.push("qa/visual/manifest.json does not include the expected desktop, mobile, and OBS captures; rerun npm run qa:visual");
+    }
+  } catch {
+    issues.push("qa/visual/manifest.json could not be parsed; rerun npm run qa:visual");
+  }
+
+  return issues;
+}
+
 async function pathExists(filePath: string) {
   try {
     await access(filePath);
@@ -616,7 +672,7 @@ async function runCli() {
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -629,6 +685,7 @@ async function runCli() {
     outputDir: args.outputDir ?? "submission-bundle",
     requireAllPlatforms: !args.allowPartial,
     obsHandoffDir: args.obsHandoffDir,
+    visualQaDir: args.visualQaDir,
     clipQueuePath: args.clipQueuePath
   });
 
@@ -645,6 +702,7 @@ type ParsedArgs = {
   databasePath?: string;
   outputDir?: string;
   obsHandoffDir?: string;
+  visualQaDir?: string;
   clipQueuePath?: string;
   allowPartial: boolean;
 };
@@ -685,6 +743,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--obs-handoff-dir") {
       parsed.obsHandoffDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--visual-qa-dir") {
+      parsed.visualQaDir = args[index + 1];
       index += 1;
       continue;
     }
