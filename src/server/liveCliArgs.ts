@@ -2,6 +2,9 @@ import type { LiveRunPlanOptions } from "./liveRunPlan";
 
 export type LiveStackCliOptions = LiveRunPlanOptions & {
   dryRun: boolean;
+  obsHandoffDir?: string;
+  qaDir?: string;
+  requireReady: boolean;
   withProofGate: boolean;
 };
 
@@ -76,11 +79,29 @@ function parseOptionalPositiveNumber(value: string | undefined) {
 }
 
 export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
-  return {
+  const parsed: LiveStackCliOptions = {
     ...parseLiveRunCliArgs(args),
     dryRun: args.includes("--dry-run"),
+    requireReady: args.includes("--require-ready"),
     withProofGate: args.includes("--with-proof-gate")
   };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--qa-dir") {
+      parsed.qaDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--obs-handoff-dir") {
+      parsed.obsHandoffDir = args[index + 1];
+      index += 1;
+    }
+  }
+
+  return parsed;
 }
 
 export function parseLivePrepareCliArgs(args: string[]): LivePrepareCliOptions {

@@ -35,6 +35,11 @@ describe("live CLI args", () => {
       parseLiveStackCliArgs([
         "--dry-run",
         "--with-proof-gate",
+        "--require-ready",
+        "--qa-dir",
+        "qa/final",
+        "--obs-handoff-dir",
+        "qa/final-obs",
         "--database-path",
         "data/live.sqlite",
         "--feed-port",
@@ -43,7 +48,10 @@ describe("live CLI args", () => {
     ).toEqual({
       allowPartial: false,
       dryRun: true,
+      requireReady: true,
       withProofGate: true,
+      qaDir: "qa/final",
+      obsHandoffDir: "qa/final-obs",
       databasePath: "data/live.sqlite",
       feedPort: 8789
     });

@@ -35,7 +35,7 @@ npm run preflight
 npm run live:prepare -- --out qa/live-run-plan.txt
 npm run obs:handoff -- --out qa/obs
 npm run live:ready
-npm run live:stack -- --dry-run
+npm run live:stack -- --require-ready --with-proof-gate --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
@@ -44,7 +44,7 @@ The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-s
 The final `live:ready` gate checks strict connector preflight, current final QA, current strict run sheet, and valid OBS handoff files before OBS setup.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
-If a default port, evidence path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --proof-timeout-ms 300000`.
+If a default port, evidence path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, `live:ready`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --proof-timeout-ms 300000`.
 
 For a one-platform dry run, use:
 
@@ -117,6 +117,8 @@ Wait for `Live proof gate: ready`. This reads the active JSONL archive while the
 Strict proof requires `Mode: connectors`. A fixture-mode archive is rehearsal proof only and should not be used for the final submission recording.
 
 ## 4. Record The Main Submission
+
+Start the capture stack with `npm run live:stack -- --require-ready --with-proof-gate`.
 
 1. Click `Record`.
 2. Let live events arrive from the stream.

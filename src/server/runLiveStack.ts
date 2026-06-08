@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { buildFinalReadinessReport, formatFinalReadinessReport } from "./finalReadiness";
 import { buildLiveDoctorReport, formatLiveDoctorReport, type LiveDoctorOptions } from "./liveDoctor";
 import { parseLiveStackCliArgs } from "./liveCliArgs";
 import { loadLocalEnv } from "./loadLocalEnv";
@@ -25,6 +26,9 @@ export type LiveStackLaunchPlan = {
 
 type RunLiveStackOptions = LiveDoctorOptions & {
   dryRun?: boolean;
+  obsHandoffDir?: string;
+  qaDir?: string;
+  requireReady?: boolean;
   withProofGate?: boolean;
   spawnProcess?: typeof spawn;
 };
@@ -100,6 +104,17 @@ export async function runLiveStack(env: LivePreflightEnv, options: RunLiveStackO
 
   if (!launchPlan.ok) {
     return 1;
+  }
+
+  if (options.requireReady) {
+    const readiness = await buildFinalReadinessReport(env, options);
+
+    console.log("");
+    console.log(formatFinalReadinessReport(readiness));
+
+    if (!readiness.ok) {
+      return 1;
+    }
   }
 
   console.log("");

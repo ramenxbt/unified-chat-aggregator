@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { buildLiveStackLaunchPlan, runLiveStack } from "./runLiveStack";
 import type { LiveDoctorCheck } from "./liveDoctor";
 import type { LivePreflightEnv } from "./livePreflight";
@@ -122,6 +126,46 @@ describe("live stack runner", () => {
     log.mockRestore();
   });
 
+  it("requires final readiness before launching when requested", async () => {
+    const qaDir = await createReadyQaDir();
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    const exitCode = await runLiveStack(completeEnv, {
+      dryRun: true,
+      requireReady: true,
+      qaDir,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+    const output = log.mock.calls.flat().join("\n");
+
+    expect(exitCode).toBe(0);
+    expect(output).toContain("Final recording readiness: ready");
+    expect(output).toContain("Live stack dry run: ready");
+
+    log.mockRestore();
+  });
+
+  it("refuses to launch when final readiness is required but artifacts are missing", async () => {
+    const qaDir = await mkdtemp(path.join(os.tmpdir(), "live-stack-missing-ready-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    const exitCode = await runLiveStack(completeEnv, {
+      dryRun: true,
+      requireReady: true,
+      qaDir,
+      checkPort: readyPortCheck,
+      checkWritableDirectory: readyDirectoryCheck
+    });
+    const output = log.mock.calls.flat().join("\n");
+
+    expect(exitCode).toBe(1);
+    expect(output).toContain("Final recording readiness: needs setup");
+    expect(output).not.toContain("Live stack dry run: ready");
+
+    log.mockRestore();
+  });
+
   it("passes partial mode through to the proof gate launch plan", async () => {
     const plan = await buildLiveStackLaunchPlan(
       {
@@ -205,6 +249,67 @@ async function readyDirectoryCheck(label: string, directoryPath: string): Promis
     state: "ready",
     detail: `${directoryPath} is writable.`
   };
+}
+
+async function createReadyQaDir() {
+  const qaDir = await mkdtemp(path.join(os.tmpdir(), "live-stack-ready-"));
+
+  await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+  await writeObsHandoff(path.join(qaDir, "obs"));
+
+  return qaDir;
+}
+
+function createFinalQaReport() {
+  return {
+    status: "passed",
+    repo: {
+      commit: currentCommit(),
+      trackedFilesClean: true
+    }
+  };
+}
+
+function createLiveRunPlan() {
+  return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${currentCommit()}`, "branch: main", "", "Live preflight: ready"].join(
+    "\n"
+  );
+}
+
+async function writeObsHandoff(obsHandoffDir: string) {
+  await mkdir(obsHandoffDir, { recursive: true });
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(createObsHandoffJson()), "utf8");
+}
+
+function createObsHandoffJson() {
+  return {
+    browserSourceSettings: {
+      width: 1280,
+      height: 720,
+      fps: 30,
+      customCss: "body { background: rgba(0, 0, 0, 0); overflow: hidden; }"
+    },
+    sources: [
+      {
+        name: "Unified Chat - All Sources",
+        url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+      },
+      {
+        name: "Unified Chat - Twitch + Kick",
+        url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick&limit=12"
+      },
+      {
+        name: "Unified Chat - Signals",
+        url: "http://127.0.0.1:5173/?obs=1&signal=1&limit=10"
+      }
+    ]
+  };
+}
+
+function currentCommit() {
+  return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 }
 
 class FakeChildProcess extends EventEmitter {
