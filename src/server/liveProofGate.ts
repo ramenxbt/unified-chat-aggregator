@@ -333,31 +333,31 @@ export function parseLiveProofGateArgs(args: string[], env: NodeJS.ProcessEnv = 
     }
 
     if (arg === "--min-events") {
-      parsed.minEvents = Number(args[index + 1]);
+      assignOptionalNumber(parsed, "minEvents", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--min-source-labels") {
-      parsed.minSourceLabels = Number(args[index + 1]);
+      assignOptionalNumber(parsed, "minSourceLabels", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--max-p95-latency-ms") {
-      parsed.maxP95LatencyMs = Number(args[index + 1]);
+      assignOptionalNumber(parsed, "maxP95LatencyMs", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--timeout-ms") {
-      parsed.timeoutMs = Number(args[index + 1]);
+      assignOptionalNumber(parsed, "timeoutMs", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--interval-ms") {
-      parsed.intervalMs = Number(args[index + 1]);
+      assignOptionalNumber(parsed, "intervalMs", args[index + 1]);
       index += 1;
       continue;
     }
@@ -381,7 +381,19 @@ function parseOptionalNumber(value: string | undefined) {
 
   const parsedValue = Number(value);
 
-  return Number.isFinite(parsedValue) ? parsedValue : undefined;
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : undefined;
+}
+
+function assignOptionalNumber(
+  target: LiveProofGateOptions,
+  key: "minEvents" | "minSourceLabels" | "maxP95LatencyMs" | "timeoutMs" | "intervalMs",
+  value: string | undefined
+) {
+  const parsed = parseOptionalNumber(value);
+
+  if (parsed !== undefined) {
+    target[key] = parsed;
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

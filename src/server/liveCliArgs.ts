@@ -14,13 +14,13 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
     const arg = args[index];
 
     if (arg === "--feed-port") {
-      parsed.feedPort = Number(args[index + 1]);
+      assignOptionalPositiveNumber(parsed, "feedPort", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--app-port") {
-      parsed.appPort = Number(args[index + 1]);
+      assignOptionalPositiveNumber(parsed, "appPort", args[index + 1]);
       index += 1;
       continue;
     }
@@ -38,19 +38,37 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
     }
 
     if (arg === "--proof-timeout-ms" || arg === "--timeout-ms") {
-      parsed.proofTimeoutMs = Number(args[index + 1]);
+      assignOptionalPositiveNumber(parsed, "proofTimeoutMs", args[index + 1]);
       index += 1;
       continue;
     }
 
     if (arg === "--proof-interval-ms" || arg === "--interval-ms") {
-      parsed.proofIntervalMs = Number(args[index + 1]);
+      assignOptionalPositiveNumber(parsed, "proofIntervalMs", args[index + 1]);
       index += 1;
       continue;
     }
   }
 
   return parsed;
+}
+
+function assignOptionalPositiveNumber(
+  target: LiveRunPlanOptions,
+  key: "feedPort" | "appPort" | "proofTimeoutMs" | "proofIntervalMs",
+  value: string | undefined
+) {
+  const parsed = parseOptionalPositiveNumber(value);
+
+  if (parsed !== undefined) {
+    target[key] = parsed;
+  }
+}
+
+function parseOptionalPositiveNumber(value: string | undefined) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {

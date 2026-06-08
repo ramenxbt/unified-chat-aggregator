@@ -63,8 +63,8 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
     minEvents: parsePositiveNumber(env.PROOF_MIN_EVENTS, 25),
     minSourceLabels: parsePositiveNumber(env.PROOF_MIN_SOURCE_LABELS, 3),
     maxP95LatencyMs: parsePositiveNumber(env.PROOF_MAX_P95_LATENCY_MS, 5000),
-    timeoutMs: options.proofTimeoutMs ?? parsePositiveNumber(env.PROOF_TIMEOUT_MS, 120_000),
-    intervalMs: options.proofIntervalMs ?? parsePositiveNumber(env.PROOF_INTERVAL_MS, 1000)
+    timeoutMs: parsePositiveNumber(options.proofTimeoutMs, parsePositiveNumber(env.PROOF_TIMEOUT_MS, 120_000)),
+    intervalMs: parsePositiveNumber(options.proofIntervalMs, parsePositiveNumber(env.PROOF_INTERVAL_MS, 1000))
   };
   const partialFlag = options.allowPartial ? " --allow-partial" : "";
   const kickWebhookPort = env.KICK_WEBHOOK_PORT ?? "8788";
@@ -174,7 +174,7 @@ function formatEnvAssignment(name: string, value: string) {
   return `${name}=${shellQuote(value)}`;
 }
 
-function parsePositiveNumber(value: string | undefined, fallback: number) {
+function parsePositiveNumber(value: string | number | undefined, fallback: number) {
   const parsed = Number(value);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;

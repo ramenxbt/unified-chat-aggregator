@@ -48,4 +48,21 @@ describe("live CLI args", () => {
       feedPort: 8789
     });
   });
+
+  it("ignores invalid numeric overrides", () => {
+    expect(
+      parseLiveRunCliArgs([
+        "--feed-port",
+        "nope",
+        "--app-port",
+        "0",
+        "--proof-timeout-ms",
+        "-1",
+        "--proof-interval-ms",
+        "NaN"
+      ])
+    ).toEqual({
+      allowPartial: false
+    });
+  });
 });

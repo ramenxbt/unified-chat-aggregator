@@ -127,4 +127,22 @@ describe("live run plan", () => {
     expect(plan.evidence.evidenceCheckCommand).toContain("--allow-partial");
     expect(plan.evidence.submissionBundleCommand).toContain("--allow-partial");
   });
+
+  it("falls back when proof timing overrides are invalid", () => {
+    const plan = buildLiveRunPlan(
+      {
+        ...completeEnv,
+        PROOF_TIMEOUT_MS: "300000",
+        PROOF_INTERVAL_MS: "2000"
+      },
+      {
+        proofTimeoutMs: Number.NaN,
+        proofIntervalMs: -1
+      }
+    );
+
+    expect(plan.proofGate.timeoutMs).toBe(300000);
+    expect(plan.proofGate.intervalMs).toBe(2000);
+    expect(plan.evidence.proofGateCommand).not.toContain("NaN");
+  });
 });

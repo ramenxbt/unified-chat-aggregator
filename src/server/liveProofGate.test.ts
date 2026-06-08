@@ -124,6 +124,18 @@ describe("live proof gate", () => {
       intervalMs: 2000
     });
   });
+
+  it("keeps env timing defaults when CLI timing values are invalid", () => {
+    expect(
+      parseLiveProofGateArgs(["--timeout-ms", "nope", "--interval-ms", "0"], {
+        PROOF_TIMEOUT_MS: "300000",
+        PROOF_INTERVAL_MS: "2000"
+      })
+    ).toMatchObject({
+      timeoutMs: 300000,
+      intervalMs: 2000
+    });
+  });
 });
 
 async function createProofFixture(

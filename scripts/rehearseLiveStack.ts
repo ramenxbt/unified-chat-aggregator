@@ -143,6 +143,27 @@ async function assertArchive() {
 }
 
 async function assertDatabase() {
+  const deadline = Date.now() + 10_000;
+  let lastLockError: unknown;
+
+  while (Date.now() < deadline) {
+    try {
+      await assertDatabaseOnce();
+      return;
+    } catch (error) {
+      if (!isSQLiteLockError(error)) {
+        throw error;
+      }
+
+      lastLockError = error;
+      await delay(250);
+    }
+  }
+
+  throw lastLockError instanceof Error ? lastLockError : new Error(`Database stayed locked: ${databasePath}`);
+}
+
+async function assertDatabaseOnce() {
   const sqliteModuleName = "node:sqlite";
   const { DatabaseSync } = await import(sqliteModuleName);
   const db = new DatabaseSync(databasePath, { readOnly: true });
@@ -157,6 +178,14 @@ async function assertDatabase() {
   } finally {
     db.close();
   }
+}
+
+function isSQLiteLockError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.message.toLowerCase().includes("database is locked") ||
+      ("code" in error && error.code === "ERR_SQLITE_ERROR" && "errcode" in error && error.errcode === 5))
+  );
 }
 
 function stopProcess(child: ChildProcessWithoutNullStreams) {
