@@ -102,13 +102,17 @@ describe("App", () => {
       "href",
       expect.stringContaining("obs=1")
     );
-    expect(screen.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /twitch ansem/i })).toHaveAttribute(
       "href",
       expect.stringContaining("sources=twitch")
     );
-    expect(screen.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /twitch ansem/i })).toHaveAttribute(
       "href",
       expect.stringContaining("q=ansem")
+    );
+    expect(screen.getByRole("link", { name: /kick marketbubble/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("sources=kick")
     );
     expect(screen.getByRole("link", { name: /signal only/i })).toHaveAttribute(
       "href",

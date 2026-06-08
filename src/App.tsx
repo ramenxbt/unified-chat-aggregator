@@ -164,7 +164,7 @@ export function App() {
   );
   const sourceIdentityGroups = useMemo(() => buildSourceIdentityGroups(sourceAccountSummaries), [sourceAccountSummaries]);
   const moderationItems = useMemo(() => buildModerationItems(feedEvents), [feedEvents]);
-  const obsPresetLinks = useMemo(buildObsPresetLinks, []);
+  const obsPresetLinks = useMemo(() => buildObsPresetLinks(sourceAccountSummaries), [sourceAccountSummaries]);
 
   useEffect(() => {
     document.body.classList.toggle("obs-body", obsMode);
@@ -988,7 +988,22 @@ function parseLimitParam(value: string | null) {
   return Math.min(limit, 100);
 }
 
-function buildObsPresetLinks(): ObsPresetLink[] {
+function buildObsPresetLinks(accounts: SourceAccountSummary[]): ObsPresetLink[] {
+  const focusedAccountLinks = accounts.slice(0, 3).map((account) => {
+    const accountName = getAccountNameFromSourceLabel(account.label);
+    const query = accountName.replace(/^@/, "").toLowerCase();
+
+    return {
+      title: `${platformLabels[account.platform]} ${accountName}`,
+      detail: "Focused proof shot for this source account.",
+      href: buildObsPresetHref({
+        sources: [account.platform],
+        limit: 8,
+        query
+      })
+    };
+  });
+
   return [
     {
       title: "All sources",
@@ -1006,15 +1021,7 @@ function buildObsPresetLinks(): ObsPresetLink[] {
         limit: 12
       })
     },
-    {
-      title: "Ansem Twitch",
-      detail: "Focused proof shot for a single account.",
-      href: buildObsPresetHref({
-        sources: ["twitch"],
-        limit: 8,
-        query: "ansem"
-      })
-    },
+    ...focusedAccountLinks,
     {
       title: "Signal only",
       detail: "High-signal clip view for fast review.",
