@@ -152,7 +152,7 @@ The feed server archive is the source of truth if the browser loses its local re
 Check the archive and database evidence:
 
 ```bash
-npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite
+npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt
 npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt
 ```
 
@@ -187,9 +187,10 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `qa/kick-tunnel-check.txt` from `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` after the capture stack starts.
 - Passing `qa/final-readiness.txt` from `npm run live:ready -- --out qa/final-readiness.txt` before opening OBS.
-- Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
+- Passing `qa/evidence-check.txt` from `npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt`, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.
 - `submission-bundle/` containing copied final readiness proof from `qa/final-readiness.txt`.
+- `submission-bundle/` containing copied evidence check proof from `qa/evidence-check.txt` when present.
 - `submission-bundle/` containing copied OBS handoff files from `qa/obs/`.
 - `submission-bundle/` containing copied visual QA manifests from `qa/visual/`.
 - `submission-bundle/` containing copied Kick tunnel proof from `qa/kick-tunnel-check.txt`.

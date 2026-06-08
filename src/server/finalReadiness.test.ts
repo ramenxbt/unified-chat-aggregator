@@ -30,7 +30,6 @@ const completeEnv: LivePreflightEnv = {
 
 const defaultProofGateCommand =
   "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
-const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
 const defaultFeedCommand = "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/feed.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed";
 const defaultDashboardCommand = "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173";
 
@@ -315,7 +314,7 @@ async function createReadyQaDir({
   feedCommand = defaultFeedCommand,
   dashboardCommand = defaultDashboardCommand,
   proofGateCommand = defaultProofGateCommand,
-  evidenceCheckCommand = defaultEvidenceCheckCommand,
+  evidenceCheckCommand,
   submissionBundleCommand,
   obsHandoffCommit = currentCommit(),
   visualQaCommit = currentCommit(),
@@ -339,6 +338,8 @@ async function createReadyQaDir({
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-"));
   const resolvedSubmissionBundleCommand =
     submissionBundleCommand === undefined ? defaultSubmissionBundleCommand(path.join(qaDir, "kick-tunnel-check.txt")) : submissionBundleCommand;
+  const resolvedEvidenceCheckCommand =
+    evidenceCheckCommand === undefined ? defaultEvidenceCheckCommandForQa(qaDir) : evidenceCheckCommand;
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(
@@ -349,7 +350,7 @@ async function createReadyQaDir({
       feedCommand,
       dashboardCommand,
       proofGateCommand,
-      evidenceCheckCommand,
+      resolvedEvidenceCheckCommand,
       resolvedSubmissionBundleCommand
     ),
     "utf8"
@@ -371,6 +372,12 @@ function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
     path.dirname(kickTunnelCheckPath)
   )} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
+  )}`;
+}
+
+function defaultEvidenceCheckCommandForQa(qaDir: string) {
+  return `npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out ${shellQuote(
+    path.join(qaDir, "evidence-check.txt")
   )}`;
 }
 

@@ -135,7 +135,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         `--timeout-ms ${proofGate.timeoutMs}`,
         `--interval-ms ${proofGate.intervalMs}${partialFlag}`
       ].join(" "),
-      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)}${partialFlag}`,
+      evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out ${shellQuote(`${qaDir}/evidence-check.txt`)}${partialFlag}`,
       submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
       replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
       replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`

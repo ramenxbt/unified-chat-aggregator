@@ -16,6 +16,7 @@ describe("submission bundle", () => {
     const clipQueuePath = path.join(baseDir, "clip-queue-export.json");
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "evidence-check.txt"), "Evidence check: ready\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFinalReadinessProof(path.join(finalQaReportDir, "final-readiness.txt"));
@@ -42,6 +43,7 @@ describe("submission bundle", () => {
     const replayJson = JSON.parse(await readFile(result.files.replayJson, "utf8"));
     const replayCsv = await readFile(result.files.replayCsv, "utf8");
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
+    expect(result.files.evidenceCheckReport).toBeDefined();
     expect(result.files.finalQaReportMarkdown).toBeDefined();
     expect(result.files.finalQaReportJson).toBeDefined();
     expect(result.files.finalReadinessReport).toBeDefined();
@@ -52,6 +54,7 @@ describe("submission bundle", () => {
     expect(result.files.visualQaManifestJson).toBeDefined();
     expect(result.files.kickTunnelCheck).toBeDefined();
     expect(result.files.clipQueueJson).toBeDefined();
+    const evidenceCheckReport = await readFile(result.files.evidenceCheckReport as string, "utf8");
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
     const finalReadinessReport = await readFile(result.files.finalReadinessReport as string, "utf8");
@@ -73,12 +76,14 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("Repo commit:");
     expect(submissionNotes).toContain("## External Artifacts To Attach");
     expect(submissionNotes).toContain("OBS overlay recording with Twitch, Kick, and X source labels visible");
+    expect(submissionNotes).toContain("Saved evidence check proof from qa/evidence-check.txt");
     expect(submissionNotes).toContain("Visual QA manifest from qa/visual/manifest.md");
     expect(submissionNotes).toContain("## Clip Queue");
     expect(submissionNotes).toContain("- Clips marked: 2");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
     expect(submissionNotes).toContain("- kick: 1 events");
     expect(submissionNotes).toContain("- KICK (MARKETBUBBLE)");
+    expect(evidenceCheckReport).toContain("Evidence check: ready");
     expect(finalQaReport).toContain("Status: passed");
     expect(finalQaReportJson).toMatchObject({
       status: "passed",
@@ -124,6 +129,7 @@ describe("submission bundle", () => {
         "OBS overlay recording with Twitch, Kick, and X source labels visible",
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
         "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
+        "Saved evidence check proof from qa/evidence-check.txt",
         "Final live run sheet from qa/live-run-plan.txt",
         "Final readiness proof from qa/final-readiness.txt",
         "OBS browser source handoff from qa/obs/obs-browser-sources.md",
@@ -136,6 +142,7 @@ describe("submission bundle", () => {
         sourceLabels: ["KICK (MARKETBUBBLE)", "TWITCH (ANSEM)"]
       },
       files: {
+        evidenceCheckReport: result.files.evidenceCheckReport,
         finalQaReportMarkdown: result.files.finalQaReportMarkdown,
         finalQaReportJson: result.files.finalQaReportJson,
         finalReadinessReport: result.files.finalReadinessReport,
@@ -148,6 +155,7 @@ describe("submission bundle", () => {
         clipQueueJson: result.files.clipQueueJson
       }
     });
+    expect(formatSubmissionBundleResult(result)).toContain("Evidence check proof:");
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
     expect(formatSubmissionBundleResult(result)).toContain("Final readiness report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
@@ -189,6 +197,7 @@ describe("submission bundle", () => {
     const qaDir = path.join(baseDir, "final qa");
     const outputDir = path.join(baseDir, "bundle-custom-qa");
     await mkdir(qaDir, { recursive: true });
+    await writeFile(path.join(qaDir, "evidence-check.txt"), "Evidence check: ready\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"));
@@ -209,6 +218,7 @@ describe("submission bundle", () => {
     });
 
     expect(result.ok).toBe(true);
+    expect(result.files.evidenceCheckReport).toBe(path.join(outputDir, "evidence-check.txt"));
     expect(result.files.finalQaReportJson).toBe(path.join(outputDir, "final-qa-report.json"));
     expect(result.files.finalReadinessReport).toBe(path.join(outputDir, "final-readiness.txt"));
     expect(result.files.liveRunPlan).toBe(path.join(outputDir, "live-run-plan.txt"));
@@ -841,7 +851,7 @@ function defaultProofGateCommand() {
 }
 
 function defaultEvidenceCheckCommand() {
-  return "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
+  return "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt";
 }
 
 function defaultSubmissionBundleCommand() {

@@ -34,6 +34,7 @@ export type SubmissionBundleResult = {
     replayCsv: string;
     submissionNotes: string;
     summary: string;
+    evidenceCheckReport?: string;
     finalQaReportMarkdown?: string;
     finalQaReportJson?: string;
     finalReadinessReport?: string;
@@ -76,6 +77,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const bundleDir = path.resolve(options.outputDir);
   const qaDir = options.qaDir ?? "qa";
   const finalQaReportDir = options.finalQaReportDir ?? qaDir;
+  const evidenceCheckReport = await findEvidenceCheckReport(finalQaReportDir, bundleDir);
   const finalQaReports = await findFinalQaReports(finalQaReportDir, bundleDir);
   const finalReadinessReport = await findFinalReadinessReport(finalQaReportDir, bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? qaDir, bundleDir);
@@ -104,6 +106,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     replayCsv: path.join(bundleDir, "replay.csv"),
     submissionNotes: path.join(bundleDir, "submission-notes.md"),
     summary: path.join(bundleDir, "summary.json"),
+    ...evidenceCheckReport.files,
     ...finalQaReports.files,
     ...finalReadinessReport.files,
     ...liveRunPlans.files,
@@ -150,6 +153,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       )}\n`,
       "utf8"
     ),
+    ...evidenceCheckReport.copyTasks.map((copyTask) => copyTask()),
     ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
     ...finalReadinessReport.copyTasks.map((copyTask) => copyTask()),
     ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
@@ -177,6 +181,7 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     `Replay CSV: ${result.files.replayCsv}`,
     `Submission notes: ${result.files.submissionNotes}`,
     `Summary: ${result.files.summary}`,
+    ...(result.files.evidenceCheckReport ? [`Evidence check proof: ${result.files.evidenceCheckReport}`] : []),
     ...(result.files.finalQaReportMarkdown ? [`Final QA report: ${result.files.finalQaReportMarkdown}`] : []),
     ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : []),
     ...(result.files.finalReadinessReport ? [`Final readiness report: ${result.files.finalReadinessReport}`] : []),
@@ -292,6 +297,7 @@ function buildExternalArtifactChecklist() {
     "OBS overlay recording with Twitch, Kick, and X source labels visible",
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
     "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
+    "Saved evidence check proof from qa/evidence-check.txt",
     "Final live run sheet from qa/live-run-plan.txt",
     "Final readiness proof from qa/final-readiness.txt",
     "OBS browser source handoff from qa/obs/obs-browser-sources.md",
@@ -299,6 +305,10 @@ function buildExternalArtifactChecklist() {
     "Visual QA manifest from qa/visual/manifest.md",
     "Kick tunnel health proof from qa/kick-tunnel-check.txt"
   ];
+}
+
+async function findEvidenceCheckReport(reportDir: string, bundleDir: string) {
+  return findOptionalFiles(reportDir, bundleDir, [["evidence-check.txt", "evidence-check.txt", "evidenceCheckReport"]]);
 }
 
 async function findFinalQaReports(reportDir: string, bundleDir: string) {

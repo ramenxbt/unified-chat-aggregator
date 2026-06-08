@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -380,11 +380,11 @@ async function openSQLiteDatabase(databasePath: string) {
 }
 
 async function runCli() {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseEvidenceReportCliArgs(process.argv.slice(2));
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run evidence:check -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--allow-partial]"
+      "Usage: npm run evidence:check -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out qa/evidence-check.txt] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -396,22 +396,33 @@ async function runCli() {
     databasePath: args.databasePath,
     requireAllPlatforms: !args.allowPartial
   });
+  const output = formatEvidenceReport(report);
 
-  console.log(formatEvidenceReport(report));
+  console.log(output);
+
+  if (args.outputPath) {
+    await writeEvidenceReportProof(args.outputPath, output);
+  }
 
   if (!report.ok) {
     process.exitCode = 1;
   }
 }
 
+export async function writeEvidenceReportProof(filePath: string, content: string) {
+  await mkdir(path.dirname(path.resolve(filePath)), { recursive: true });
+  await writeFile(filePath, `${content}\n`, "utf8");
+}
+
 type ParsedArgs = {
   archivePath: string | null;
   archiveDir: string | null;
   databasePath?: string;
+  outputPath?: string;
   allowPartial: boolean;
 };
 
-function parseArgs(args: string[]): ParsedArgs {
+export function parseEvidenceReportCliArgs(args: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     archivePath: null,
     archiveDir: null,
@@ -435,6 +446,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--db") {
       parsed.databasePath = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--out" || arg === "--output") {
+      parsed.outputPath = args[index + 1];
       index += 1;
       continue;
     }

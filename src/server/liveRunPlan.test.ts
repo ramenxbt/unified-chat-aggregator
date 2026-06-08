@@ -61,7 +61,7 @@ describe("live run plan", () => {
       "live proof gate: npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000"
     );
     expect(formatted).toContain(
-      "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite"
+      "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
       "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
@@ -96,7 +96,7 @@ describe("live run plan", () => {
       "live proof gate: npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 100 --min-source-labels 5 --max-p95-latency-ms 2500 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
-      "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite'"
+      "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
       "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"

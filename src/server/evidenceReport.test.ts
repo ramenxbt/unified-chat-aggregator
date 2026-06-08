@@ -1,10 +1,15 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createFixtureEvent, initialConnectorStatuses } from "../fixtures/fixtureEvents";
 import { FileFeedArchive, SQLiteFeedArchive, createFeedSessionId } from "./feedArchive";
-import { buildEvidenceReport, formatEvidenceReport } from "./evidenceReport";
+import {
+  buildEvidenceReport,
+  formatEvidenceReport,
+  parseEvidenceReportCliArgs,
+  writeEvidenceReportProof
+} from "./evidenceReport";
 
 describe("evidence report", () => {
   it("validates archive and database evidence for all platforms", async () => {
@@ -80,6 +85,32 @@ describe("evidence report", () => {
 
     expect(report.ok).toBe(true);
     expect(report.archivePath).toBe(archivePath);
+  });
+
+  it("parses output paths for saved evidence proof", () => {
+    expect(parseEvidenceReportCliArgs(["--archive-dir", "data/feed-sessions", "--db", "data/feed.sqlite", "--out", "qa/evidence-check.txt"])).toEqual({
+      archivePath: null,
+      archiveDir: "data/feed-sessions",
+      databasePath: "data/feed.sqlite",
+      outputPath: "qa/evidence-check.txt",
+      allowPartial: false
+    });
+
+    expect(parseEvidenceReportCliArgs(["--archive", "data/feed-sessions/session", "--output", "qa/evidence.txt", "--allow-partial"])).toEqual({
+      archivePath: "data/feed-sessions/session",
+      archiveDir: null,
+      outputPath: "qa/evidence.txt",
+      allowPartial: true
+    });
+  });
+
+  it("writes formatted evidence proof to disk", async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "feed-evidence-output-"));
+    const outputPath = path.join(tempDir, "qa", "evidence-check.txt");
+
+    await writeEvidenceReportProof(outputPath, "Evidence check: ready");
+
+    expect(await readFile(outputPath, "utf8")).toBe("Evidence check: ready\n");
   });
 
   it("retries when the evidence database is temporarily locked", async () => {
