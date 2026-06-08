@@ -67,6 +67,7 @@ export async function buildFinalReadinessReport(
         ? "Twitch, Kick, and X are ready for a connector-mode capture."
         : "Run npm run preflight and resolve missing Twitch, Kick, or X setup before recording."
     } satisfies FinalReadinessCheck,
+    checkTargetSourceLabels(plan.targetSourceLabels),
     await checkFinalQaReport(path.join(qaDir, "final-report.json"), repo.commit),
     await checkVisualQaManifest(visualQaDir, repo.commit),
     liveRunPlanCheck,
@@ -130,6 +131,23 @@ function formatLiveRunOptionArgs(options: FinalReadinessOptions) {
   if (options.proofIntervalMs !== undefined) args.push("--proof-interval-ms", shellQuote(String(options.proofIntervalMs)));
 
   return args;
+}
+
+function checkTargetSourceLabels(targetSourceLabels: string[]): FinalReadinessCheck {
+  if (targetSourceLabels.length < 3) {
+    return {
+      name: "Target source labels",
+      state: "setup",
+      detail:
+        "Set TWITCH_BROADCASTER_LOGIN, KICK_BROADCASTER_SLUG, and X_FILTER_RULES or X_SPACES_QUERY so the final feed can show account-qualified labels."
+    };
+  }
+
+  return {
+    name: "Target source labels",
+    state: "ready",
+    detail: targetSourceLabels.join(", ")
+  };
 }
 
 async function checkFinalQaReport(reportPath: string, currentCommit: string | null): Promise<FinalReadinessCheck> {

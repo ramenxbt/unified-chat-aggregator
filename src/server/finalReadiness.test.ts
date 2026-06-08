@@ -40,6 +40,8 @@ describe("final recording readiness", () => {
     expect(report.ok).toBe(true);
     expect(formatted).toContain("Final recording readiness: ready");
     expect(formatted).toContain("PASS Strict connector preflight");
+    expect(formatted).toContain("PASS Target source labels");
+    expect(formatted).toContain("KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)");
     expect(formatted).toContain("PASS Final QA report");
     expect(formatted).toContain("PASS Visual QA manifest");
     expect(formatted).toContain("PASS Final live run sheet");
@@ -65,6 +67,26 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("Stream-day .env checklist:");
     expect(formatted).toContain("TWITCH_CLIENT_ID=");
     expect(formatted).toContain("KICK_WEBHOOK_PUBLIC_URL=https://YOUR-TUNNEL.example/webhooks/kick");
+  });
+
+  it("fails when readable target source labels are incomplete", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(
+      {
+        ...completeEnv,
+        TWITCH_BROADCASTER_LOGIN: undefined,
+        KICK_BROADCASTER_SLUG: undefined,
+        X_FILTER_RULES: "from:marketbubble",
+        X_SPACES_QUERY: undefined
+      },
+      { qaDir }
+    );
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("PASS Strict connector preflight");
+    expect(formatted).toContain("MISS Target source labels");
+    expect(formatted).toContain("Set TWITCH_BROADCASTER_LOGIN, KICK_BROADCASTER_SLUG");
   });
 
   it("fails when the final run sheet is stale", async () => {
