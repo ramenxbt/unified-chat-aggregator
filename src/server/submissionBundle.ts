@@ -15,6 +15,7 @@ export type SubmissionBundleOptions = {
   requireAllPlatforms?: boolean;
   finalQaReportDir?: string;
   liveRunPlanDir?: string;
+  obsHandoffDir?: string;
 };
 
 export type SubmissionBundleResult = {
@@ -30,6 +31,8 @@ export type SubmissionBundleResult = {
     finalQaReportJson?: string;
     liveRunPlan?: string;
     partialLiveRunPlan?: string;
+    obsHandoffMarkdown?: string;
+    obsHandoffJson?: string;
   };
   evidence: EvidenceReport;
   artifactIssues: string[];
@@ -48,8 +51,9 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const bundleDir = path.resolve(options.outputDir);
   const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
+  const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join("qa", "obs"), bundleDir);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
-  const artifactIssues = await validateCopiedArtifacts(finalQaReports, liveRunPlans, requireAllPlatforms, repo);
+  const artifactIssues = await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, requireAllPlatforms, repo);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
@@ -57,7 +61,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     submissionNotes: path.join(bundleDir, "submission-notes.md"),
     summary: path.join(bundleDir, "summary.json"),
     ...finalQaReports.files,
-    ...liveRunPlans.files
+    ...liveRunPlans.files,
+    ...obsHandoff.files
   };
 
   await mkdir(bundleDir, { recursive: true });
@@ -93,7 +98,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       "utf8"
     ),
     ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
-    ...liveRunPlans.copyTasks.map((copyTask) => copyTask())
+    ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
+    ...obsHandoff.copyTasks.map((copyTask) => copyTask())
   ]);
 
   return {
@@ -117,7 +123,9 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     ...(result.files.finalQaReportMarkdown ? [`Final QA report: ${result.files.finalQaReportMarkdown}`] : []),
     ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : []),
     ...(result.files.liveRunPlan ? [`Live run plan: ${result.files.liveRunPlan}`] : []),
-    ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : [])
+    ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : []),
+    ...(result.files.obsHandoffMarkdown ? [`OBS handoff: ${result.files.obsHandoffMarkdown}`] : []),
+    ...(result.files.obsHandoffJson ? [`OBS handoff JSON: ${result.files.obsHandoffJson}`] : [])
   ];
 
   const issues = [...result.evidence.issues, ...result.artifactIssues];
@@ -211,6 +219,7 @@ function buildExternalArtifactChecklist() {
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
     "Exported dashboard recording JSON and CSV, if captured from the browser",
     "Final live run sheet from qa/live-run-plan.txt",
+    "OBS browser source handoff from qa/obs/obs-browser-sources.md",
     "Final local rehearsal report from qa/final-report.md"
   ];
 }
@@ -226,6 +235,13 @@ async function findLiveRunPlans(reportDir: string, bundleDir: string) {
   return findOptionalFiles(reportDir, bundleDir, [
     ["live-run-plan.txt", "live-run-plan.txt", "liveRunPlan"],
     ["live-run-plan.partial.txt", "live-run-plan.partial.txt", "partialLiveRunPlan"]
+  ]);
+}
+
+async function findObsHandoff(reportDir: string, bundleDir: string) {
+  return findOptionalFiles(reportDir, bundleDir, [
+    ["obs-browser-sources.md", "obs-browser-sources.md", "obsHandoffMarkdown"],
+    ["obs-browser-sources.json", "obs-browser-sources.json", "obsHandoffJson"]
   ]);
 }
 
@@ -255,6 +271,7 @@ async function findOptionalFiles(
 async function validateCopiedArtifacts(
   finalQaReports: Awaited<ReturnType<typeof findFinalQaReports>>,
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
+  obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
   requireAllPlatforms: boolean,
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
@@ -266,6 +283,7 @@ async function validateCopiedArtifacts(
 
   issues.push(...(await validateFinalQaReport(finalQaReports, repo)));
   issues.push(...(await validateLiveRunPlan(liveRunPlans, repo)));
+  issues.push(...(await validateObsHandoff(obsHandoff)));
 
   return issues;
 }
@@ -346,6 +364,52 @@ function isPartialLiveRunPlan(content: string) {
   return content.includes("Platform requirement: at least one live connector") || content.includes("--allow-partial");
 }
 
+async function validateObsHandoff(obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>) {
+  const issues: string[] = [];
+
+  if (!obsHandoff.sourceFiles.obsHandoffMarkdown) {
+    issues.push("qa/obs/obs-browser-sources.md is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle");
+  }
+
+  if (!obsHandoff.sourceFiles.obsHandoffJson) {
+    issues.push("qa/obs/obs-browser-sources.json is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle");
+    return issues;
+  }
+
+  try {
+    const handoff = JSON.parse(await readFile(obsHandoff.sourceFiles.obsHandoffJson, "utf8")) as {
+      browserSourceSettings?: {
+        width?: number;
+        height?: number;
+        fps?: number;
+        customCss?: string;
+      };
+      sources?: Array<{
+        name?: string;
+        url?: string;
+      }>;
+    };
+
+    if (!Array.isArray(handoff.sources) || handoff.sources.length < 3) {
+      issues.push("qa/obs/obs-browser-sources.json does not include the expected OBS browser sources; rerun npm run obs:handoff -- --out qa/obs");
+    }
+
+    if (!handoff.sources?.some((source) => source.name === "Unified Chat - All Sources" && source.url?.includes("obs=1"))) {
+      issues.push("qa/obs/obs-browser-sources.json is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out qa/obs");
+    }
+
+    const settings = handoff.browserSourceSettings;
+
+    if (settings?.width !== 1280 || settings.height !== 720 || settings.fps !== 30 || !settings.customCss?.includes("rgba(0, 0, 0, 0)")) {
+      issues.push("qa/obs/obs-browser-sources.json has unexpected browser source settings; rerun npm run obs:handoff -- --out qa/obs");
+    }
+  } catch {
+    issues.push("qa/obs/obs-browser-sources.json could not be parsed; rerun npm run obs:handoff -- --out qa/obs");
+  }
+
+  return issues;
+}
+
 async function pathExists(filePath: string) {
   try {
     await access(filePath);
@@ -375,7 +439,8 @@ async function runCli() {
     archiveDir: args.archiveDir ?? undefined,
     databasePath: args.databasePath,
     outputDir: args.outputDir ?? "submission-bundle",
-    requireAllPlatforms: !args.allowPartial
+    requireAllPlatforms: !args.allowPartial,
+    obsHandoffDir: args.obsHandoffDir
   });
 
   console.log(formatSubmissionBundleResult(result));
@@ -390,6 +455,7 @@ type ParsedArgs = {
   archiveDir: string | null;
   databasePath?: string;
   outputDir?: string;
+  obsHandoffDir?: string;
   allowPartial: boolean;
 };
 
@@ -423,6 +489,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--out") {
       parsed.outputDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--obs-handoff-dir") {
+      parsed.obsHandoffDir = args[index + 1];
       index += 1;
       continue;
     }

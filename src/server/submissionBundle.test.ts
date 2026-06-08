@@ -11,18 +11,21 @@ describe("submission bundle", () => {
   it("writes evidence, replay, csv, and summary files", async () => {
     const { archiveDir, archivePath, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
     const outputDir = path.join(baseDir, "bundle");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir,
-      liveRunPlanDir: finalQaReportDir
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
     });
 
     expect(result.ok).toBe(true);
@@ -35,9 +38,13 @@ describe("submission bundle", () => {
     expect(result.files.finalQaReportMarkdown).toBeDefined();
     expect(result.files.finalQaReportJson).toBeDefined();
     expect(result.files.liveRunPlan).toBeDefined();
+    expect(result.files.obsHandoffMarkdown).toBeDefined();
+    expect(result.files.obsHandoffJson).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
     const liveRunPlan = await readFile(result.files.liveRunPlan as string, "utf8");
+    const obsHandoffMarkdown = await readFile(result.files.obsHandoffMarkdown as string, "utf8");
+    const obsHandoffJson = JSON.parse(await readFile(result.files.obsHandoffJson as string, "utf8"));
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
     expect(evidenceReport).toContain("Evidence check: ready");
@@ -59,6 +66,11 @@ describe("submission bundle", () => {
       }
     });
     expect(liveRunPlan).toContain("Live preflight: ready");
+    expect(obsHandoffMarkdown).toContain("OBS Browser Source Handoff");
+    expect(obsHandoffJson.sources[0]).toMatchObject({
+      name: "Unified Chat - All Sources",
+      url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+    });
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
       evidenceOk: true,
@@ -84,21 +96,26 @@ describe("submission bundle", () => {
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
         "Exported dashboard recording JSON and CSV, if captured from the browser",
         "Final live run sheet from qa/live-run-plan.txt",
+        "OBS browser source handoff from qa/obs/obs-browser-sources.md",
         "Final local rehearsal report from qa/final-report.md"
       ],
       files: {
         finalQaReportMarkdown: result.files.finalQaReportMarkdown,
         finalQaReportJson: result.files.finalQaReportJson,
-        liveRunPlan: result.files.liveRunPlan
+        liveRunPlan: result.files.liveRunPlan,
+        obsHandoffMarkdown: result.files.obsHandoffMarkdown,
+        obsHandoffJson: result.files.obsHandoffJson
       }
     });
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
+    expect(formatSubmissionBundleResult(result)).toContain("OBS handoff:");
   });
 
   it("flags a partial live run sheet in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
     const outputDir = path.join(baseDir, "bundle-partial-plan");
     await mkdir(liveRunPlanDir, { recursive: true });
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
@@ -107,13 +124,15 @@ describe("submission bundle", () => {
       createLiveRunPlan("Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n"),
       "utf8"
     );
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir: liveRunPlanDir,
-      liveRunPlanDir
+      liveRunPlanDir,
+      obsHandoffDir
     });
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
@@ -154,6 +173,7 @@ describe("submission bundle", () => {
   it("flags a stale final QA report commit in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
     const outputDir = path.join(baseDir, "bundle-stale-qa");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(
@@ -161,13 +181,15 @@ describe("submission bundle", () => {
       JSON.stringify(createFinalQaReport({ commit: "stale123" })),
       "utf8"
     );
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir,
-      liveRunPlanDir: finalQaReportDir
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
     });
 
     expect(result.ok).toBe(false);
@@ -177,17 +199,20 @@ describe("submission bundle", () => {
   it("flags a stale live run sheet commit in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
     const outputDir = path.join(baseDir, "bundle-stale-run-sheet");
     await mkdir(liveRunPlanDir, { recursive: true });
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(liveRunPlanDir, "live-run-plan.txt"), createLiveRunPlan("Live preflight: ready\n", "stale123"), "utf8");
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir: liveRunPlanDir,
-      liveRunPlanDir
+      liveRunPlanDir,
+      obsHandoffDir
     });
 
     expect(result.ok).toBe(false);
@@ -199,17 +224,20 @@ describe("submission bundle", () => {
   it("flags a live run sheet without commit metadata in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
     const outputDir = path.join(baseDir, "bundle-missing-run-sheet-metadata");
     await mkdir(liveRunPlanDir, { recursive: true });
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(path.join(liveRunPlanDir, "live-run-plan.txt"), "Live preflight: ready\n", "utf8");
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir: liveRunPlanDir,
-      liveRunPlanDir
+      liveRunPlanDir,
+      obsHandoffDir
     });
 
     expect(result.ok).toBe(false);
@@ -221,6 +249,7 @@ describe("submission bundle", () => {
   it("flags a dirty-worktree final QA report in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
     const outputDir = path.join(baseDir, "bundle-dirty-qa");
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(
@@ -228,18 +257,74 @@ describe("submission bundle", () => {
       JSON.stringify(createFinalQaReport({ trackedFilesClean: false })),
       "utf8"
     );
+    await writeObsHandoff(obsHandoffDir);
 
     const result = await createSubmissionBundle({
       archiveDir,
       databasePath,
       outputDir,
       finalQaReportDir,
-      liveRunPlanDir: finalQaReportDir
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
     });
 
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
       "qa/final-report.json was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final"
+    );
+  });
+
+  it("requires OBS handoff files for a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-missing-obs");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir: path.join(baseDir, "missing-obs")
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/obs/obs-browser-sources.md is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/obs/obs-browser-sources.json is missing; run npm run obs:handoff -- --out qa/obs before creating the final bundle"
+    );
+  });
+
+  it("flags malformed OBS handoff JSON in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-bad-obs");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir, { sources: [] });
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/obs/obs-browser-sources.json does not include the expected OBS browser sources; rerun npm run obs:handoff -- --out qa/obs"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/obs/obs-browser-sources.json is missing the all-source OBS overlay URL; rerun npm run obs:handoff -- --out qa/obs"
     );
   });
 });
@@ -303,4 +388,35 @@ function createLiveRunPlan(body = "Live preflight: ready\n", commit = currentCom
   return ["Live run sheet:", "generated at: 2026-06-08T00:00:00.000Z", `commit: ${commit}`, "branch: main", "", body].join(
     "\n"
   );
+}
+
+async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsHandoffJson()) {
+  await mkdir(obsHandoffDir, { recursive: true });
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.md"), "# OBS Browser Source Handoff\n", "utf8");
+  await writeFile(path.join(obsHandoffDir, "obs-browser-sources.json"), JSON.stringify(json), "utf8");
+}
+
+function createObsHandoffJson() {
+  return {
+    browserSourceSettings: {
+      width: 1280,
+      height: 720,
+      fps: 30,
+      customCss: "body { background: rgba(0, 0, 0, 0); overflow: hidden; }"
+    },
+    sources: [
+      {
+        name: "Unified Chat - All Sources",
+        url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14"
+      },
+      {
+        name: "Unified Chat - Twitch + Kick",
+        url: "http://127.0.0.1:5173/?obs=1&sources=twitch,kick&limit=12"
+      },
+      {
+        name: "Unified Chat - Signals",
+        url: "http://127.0.0.1:5173/?obs=1&signal=1&limit=10"
+      }
+    ]
+  };
 }

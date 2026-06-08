@@ -52,7 +52,7 @@ npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
-Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`; `submission:bundle` will fail with a run-sheet issue if that file still contains partial-mode proof commands or was generated for an older commit.
+Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial` and rerun `npm run obs:handoff -- --out qa/obs`; `submission:bundle` will fail with an artifact issue if the run sheet is partial, stale, or if the OBS handoff files are missing or malformed.
 
 ## 2. Kick Tunnel
 
@@ -173,6 +173,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.
+- `submission-bundle/` containing copied OBS handoff files from `qa/obs/`.
 - `submission-notes.md` reviewed for repo commit, source labels, proof metrics, and external artifacts to attach.
 - Exported recording JSON.
 - Exported recording CSV.
