@@ -36,6 +36,7 @@ export type SubmissionBundleResult = {
     summary: string;
     finalQaReportMarkdown?: string;
     finalQaReportJson?: string;
+    finalReadinessReport?: string;
     liveRunPlan?: string;
     partialLiveRunPlan?: string;
     obsHandoffMarkdown?: string;
@@ -76,6 +77,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const qaDir = options.qaDir ?? "qa";
   const finalQaReportDir = options.finalQaReportDir ?? qaDir;
   const finalQaReports = await findFinalQaReports(finalQaReportDir, bundleDir);
+  const finalReadinessReport = await findFinalReadinessReport(finalQaReportDir, bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? qaDir, bundleDir);
   const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join(qaDir, "obs"), bundleDir);
   const visualQaManifest = await findVisualQaManifest(options.visualQaDir ?? path.join(finalQaReportDir, "visual"), bundleDir);
@@ -102,6 +104,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     submissionNotes: path.join(bundleDir, "submission-notes.md"),
     summary: path.join(bundleDir, "summary.json"),
     ...finalQaReports.files,
+    ...finalReadinessReport.files,
     ...liveRunPlans.files,
     ...obsHandoff.files,
     ...visualQaManifest.files,
@@ -147,6 +150,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       "utf8"
     ),
     ...finalQaReports.copyTasks.map((copyTask) => copyTask()),
+    ...finalReadinessReport.copyTasks.map((copyTask) => copyTask()),
     ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
     ...obsHandoff.copyTasks.map((copyTask) => copyTask()),
     ...visualQaManifest.copyTasks.map((copyTask) => copyTask()),
@@ -174,6 +178,7 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     `Summary: ${result.files.summary}`,
     ...(result.files.finalQaReportMarkdown ? [`Final QA report: ${result.files.finalQaReportMarkdown}`] : []),
     ...(result.files.finalQaReportJson ? [`Final QA JSON: ${result.files.finalQaReportJson}`] : []),
+    ...(result.files.finalReadinessReport ? [`Final readiness report: ${result.files.finalReadinessReport}`] : []),
     ...(result.files.liveRunPlan ? [`Live run plan: ${result.files.liveRunPlan}`] : []),
     ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : []),
     ...(result.files.obsHandoffMarkdown ? [`OBS handoff: ${result.files.obsHandoffMarkdown}`] : []),
@@ -287,6 +292,7 @@ function buildExternalArtifactChecklist() {
     "Dashboard recording or screenshot showing connector diagnostics and run proof",
     "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
     "Final live run sheet from qa/live-run-plan.txt",
+    "Final readiness proof from qa/final-readiness.txt",
     "OBS browser source handoff from qa/obs/obs-browser-sources.md",
     "Final local rehearsal report from qa/final-report.md",
     "Visual QA manifest from qa/visual/manifest.md",
@@ -299,6 +305,10 @@ async function findFinalQaReports(reportDir: string, bundleDir: string) {
     ["final-report.md", "final-qa-report.md", "finalQaReportMarkdown"],
     ["final-report.json", "final-qa-report.json", "finalQaReportJson"]
   ]);
+}
+
+async function findFinalReadinessReport(reportDir: string, bundleDir: string) {
+  return findOptionalFiles(reportDir, bundleDir, [["final-readiness.txt", "final-readiness.txt", "finalReadinessReport"]]);
 }
 
 async function findLiveRunPlans(reportDir: string, bundleDir: string) {

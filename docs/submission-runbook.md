@@ -37,7 +37,7 @@ Run the strict connector check next:
 npm run preflight
 npm run live:prepare -- --out qa/live-run-plan.txt
 npm run obs:handoff -- --out qa/obs
-npm run live:ready
+npm run live:ready -- --out qa/final-readiness.txt
 npm run live:stack -- --require-ready --with-proof-gate --dry-run
 ```
 
@@ -46,7 +46,7 @@ If setup is incomplete, the preflight output includes a `Stream-day .env checkli
 Strict final mode requires `KICK_WEBHOOK_PUBLIC_URL` to be a public HTTPS URL ending in `/webhooks/kick`; use `--allow-partial` only for local-only Kick receiver smoke tests.
 The saved `qa/live-run-plan.txt` file keeps the exact commands, target source labels, OBS URLs, tunnel health check, evidence commands, clip-aware bundle command, replay export commands, and repo commit metadata available during setup. Set `TWITCH_BROADCASTER_LOGIN` and `KICK_BROADCASTER_SLUG` even when you already have numeric IDs so the final overlay can prove account-qualified labels like `TWITCH (MARKETBUBBLE)` and `KICK (MARKETBUBBLE)`.
 The OBS handoff writes `qa/obs/obs-browser-sources.md` and `qa/obs/obs-browser-sources.json` with the browser source URLs, settings, and focused proof shots for the same app port.
-The final `live:ready` gate checks strict connector preflight, three readable target source labels, current final QA, current visual QA manifest, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup. It also prints the saved Kick tunnel proof command to run after the capture stack starts and the exact `npm run live:stack -- --require-ready --with-proof-gate` command for the final capture. If connector setup is incomplete, it repeats the strict preflight details and `.env` checklist inline.
+The final `live:ready` gate checks strict connector preflight, three readable target source labels, current final QA, current visual QA manifest, current strict run sheet with the launch commands, OBS all-source URL for the current app port, and current evidence commands, valid current-commit OBS handoff files, and matching OBS all-source URLs between the run sheet and handoff before OBS setup. It also prints the saved Kick tunnel proof command to run after the capture stack starts and the exact `npm run live:stack -- --require-ready --with-proof-gate` command for the final capture. Save it with `--out qa/final-readiness.txt` so the go/no-go result sits beside the run sheet. If connector setup is incomplete, it repeats the strict preflight details and `.env` checklist inline.
 After the feed server is running, use `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` instead of a manual browser check to prove the public Kick tunnel reaches the local `/webhooks/kick` receiver and save the proof file for the submission bundle.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
@@ -186,9 +186,10 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `qa/kick-tunnel-check.txt` from `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` after the capture stack starts.
-- Passing `npm run live:ready` output before opening OBS.
+- Passing `qa/final-readiness.txt` from `npm run live:ready -- --out qa/final-readiness.txt` before opening OBS.
 - Passing `npm run evidence:check` output for the recorded session, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.
+- `submission-bundle/` containing copied final readiness proof from `qa/final-readiness.txt`.
 - `submission-bundle/` containing copied OBS handoff files from `qa/obs/`.
 - `submission-bundle/` containing copied visual QA manifests from `qa/visual/`.
 - `submission-bundle/` containing copied Kick tunnel proof from `qa/kick-tunnel-check.txt`.

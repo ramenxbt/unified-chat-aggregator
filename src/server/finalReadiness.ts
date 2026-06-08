@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -33,6 +33,10 @@ export type FinalReadinessOptions = LiveRunPlanOptions & {
   qaDir?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
+};
+
+export type FinalReadinessCliOptions = FinalReadinessOptions & {
+  outPath?: string;
 };
 
 type LiveRunPlanReadinessCheck = FinalReadinessCheck & {
@@ -550,8 +554,13 @@ function runGit(args: string[]) {
   }
 }
 
-function parseFinalReadinessCliArgs(args: string[]): FinalReadinessOptions {
-  const parsed: FinalReadinessOptions = parseLiveRunCliArgs(args);
+export async function writeFinalReadinessReport(filePath: string, content: string) {
+  await mkdir(path.dirname(path.resolve(filePath)), { recursive: true });
+  await writeFile(filePath, `${content}\n`, "utf8");
+}
+
+export function parseFinalReadinessCliArgs(args: string[]): FinalReadinessCliOptions {
+  const parsed: FinalReadinessCliOptions = parseLiveRunCliArgs(args);
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -573,6 +582,12 @@ function parseFinalReadinessCliArgs(args: string[]): FinalReadinessOptions {
       index += 1;
       continue;
     }
+
+    if (arg === "--out" || arg === "--output") {
+      parsed.outPath = args[index + 1];
+      index += 1;
+      continue;
+    }
   }
 
   return parsed;
@@ -581,9 +596,15 @@ function parseFinalReadinessCliArgs(args: string[]): FinalReadinessOptions {
 async function runCli() {
   loadLocalEnv();
 
-  const report = await buildFinalReadinessReport(process.env, parseFinalReadinessCliArgs(process.argv.slice(2)));
+  const options = parseFinalReadinessCliArgs(process.argv.slice(2));
+  const report = await buildFinalReadinessReport(process.env, options);
+  const output = formatFinalReadinessReport(report);
 
-  console.log(formatFinalReadinessReport(report));
+  console.log(output);
+
+  if (options.outPath) {
+    await writeFinalReadinessReport(options.outPath, output);
+  }
 
   if (!report.ok) {
     process.exitCode = 1;

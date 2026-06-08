@@ -1,9 +1,14 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildFinalReadinessReport, formatFinalReadinessReport } from "./finalReadiness";
+import {
+  buildFinalReadinessReport,
+  formatFinalReadinessReport,
+  parseFinalReadinessCliArgs,
+  writeFinalReadinessReport
+} from "./finalReadiness";
 import type { LivePreflightEnv } from "./livePreflight";
 
 const completeEnv: LivePreflightEnv = {
@@ -206,6 +211,28 @@ describe("final recording readiness", () => {
     expect(formatted).toContain(
       `npm run live:stack -- --feed-port 8899 --app-port 5260 --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --clips 'exports/final clips.json' --qa-dir '${qaDir}' --proof-timeout-ms 300000 --proof-interval-ms 2000 --obs-handoff-dir '${obsHandoffDir}' --require-ready --with-proof-gate`
     );
+  });
+
+  it("parses an output path for saving readiness proof", () => {
+    expect(parseFinalReadinessCliArgs(["--qa-dir", "qa/final", "--out", "qa/final-readiness.txt"])).toEqual({
+      allowPartial: false,
+      qaDir: "qa/final",
+      outPath: "qa/final-readiness.txt"
+    });
+
+    expect(parseFinalReadinessCliArgs(["--output", "qa/ready.txt"])).toEqual({
+      allowPartial: false,
+      outPath: "qa/ready.txt"
+    });
+  });
+
+  it("writes the final readiness report to a proof file", async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-output-"));
+    const reportPath = path.join(tempDir, "qa", "final-readiness.txt");
+
+    await writeFinalReadinessReport(reportPath, "Final recording readiness: ready");
+
+    expect(await readFile(reportPath, "utf8")).toBe("Final recording readiness: ready\n");
   });
 
   it("fails when the final run sheet is missing the live proof gate command", async () => {

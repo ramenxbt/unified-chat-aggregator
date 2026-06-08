@@ -18,6 +18,7 @@ describe("submission bundle", () => {
     await mkdir(finalQaReportDir, { recursive: true });
     await writeFile(path.join(finalQaReportDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "final-readiness.txt"), "Final recording readiness: ready\n", "utf8");
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
     await writeVisualQaManifest(visualQaDir);
@@ -43,6 +44,7 @@ describe("submission bundle", () => {
     const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
     expect(result.files.finalQaReportMarkdown).toBeDefined();
     expect(result.files.finalQaReportJson).toBeDefined();
+    expect(result.files.finalReadinessReport).toBeDefined();
     expect(result.files.liveRunPlan).toBeDefined();
     expect(result.files.obsHandoffMarkdown).toBeDefined();
     expect(result.files.obsHandoffJson).toBeDefined();
@@ -52,6 +54,7 @@ describe("submission bundle", () => {
     expect(result.files.clipQueueJson).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
+    const finalReadinessReport = await readFile(result.files.finalReadinessReport as string, "utf8");
     const liveRunPlan = await readFile(result.files.liveRunPlan as string, "utf8");
     const obsHandoffMarkdown = await readFile(result.files.obsHandoffMarkdown as string, "utf8");
     const obsHandoffJson = JSON.parse(await readFile(result.files.obsHandoffJson as string, "utf8"));
@@ -83,6 +86,7 @@ describe("submission bundle", () => {
         commit: expect.any(String)
       }
     });
+    expect(finalReadinessReport).toContain("Final recording readiness: ready");
     expect(liveRunPlan).toContain("Live preflight: ready");
     expect(obsHandoffMarkdown).toContain("OBS Browser Source Handoff");
     expect(obsHandoffJson.sources[0]).toMatchObject({
@@ -119,6 +123,7 @@ describe("submission bundle", () => {
         "Dashboard recording or screenshot showing connector diagnostics and run proof",
         "Exported dashboard recording JSON, CSV, and clip queue JSON, if captured from the browser",
         "Final live run sheet from qa/live-run-plan.txt",
+        "Final readiness proof from qa/final-readiness.txt",
         "OBS browser source handoff from qa/obs/obs-browser-sources.md",
         "Final local rehearsal report from qa/final-report.md",
         "Visual QA manifest from qa/visual/manifest.md",
@@ -131,6 +136,7 @@ describe("submission bundle", () => {
       files: {
         finalQaReportMarkdown: result.files.finalQaReportMarkdown,
         finalQaReportJson: result.files.finalQaReportJson,
+        finalReadinessReport: result.files.finalReadinessReport,
         liveRunPlan: result.files.liveRunPlan,
         obsHandoffMarkdown: result.files.obsHandoffMarkdown,
         obsHandoffJson: result.files.obsHandoffJson,
@@ -141,6 +147,7 @@ describe("submission bundle", () => {
       }
     });
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
+    expect(formatSubmissionBundleResult(result)).toContain("Final readiness report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
     expect(formatSubmissionBundleResult(result)).toContain("OBS handoff:");
     expect(formatSubmissionBundleResult(result)).toContain("Visual QA manifest:");
@@ -182,6 +189,7 @@ describe("submission bundle", () => {
     await mkdir(qaDir, { recursive: true });
     await writeFile(path.join(qaDir, "final-report.md"), "# Final QA Report\n\nStatus: passed\n", "utf8");
     await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(qaDir, "final-readiness.txt"), "Final recording readiness: ready\n", "utf8");
     await writeFile(
       path.join(qaDir, "live-run-plan.txt"),
       createLiveRunPlan(undefined, undefined, undefined, undefined, undefined, defaultSubmissionBundleCommandForQa(qaDir)),
@@ -200,6 +208,7 @@ describe("submission bundle", () => {
 
     expect(result.ok).toBe(true);
     expect(result.files.finalQaReportJson).toBe(path.join(outputDir, "final-qa-report.json"));
+    expect(result.files.finalReadinessReport).toBe(path.join(outputDir, "final-readiness.txt"));
     expect(result.files.liveRunPlan).toBe(path.join(outputDir, "live-run-plan.txt"));
     expect(result.files.obsHandoffJson).toBe(path.join(outputDir, "obs-browser-sources.json"));
     expect(result.files.visualQaManifestJson).toBe(path.join(outputDir, "visual-qa-manifest.json"));
