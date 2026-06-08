@@ -3,6 +3,7 @@ import { createServer } from "node:net";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { parseLiveRunCliArgs } from "./liveCliArgs";
 import { buildLiveRunPlan, formatLiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import type { LivePreflightEnv } from "./livePreflight";
@@ -183,10 +184,7 @@ function buildPortConflictChecks(portClaims: { label: string; port: number }[]):
 async function runCli() {
   loadLocalEnv();
 
-  const allowPartial = process.argv.includes("--allow-partial");
-  const report = await buildLiveDoctorReport(process.env, {
-    allowPartial
-  });
+  const report = await buildLiveDoctorReport(process.env, parseLiveRunCliArgs(process.argv.slice(2)));
 
   console.log(formatLiveDoctorReport(report));
 

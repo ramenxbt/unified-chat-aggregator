@@ -69,13 +69,18 @@ describe("live stack runner", () => {
     const plan = await buildLiveStackLaunchPlan(completeEnv, {
       appPort: 5260,
       feedPort: 8899,
+      archiveDir: "data/final sessions",
+      databasePath: "data/final proof.sqlite",
       checkPort: readyPortCheck,
       checkWritableDirectory: readyDirectoryCheck
     });
 
     expect(plan.processes.feed.env.FEED_SERVER_PORT).toBe("8899");
+    expect(plan.processes.feed.env.FEED_ARCHIVE_DIR).toBe("data/final sessions");
+    expect(plan.processes.feed.env.FEED_DB_PATH).toBe("data/final proof.sqlite");
     expect(plan.processes.dashboard.args).toEqual(["run", "dev", "--", "--host", "127.0.0.1", "--port", "5260"]);
     expect(plan.processes.dashboard.env.VITE_FEED_WS_URL).toBe("ws://127.0.0.1:8899");
+    expect(plan.processes.proofGate.args).toContain("data/final sessions");
   });
 
   it("dry-runs without spawning long-lived processes", async () => {

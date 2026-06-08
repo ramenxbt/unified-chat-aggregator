@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { buildLiveDoctorReport, formatLiveDoctorReport, type LiveDoctorOptions } from "./liveDoctor";
+import { parseLiveStackCliArgs } from "./liveCliArgs";
 import { loadLocalEnv } from "./loadLocalEnv";
 import type { LivePreflightEnv } from "./livePreflight";
 
@@ -192,18 +193,10 @@ function shellQuote(value: string) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-function parseArgs(args: string[]) {
-  return {
-    allowPartial: args.includes("--allow-partial"),
-    dryRun: args.includes("--dry-run"),
-    withProofGate: args.includes("--with-proof-gate")
-  };
-}
-
 async function runCli() {
   loadLocalEnv();
 
-  const options = parseArgs(process.argv.slice(2));
+  const options = parseLiveStackCliArgs(process.argv.slice(2));
   const exitCode = await runLiveStack(process.env, options);
 
   process.exitCode = exitCode;

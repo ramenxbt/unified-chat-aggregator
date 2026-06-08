@@ -1,12 +1,10 @@
 import { buildLiveRunPlan, formatLiveRunPlan } from "./liveRunPlan";
+import { parseLiveRunCliArgs } from "./liveCliArgs";
 import { loadLocalEnv } from "./loadLocalEnv";
 
 loadLocalEnv();
 
-const allowPartial = process.argv.includes("--allow-partial");
-const plan = buildLiveRunPlan(process.env, {
-  allowPartial
-});
+const plan = buildLiveRunPlan(process.env, parseLiveRunCliArgs(process.argv.slice(2)));
 
 console.log(formatLiveRunPlan(plan));
 

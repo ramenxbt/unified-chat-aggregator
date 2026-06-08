@@ -39,6 +39,7 @@ npm run live:stack -- --dry-run
 The strict check should say `Live preflight: ready` before the final full-platform recording.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, or `PROOF_MAX_P95_LATENCY_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
+If a default port or evidence path is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite`.
 
 For a one-platform dry run, use:
 
