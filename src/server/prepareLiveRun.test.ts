@@ -45,6 +45,10 @@ describe("prepare live run", () => {
     expect(savedPlan).toMatch(/^commit: \S+/m);
     expect(savedPlan).toMatch(/^branch: \S+/m);
     expect(savedPlan).toContain("Live preflight: ready");
+    expect(savedPlan).toContain("Target source labels:");
+    expect(savedPlan).toContain("KICK (MARKETBUBBLE)");
+    expect(savedPlan).toContain("TWITCH (MARKETBUBBLE)");
+    expect(savedPlan).toContain("X (@MARKETBUBBLE)");
     expect(savedPlan).toContain("OBS all sources: http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(savedPlan).toContain(
       "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db data/final.sqlite --out submission-bundle --clips 'exports/final clips.json'"

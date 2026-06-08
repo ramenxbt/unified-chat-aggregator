@@ -37,6 +37,11 @@ describe("live run plan", () => {
     expect(formatted).toContain(
       "VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev -- --host 127.0.0.1 --port 5173"
     );
+    expect(plan.targetSourceLabels).toEqual(["KICK (MARKETBUBBLE)", "TWITCH (MARKETBUBBLE)", "X (@MARKETBUBBLE)"]);
+    expect(formatted).toContain("Target source labels:");
+    expect(formatted).toContain("KICK (MARKETBUBBLE)");
+    expect(formatted).toContain("TWITCH (MARKETBUBBLE)");
+    expect(formatted).toContain("X (@MARKETBUBBLE)");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain(
       "tunnel health check: curl -i https://market-bubble-tunnel.example/webhooks/kick"
@@ -116,6 +121,8 @@ describe("live run plan", () => {
     expect(formatted).toContain("Live preflight: needs setup");
     expect(formatted).toContain("missing: TWITCH_CLIENT_ID");
     expect(formatted).toContain("Final run commands:");
+    expect(formatted).toContain("Target source labels:");
+    expect(formatted).toContain("not configured");
     expect(formatted).toContain("public URL: not configured");
   });
 

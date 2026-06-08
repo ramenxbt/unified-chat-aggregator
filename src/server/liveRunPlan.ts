@@ -1,3 +1,4 @@
+import { formatSourceDisplayLabel } from "../domain/unifiedEvent";
 import { evaluateLivePreflight, formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
 
 export type LiveRunPlanOptions = {
@@ -21,6 +22,7 @@ export type LiveRunPlan = {
     timeoutMs: number;
     intervalMs: number;
   };
+  targetSourceLabels: string[];
   commands: {
     feed: string;
     dashboard: string;
@@ -77,11 +79,13 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
   const report = evaluateLivePreflight(env, {
     requireAllPlatforms: !options.allowPartial
   });
+  const targetSourceLabels = buildTargetSourceLabels(env);
 
   return {
     ok: report.ok,
     report,
     proofGate,
+    targetSourceLabels,
     commands: {
       feed: `${formatEnvAssignment("FEED_SERVER_PORT", String(feedPort))} ${formatEnvAssignment(
         "FEED_DB_PATH",
@@ -141,6 +145,11 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     `  feed: ${plan.commands.feed}`,
     `  dashboard: ${plan.commands.dashboard}`,
     "",
+    "Target source labels:",
+    ...(plan.targetSourceLabels.length > 0
+      ? plan.targetSourceLabels.map((label) => `  ${label}`)
+      : ["  not configured"]),
+    "",
     "Open:",
     `  dashboard: ${plan.urls.dashboard}`,
     `  OBS all sources: ${plan.urls.obsAllSources}`,
@@ -183,6 +192,33 @@ function parsePositiveNumber(value: string | number | undefined, fallback: numbe
   const parsed = Number(value);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function buildTargetSourceLabels(env: LivePreflightEnv) {
+  const labels = [
+    env.TWITCH_BROADCASTER_LOGIN ? formatSourceDisplayLabel("twitch", env.TWITCH_BROADCASTER_LOGIN) : null,
+    env.KICK_BROADCASTER_SLUG ? formatSourceDisplayLabel("kick", env.KICK_BROADCASTER_SLUG) : null,
+    ...extractXTargetNames(env).map((sourceName) =>
+      formatSourceDisplayLabel("x", sourceName, {
+        forceXHandle: !sourceName.includes(" ")
+      })
+    )
+  ].filter((label): label is string => Boolean(label));
+
+  return [...new Set(labels)].sort();
+}
+
+function extractXTargetNames(env: LivePreflightEnv) {
+  const fromRules =
+    env.X_FILTER_RULES?.split(/\r?\n|,/)
+      .map((rule) => rule.trim().match(/\bfrom:([A-Za-z0-9_]+)/)?.[1])
+      .filter((sourceName): sourceName is string => Boolean(sourceName)) ?? [];
+
+  if (fromRules.length > 0) {
+    return fromRules;
+  }
+
+  return env.X_SPACES_QUERY ? [env.X_SPACES_QUERY] : [];
 }
 
 function shellQuote(value: string) {
