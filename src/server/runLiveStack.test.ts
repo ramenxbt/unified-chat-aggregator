@@ -296,12 +296,21 @@ function createLiveRunPlan(qaDir: string) {
     "Evidence outputs:",
     `  live proof gate: ${defaultProofGateCommand}`,
     `  evidence check: ${defaultEvidenceCheckCommandForQa(qaDir)}`,
+    `  submission finalize: ${defaultSubmissionFinalizeCommand(path.join(qaDir, "kick-tunnel-check.txt"))}`,
     `  submission bundle: ${defaultSubmissionBundleCommand(path.join(qaDir, "kick-tunnel-check.txt"))}`
   ].join("\n");
 }
 
 function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
   return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
+    path.dirname(kickTunnelCheckPath)
+  )} --kick-tunnel-check ${shellQuote(
+    kickTunnelCheckPath
+  )}`;
+}
+
+function defaultSubmissionFinalizeCommand(kickTunnelCheckPath: string) {
+  return `npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
   )} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath

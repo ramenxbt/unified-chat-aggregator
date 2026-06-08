@@ -64,6 +64,9 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
+      "submission finalize: npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+    );
+    expect(formatted).toContain(
       "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
@@ -99,6 +102,9 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out qa/evidence-check.txt"
     );
     expect(formatted).toContain(
+      "submission finalize: npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
+    );
+    expect(formatted).toContain(
       "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt"
     );
   });
@@ -108,6 +114,7 @@ describe("live run plan", () => {
       clipQueuePath: "exports/final clips.json"
     });
 
+    expect(plan.evidence.submissionFinalizeCommand).toContain("--clips 'exports/final clips.json'");
     expect(plan.evidence.submissionBundleCommand).toContain("--clips 'exports/final clips.json'");
   });
 
@@ -117,6 +124,7 @@ describe("live run plan", () => {
     });
 
     expect(plan.urls.kickWebhookHealthCommand).toBe("npm run live:tunnel -- --out 'qa/final kick tunnel.txt'");
+    expect(plan.evidence.submissionFinalizeCommand).toContain("--qa-dir qa --kick-tunnel-check 'qa/final kick tunnel.txt'");
     expect(plan.evidence.submissionBundleCommand).toContain("--qa-dir qa --kick-tunnel-check 'qa/final kick tunnel.txt'");
   });
 
@@ -148,6 +156,7 @@ describe("live run plan", () => {
     expect(plan.report.requireAllPlatforms).toBe(false);
     expect(plan.evidence.proofGateCommand).toContain("--allow-partial");
     expect(plan.evidence.evidenceCheckCommand).toContain("--allow-partial");
+    expect(plan.evidence.submissionFinalizeCommand).toContain("--allow-partial");
     expect(plan.evidence.submissionBundleCommand).toContain("--allow-partial");
   });
 

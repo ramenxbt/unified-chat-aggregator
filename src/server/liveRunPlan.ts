@@ -55,6 +55,7 @@ export type LiveRunPlan = {
     databasePath: string;
     proofGateCommand: string;
     evidenceCheckCommand: string;
+    submissionFinalizeCommand: string;
     submissionBundleCommand: string;
     replayJsonCommand: string;
     replayCsvCommand: string;
@@ -136,6 +137,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
         `--interval-ms ${proofGate.intervalMs}${partialFlag}`
       ].join(" "),
       evidenceCheckCommand: `npm run evidence:check -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out ${shellQuote(`${qaDir}/evidence-check.txt`)}${partialFlag}`,
+      submissionFinalizeCommand: `npm run submission:finalize -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
       submissionBundleCommand: `npm run submission:bundle -- --archive-dir ${shellQuote(archiveDir)} --db ${shellQuote(databasePath)} --out submission-bundle --clips ${shellQuote(clipQueuePath)} --qa-dir ${shellQuote(qaDir)} --kick-tunnel-check ${shellQuote(kickTunnelCheckPath)}${partialFlag}`,
       replayJsonCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --out replay.json`,
       replayCsvCommand: `npm run archive:export -- --archive-dir ${shellQuote(archiveDir)} --format csv --out replay.csv`
@@ -182,6 +184,7 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
     `  database: ${plan.evidence.databasePath}`,
     `  live proof gate: ${plan.evidence.proofGateCommand}`,
     `  evidence check: ${plan.evidence.evidenceCheckCommand}`,
+    `  submission finalize: ${plan.evidence.submissionFinalizeCommand}`,
     `  submission bundle: ${plan.evidence.submissionBundleCommand}`,
     `  replay JSON: ${plan.evidence.replayJsonCommand}`,
     `  replay CSV: ${plan.evidence.replayCsvCommand}`

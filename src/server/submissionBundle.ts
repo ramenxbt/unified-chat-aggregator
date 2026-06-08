@@ -612,6 +612,7 @@ async function validateLiveRunPlan(
   const expectedObsAllSourcesUrl = extractLiveRunPlanObsAllSourcesUrl(liveRunPlan);
   const expectedProofGateCommand = extractLiveRunPlanProofGateCommand(liveRunPlan);
   const expectedEvidenceCheckCommand = extractLiveRunPlanEvidenceCheckCommand(liveRunPlan);
+  const expectedSubmissionFinalizeCommand = extractLiveRunPlanSubmissionFinalizeCommand(liveRunPlan);
   const expectedSubmissionBundleCommand = extractLiveRunPlanSubmissionBundleCommand(liveRunPlan);
 
   if (isPartialLiveRunPlan(liveRunPlan)) {
@@ -646,6 +647,10 @@ async function validateLiveRunPlan(
 
   if (!expectedEvidenceCheckCommand) {
     issues.push(`${runSheetPath} is missing the evidence check command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
+  }
+
+  if (!expectedSubmissionFinalizeCommand) {
+    issues.push(`${runSheetPath} is missing the submission finalize command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
   if (!expectedSubmissionBundleCommand) {
@@ -684,6 +689,10 @@ function extractLiveRunPlanEvidenceCheckCommand(content: string) {
 
 function extractLiveRunPlanSubmissionBundleCommand(content: string) {
   return content.match(/^\s*submission bundle:\s*(.+)$/m)?.[1];
+}
+
+function extractLiveRunPlanSubmissionFinalizeCommand(content: string) {
+  return content.match(/^\s*submission finalize:\s*(.+)$/m)?.[1];
 }
 
 function isPartialLiveRunPlan(content: string) {

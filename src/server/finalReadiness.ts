@@ -28,6 +28,7 @@ export type FinalReadinessReport = {
     obsHandoff: string;
     kickTunnelCheck: string;
     proofGate: string;
+    submissionFinalize: string;
     submissionBundle: string;
     captureStack: string;
   };
@@ -68,6 +69,7 @@ export async function buildFinalReadinessReport(
       dashboard: plan.commands.dashboard,
       proofGate: plan.evidence.proofGateCommand,
       evidenceCheck: plan.evidence.evidenceCheckCommand,
+      submissionFinalize: plan.evidence.submissionFinalizeCommand,
       submissionBundle: plan.evidence.submissionBundleCommand
     }
   );
@@ -112,6 +114,7 @@ export function formatFinalReadinessReport(report: FinalReadinessReport) {
     `  ${report.requiredCommands.obsHandoff}`,
     `  ${report.requiredCommands.kickTunnelCheck}`,
     `  ${report.requiredCommands.proofGate}`,
+    `  ${report.requiredCommands.submissionFinalize}`,
     `  ${report.requiredCommands.submissionBundle}`,
     `  ${report.requiredCommands.captureStack}`
   ];
@@ -140,6 +143,7 @@ function buildRequiredCommands(
     obsHandoff: ["npm run obs:handoff --", "--app-port", shellQuote(String(options.appPort ?? plan.urls.dashboard.match(/:(\d+)\//)?.[1] ?? 5173)), "--out", shellQuote(obsHandoffDir)].join(" "),
     kickTunnelCheck: plan.urls.kickWebhookHealthCommand,
     proofGate: plan.evidence.proofGateCommand,
+    submissionFinalize: plan.evidence.submissionFinalizeCommand,
     submissionBundle: plan.evidence.submissionBundleCommand,
     captureStack: [
       "npm run live:stack --",
@@ -298,7 +302,14 @@ async function checkLiveRunPlan(
   runSheetPath: string,
   currentCommit: string | null,
   currentObsAllSourcesUrl: string,
-  currentRunSheetCommands: { feed: string; dashboard: string; proofGate: string; evidenceCheck: string; submissionBundle: string }
+  currentRunSheetCommands: {
+    feed: string;
+    dashboard: string;
+    proofGate: string;
+    evidenceCheck: string;
+    submissionFinalize: string;
+    submissionBundle: string;
+  }
 ): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
@@ -308,6 +319,7 @@ async function checkLiveRunPlan(
     const expectedObsAllSourcesUrl = content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
     const expectedProofGateCommand = extractRunSheetCommand(content, "live proof gate");
     const expectedEvidenceCheckCommand = extractRunSheetCommand(content, "evidence check");
+    const expectedSubmissionFinalizeCommand = extractRunSheetCommand(content, "submission finalize");
     const expectedSubmissionBundleCommand = extractRunSheetCommand(content, "submission bundle");
 
     if (content.includes("--allow-partial") || content.includes("Platform requirement: at least one live connector")) {
@@ -415,6 +427,24 @@ async function checkLiveRunPlan(
         name: "Final live run sheet",
         state: "setup",
         detail: `${runSheetPath} evidence check command does not match current live:ready evidence paths.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (!expectedSubmissionFinalizeCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the submission finalize command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (expectedSubmissionFinalizeCommand !== currentRunSheetCommands.submissionFinalize) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} submission finalize command does not match current live:ready evidence paths.`,
         expectedObsAllSourcesUrl
       };
     }

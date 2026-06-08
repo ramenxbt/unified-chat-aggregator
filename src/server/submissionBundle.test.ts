@@ -602,7 +602,7 @@ describe("submission bundle", () => {
     await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
     await writeFile(
       path.join(liveRunPlanDir, "live-run-plan.txt"),
-      createLiveRunPlan("Live preflight: ready\n", currentCommit(), undefined, defaultProofGateCommand(), null, null),
+      createLiveRunPlan("Live preflight: ready\n", currentCommit(), undefined, defaultProofGateCommand(), null, null, undefined, undefined, null),
       "utf8"
     );
     await writeObsHandoff(obsHandoffDir);
@@ -619,6 +619,9 @@ describe("submission bundle", () => {
     expect(result.ok).toBe(false);
     expect(result.artifactIssues).toContain(
       "qa/live-run-plan.txt is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the submission finalize command; rerun live:prepare -- --out qa/live-run-plan.txt"
     );
     expect(result.artifactIssues).toContain(
       "qa/live-run-plan.txt is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt"
@@ -866,7 +869,8 @@ function createLiveRunPlan(
   evidenceCheckCommand: string | null = defaultEvidenceCheckCommand(),
   submissionBundleCommand: string | null = defaultSubmissionBundleCommand(),
   feedCommand: string | null = defaultFeedCommand(),
-  dashboardCommand: string | null = defaultDashboardCommand()
+  dashboardCommand: string | null = defaultDashboardCommand(),
+  submissionFinalizeCommand: string | null = defaultSubmissionFinalizeCommand()
 ) {
   const lines = [
     "Live run sheet:",
@@ -896,8 +900,12 @@ function createLiveRunPlan(
   }
 
   if (submissionBundleCommand) {
-    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    if (!proofGateCommand && !evidenceCheckCommand && !submissionFinalizeCommand) lines.push("", "Evidence outputs:");
+    if (submissionFinalizeCommand) lines.push(`  submission finalize: ${submissionFinalizeCommand}`);
     lines.push(`  submission bundle: ${submissionBundleCommand}`);
+  } else if (submissionFinalizeCommand) {
+    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  submission finalize: ${submissionFinalizeCommand}`);
   }
 
   return lines.join("\n");
@@ -913,6 +921,10 @@ function defaultEvidenceCheckCommand() {
 
 function defaultSubmissionBundleCommand() {
   return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt";
+}
+
+function defaultSubmissionFinalizeCommand() {
+  return "npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt";
 }
 
 function defaultSubmissionBundleCommandForQa(qaDir: string) {

@@ -52,6 +52,7 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("PASS OBS handoff");
     expect(formatted).toContain("npm run live:tunnel -- --out");
     expect(formatted).toContain("npm run proof:gate --");
+    expect(formatted).toContain("npm run submission:finalize --");
     expect(formatted).toContain("npm run submission:bundle --");
     expect(formatted).toContain("npm run live:stack -- --qa-dir");
     expect(formatted).toContain("--require-ready --with-proof-gate");
@@ -207,6 +208,9 @@ describe("final recording readiness", () => {
       "npm run proof:gate -- --archive-dir 'data/final sessions' --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 300000 --interval-ms 2000"
     );
     expect(formatted).toContain(
+      `npm run submission:finalize -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
+    );
+    expect(formatted).toContain(
       `npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips 'exports/final clips.json' --qa-dir '${qaDir}' --kick-tunnel-check '${path.join(qaDir, "kick-tunnel-check.txt")}'`
     );
     expect(formatted).toContain(
@@ -263,7 +267,7 @@ describe("final recording readiness", () => {
   });
 
   it("fails when the final run sheet is missing evidence packaging commands", async () => {
-    const qaDir = await createReadyQaDir({ evidenceCheckCommand: null, submissionBundleCommand: null });
+    const qaDir = await createReadyQaDir({ evidenceCheckCommand: null, submissionFinalizeCommand: null, submissionBundleCommand: null });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir });
     const formatted = formatFinalReadinessReport(report);
 
@@ -315,6 +319,7 @@ async function createReadyQaDir({
   dashboardCommand = defaultDashboardCommand,
   proofGateCommand = defaultProofGateCommand,
   evidenceCheckCommand,
+  submissionFinalizeCommand,
   submissionBundleCommand,
   obsHandoffCommit = currentCommit(),
   visualQaCommit = currentCommit(),
@@ -328,6 +333,7 @@ async function createReadyQaDir({
   dashboardCommand?: string | null;
   proofGateCommand?: string | null;
   evidenceCheckCommand?: string | null;
+  submissionFinalizeCommand?: string | null;
   submissionBundleCommand?: string | null;
   obsHandoffCommit?: string;
   visualQaCommit?: string;
@@ -340,6 +346,8 @@ async function createReadyQaDir({
     submissionBundleCommand === undefined ? defaultSubmissionBundleCommand(path.join(qaDir, "kick-tunnel-check.txt")) : submissionBundleCommand;
   const resolvedEvidenceCheckCommand =
     evidenceCheckCommand === undefined ? defaultEvidenceCheckCommandForQa(qaDir) : evidenceCheckCommand;
+  const resolvedSubmissionFinalizeCommand =
+    submissionFinalizeCommand === undefined ? defaultSubmissionFinalizeCommand(path.join(qaDir, "kick-tunnel-check.txt")) : submissionFinalizeCommand;
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
   await writeFile(
@@ -351,6 +359,7 @@ async function createReadyQaDir({
       dashboardCommand,
       proofGateCommand,
       resolvedEvidenceCheckCommand,
+      resolvedSubmissionFinalizeCommand,
       resolvedSubmissionBundleCommand
     ),
     "utf8"
@@ -369,6 +378,14 @@ async function createReadyQaDir({
 
 function defaultSubmissionBundleCommand(kickTunnelCheckPath: string) {
   return `npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
+    path.dirname(kickTunnelCheckPath)
+  )} --kick-tunnel-check ${shellQuote(
+    kickTunnelCheckPath
+  )}`;
+}
+
+function defaultSubmissionFinalizeCommand(kickTunnelCheckPath: string) {
+  return `npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir ${shellQuote(
     path.dirname(kickTunnelCheckPath)
   )} --kick-tunnel-check ${shellQuote(
     kickTunnelCheckPath
@@ -406,6 +423,7 @@ function createLiveRunPlan(
   dashboardCommand: string | null,
   proofGateCommand: string | null,
   evidenceCheckCommand: string | null,
+  submissionFinalizeCommand: string | null,
   submissionBundleCommand: string | null
 ) {
   const lines = [
@@ -437,8 +455,12 @@ function createLiveRunPlan(
   }
 
   if (submissionBundleCommand) {
-    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    if (!proofGateCommand && !evidenceCheckCommand && !submissionFinalizeCommand) lines.push("", "Evidence outputs:");
+    if (submissionFinalizeCommand) lines.push(`  submission finalize: ${submissionFinalizeCommand}`);
     lines.push(`  submission bundle: ${submissionBundleCommand}`);
+  } else if (submissionFinalizeCommand) {
+    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  submission finalize: ${submissionFinalizeCommand}`);
   }
 
   return lines.join("\n");
