@@ -1,5 +1,8 @@
+import { mkdtemp, readFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkKickTunnel, formatKickTunnelCheck } from "./kickTunnelCheck";
+import { checkKickTunnel, formatKickTunnelCheck, writeKickTunnelCheckProof } from "./kickTunnelCheck";
 
 describe("Kick tunnel check", () => {
   it("passes when the public URL reaches the Kick receiver health payload", async () => {
@@ -20,6 +23,28 @@ describe("Kick tunnel check", () => {
     expect(check.ok).toBe(true);
     expect(formatKickTunnelCheck(check)).toContain("Kick tunnel: ready");
     expect(formatKickTunnelCheck(check)).toContain("Kick tunnel reaches the local receiver");
+  });
+
+  it("formats and writes commit-qualified proof output", async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "kick-tunnel-check-"));
+    const proofPath = path.join(tempDir, "qa", "kick-tunnel-check.txt");
+    const output = formatKickTunnelCheck(
+      {
+        ok: true,
+        url: "https://market-bubble-tunnel.example/webhooks/kick",
+        detail: "Kick tunnel reaches the local receiver at /webhooks/kick."
+      },
+      {
+        commit: "abc1234",
+        checkedAt: "2026-06-08T00:00:00.000Z"
+      }
+    );
+
+    await writeKickTunnelCheckProof(proofPath, output);
+
+    expect(output).toContain("Repo commit: abc1234");
+    expect(output).toContain("Checked at: 2026-06-08T00:00:00.000Z");
+    expect(await readFile(proofPath, "utf8")).toBe(`${output}\n`);
   });
 
   it("fails when no public URL is configured", async () => {

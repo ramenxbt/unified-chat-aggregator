@@ -105,7 +105,7 @@ export function buildLiveRunPlan(env: LivePreflightEnv, options: LiveRunPlanOpti
       kickWebhookLocal: `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
       kickWebhookPublic: env.KICK_WEBHOOK_PUBLIC_URL,
       kickWebhookHealth: env.KICK_WEBHOOK_PUBLIC_URL ?? `http://127.0.0.1:${kickWebhookPort}${kickWebhookPath}`,
-      kickWebhookHealthCommand: "npm run live:tunnel"
+      kickWebhookHealthCommand: "npm run live:tunnel -- --out qa/kick-tunnel-check.txt"
     },
     obs: {
       sourceType: "Browser Source",

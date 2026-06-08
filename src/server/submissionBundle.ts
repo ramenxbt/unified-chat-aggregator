@@ -20,6 +20,7 @@ export type SubmissionBundleOptions = {
   liveRunPlanDir?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
+  kickTunnelCheckPath?: string;
   clipQueuePath?: string;
 };
 
@@ -40,6 +41,7 @@ export type SubmissionBundleResult = {
     obsHandoffJson?: string;
     visualQaManifestMarkdown?: string;
     visualQaManifestJson?: string;
+    kickTunnelCheck?: string;
     clipQueueJson?: string;
   };
   evidence: EvidenceReport;
@@ -75,11 +77,20 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
   const obsHandoff = await findObsHandoff(options.obsHandoffDir ?? path.join("qa", "obs"), bundleDir);
   const visualQaManifest = await findVisualQaManifest(options.visualQaDir ?? path.join(finalQaReportDir, "visual"), bundleDir);
+  const kickTunnelCheck = await findKickTunnelCheck(options.kickTunnelCheckPath ?? path.join(finalQaReportDir, "kick-tunnel-check.txt"), bundleDir);
   const clipQueue = await findClipQueue(options.clipQueuePath, bundleDir);
   const clipQueueValidation = await validateClipQueue(clipQueue);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
   const artifactIssues = [
-    ...(await validateCopiedArtifacts(finalQaReports, liveRunPlans, obsHandoff, visualQaManifest, requireAllPlatforms, repo)),
+    ...(await validateCopiedArtifacts(
+      finalQaReports,
+      liveRunPlans,
+      obsHandoff,
+      visualQaManifest,
+      kickTunnelCheck,
+      requireAllPlatforms,
+      repo
+    )),
     ...clipQueueValidation.issues
   ];
   const files = {
@@ -92,6 +103,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     ...liveRunPlans.files,
     ...obsHandoff.files,
     ...visualQaManifest.files,
+    ...kickTunnelCheck.files,
     ...clipQueue.files
   };
 
@@ -136,6 +148,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     ...liveRunPlans.copyTasks.map((copyTask) => copyTask()),
     ...obsHandoff.copyTasks.map((copyTask) => copyTask()),
     ...visualQaManifest.copyTasks.map((copyTask) => copyTask()),
+    ...kickTunnelCheck.copyTasks.map((copyTask) => copyTask()),
     ...clipQueue.copyTasks.map((copyTask) => copyTask())
   ]);
 
@@ -165,6 +178,7 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     ...(result.files.obsHandoffJson ? [`OBS handoff JSON: ${result.files.obsHandoffJson}`] : []),
     ...(result.files.visualQaManifestMarkdown ? [`Visual QA manifest: ${result.files.visualQaManifestMarkdown}`] : []),
     ...(result.files.visualQaManifestJson ? [`Visual QA manifest JSON: ${result.files.visualQaManifestJson}`] : []),
+    ...(result.files.kickTunnelCheck ? [`Kick tunnel proof: ${result.files.kickTunnelCheck}`] : []),
     ...(result.files.clipQueueJson ? [`Clip queue JSON: ${result.files.clipQueueJson}`] : [])
   ];
 
@@ -273,7 +287,8 @@ function buildExternalArtifactChecklist() {
     "Final live run sheet from qa/live-run-plan.txt",
     "OBS browser source handoff from qa/obs/obs-browser-sources.md",
     "Final local rehearsal report from qa/final-report.md",
-    "Visual QA manifest from qa/visual/manifest.md"
+    "Visual QA manifest from qa/visual/manifest.md",
+    "Kick tunnel health proof from qa/kick-tunnel-check.txt"
   ];
 }
 
@@ -303,6 +318,25 @@ async function findVisualQaManifest(reportDir: string, bundleDir: string) {
     ["manifest.md", "visual-qa-manifest.md", "visualQaManifestMarkdown"],
     ["manifest.json", "visual-qa-manifest.json", "visualQaManifestJson"]
   ]);
+}
+
+async function findKickTunnelCheck(sourcePath: string, bundleDir: string) {
+  const resolvedSourcePath = path.resolve(sourcePath);
+  const targetPath = path.join(bundleDir, "kick-tunnel-check.txt");
+
+  if (!(await pathExists(resolvedSourcePath))) {
+    return {
+      files: {} as Record<string, string>,
+      sourceFiles: { kickTunnelCheck: resolvedSourcePath },
+      copyTasks: [] as Array<() => Promise<void>>
+    };
+  }
+
+  return {
+    files: { kickTunnelCheck: targetPath },
+    sourceFiles: { kickTunnelCheck: resolvedSourcePath },
+    copyTasks: [() => copyFile(resolvedSourcePath, targetPath)]
+  };
 }
 
 async function findClipQueue(clipQueuePath: string | undefined, bundleDir: string) {
@@ -398,6 +432,7 @@ async function validateCopiedArtifacts(
   liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
   obsHandoff: Awaited<ReturnType<typeof findObsHandoff>>,
   visualQaManifest: Awaited<ReturnType<typeof findVisualQaManifest>>,
+  kickTunnelCheck: Awaited<ReturnType<typeof findKickTunnelCheck>>,
   requireAllPlatforms: boolean,
   repo: ReturnType<typeof collectRepoMetadata>
 ) {
@@ -412,6 +447,7 @@ async function validateCopiedArtifacts(
   issues.push(...liveRunPlanValidation.issues);
   issues.push(...(await validateObsHandoff(obsHandoff, liveRunPlanValidation.expectedObsAllSourcesUrl, repo)));
   issues.push(...(await validateVisualQaManifest(visualQaManifest, repo)));
+  issues.push(...(await validateKickTunnelCheck(kickTunnelCheck, repo)));
 
   return issues;
 }
@@ -654,6 +690,39 @@ async function validateVisualQaManifest(
   return issues;
 }
 
+async function validateKickTunnelCheck(
+  kickTunnelCheck: Awaited<ReturnType<typeof findKickTunnelCheck>>,
+  repo: ReturnType<typeof collectRepoMetadata>
+) {
+  if (!kickTunnelCheck.files.kickTunnelCheck) {
+    return [
+      "qa/kick-tunnel-check.txt is missing; run npm run live:tunnel -- --out qa/kick-tunnel-check.txt after the capture stack starts"
+    ];
+  }
+
+  const issues: string[] = [];
+  const content = await readFile(kickTunnelCheck.sourceFiles.kickTunnelCheck, "utf8");
+  const commit = content.match(/^Repo commit:\s*(\S+)/m)?.[1] ?? null;
+
+  if (!/^Kick tunnel:\s*ready$/m.test(content)) {
+    issues.push("qa/kick-tunnel-check.txt does not say Kick tunnel: ready; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+  }
+
+  if (!/^URL:\s*https:\/\/\S+/m.test(content)) {
+    issues.push("qa/kick-tunnel-check.txt is missing the public HTTPS tunnel URL; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+  }
+
+  if (!commit || commit === "unknown") {
+    issues.push("qa/kick-tunnel-check.txt is missing commit metadata; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
+  } else if (repo.commit && commit !== repo.commit) {
+    issues.push(
+      `qa/kick-tunnel-check.txt was generated for commit ${commit}, but current commit is ${repo.commit}; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt`
+    );
+  }
+
+  return issues;
+}
+
 async function pathExists(filePath: string) {
   try {
     await access(filePath);
@@ -672,7 +741,7 @@ async function runCli() {
 
   if (!args.archivePath && !args.archiveDir) {
     console.error(
-      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--allow-partial]"
+      "Usage: npm run submission:bundle -- (--archive <session-path> | --archive-dir data/feed-sessions) [--db data/feed.sqlite] [--out submission-bundle] [--clips clip-queue.json] [--visual-qa-dir qa/visual] [--kick-tunnel-check qa/kick-tunnel-check.txt] [--allow-partial]"
     );
     process.exitCode = 1;
     return;
@@ -686,6 +755,7 @@ async function runCli() {
     requireAllPlatforms: !args.allowPartial,
     obsHandoffDir: args.obsHandoffDir,
     visualQaDir: args.visualQaDir,
+    kickTunnelCheckPath: args.kickTunnelCheckPath,
     clipQueuePath: args.clipQueuePath
   });
 
@@ -703,6 +773,7 @@ type ParsedArgs = {
   outputDir?: string;
   obsHandoffDir?: string;
   visualQaDir?: string;
+  kickTunnelCheckPath?: string;
   clipQueuePath?: string;
   allowPartial: boolean;
 };
@@ -749,6 +820,12 @@ function parseArgs(args: string[]): ParsedArgs {
 
     if (arg === "--visual-qa-dir") {
       parsed.visualQaDir = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--kick-tunnel-check") {
+      parsed.kickTunnelCheckPath = args[index + 1];
       index += 1;
       continue;
     }

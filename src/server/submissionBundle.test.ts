@@ -21,6 +21,7 @@ describe("submission bundle", () => {
     await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
     await writeObsHandoff(obsHandoffDir);
     await writeVisualQaManifest(visualQaDir);
+    await writeKickTunnelCheck(path.join(finalQaReportDir, "kick-tunnel-check.txt"));
     await writeFile(clipQueuePath, JSON.stringify(createClipQueueExport()), "utf8");
 
     const result = await createSubmissionBundle({
@@ -47,6 +48,7 @@ describe("submission bundle", () => {
     expect(result.files.obsHandoffJson).toBeDefined();
     expect(result.files.visualQaManifestMarkdown).toBeDefined();
     expect(result.files.visualQaManifestJson).toBeDefined();
+    expect(result.files.kickTunnelCheck).toBeDefined();
     expect(result.files.clipQueueJson).toBeDefined();
     const finalQaReport = await readFile(result.files.finalQaReportMarkdown as string, "utf8");
     const finalQaReportJson = JSON.parse(await readFile(result.files.finalQaReportJson as string, "utf8"));
@@ -55,6 +57,7 @@ describe("submission bundle", () => {
     const obsHandoffJson = JSON.parse(await readFile(result.files.obsHandoffJson as string, "utf8"));
     const visualQaManifestMarkdown = await readFile(result.files.visualQaManifestMarkdown as string, "utf8");
     const visualQaManifestJson = JSON.parse(await readFile(result.files.visualQaManifestJson as string, "utf8"));
+    const kickTunnelCheck = await readFile(result.files.kickTunnelCheck as string, "utf8");
     const clipQueueJson = JSON.parse(await readFile(result.files.clipQueueJson as string, "utf8"));
     const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
 
@@ -88,6 +91,8 @@ describe("submission bundle", () => {
     });
     expect(visualQaManifestMarkdown).toContain("Visual QA Manifest");
     expect(visualQaManifestJson.repo.commit).toBe(currentCommit());
+    expect(kickTunnelCheck).toContain("Kick tunnel: ready");
+    expect(kickTunnelCheck).toContain(`Repo commit: ${currentCommit()}`);
     expect(clipQueueJson.clipCount).toBe(2);
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
@@ -116,7 +121,8 @@ describe("submission bundle", () => {
         "Final live run sheet from qa/live-run-plan.txt",
         "OBS browser source handoff from qa/obs/obs-browser-sources.md",
         "Final local rehearsal report from qa/final-report.md",
-        "Visual QA manifest from qa/visual/manifest.md"
+        "Visual QA manifest from qa/visual/manifest.md",
+        "Kick tunnel health proof from qa/kick-tunnel-check.txt"
       ],
       clipQueue: {
         clipCount: 2,
@@ -130,6 +136,7 @@ describe("submission bundle", () => {
         obsHandoffJson: result.files.obsHandoffJson,
         visualQaManifestMarkdown: result.files.visualQaManifestMarkdown,
         visualQaManifestJson: result.files.visualQaManifestJson,
+        kickTunnelCheck: result.files.kickTunnelCheck,
         clipQueueJson: result.files.clipQueueJson
       }
     });
@@ -137,6 +144,7 @@ describe("submission bundle", () => {
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
     expect(formatSubmissionBundleResult(result)).toContain("OBS handoff:");
     expect(formatSubmissionBundleResult(result)).toContain("Visual QA manifest:");
+    expect(formatSubmissionBundleResult(result)).toContain("Kick tunnel proof:");
     expect(formatSubmissionBundleResult(result)).toContain("Clip queue JSON:");
   });
 
@@ -180,6 +188,7 @@ describe("submission bundle", () => {
       "utf8"
     );
     await writeObsHandoff(obsHandoffDir);
+    await writeKickTunnelCheck(path.join(liveRunPlanDir, "kick-tunnel-check.txt"));
 
     const result = await createSubmissionBundle({
       archiveDir,
@@ -206,6 +215,57 @@ describe("submission bundle", () => {
       evidenceOk: true,
       artifactIssues: result.artifactIssues
     });
+  });
+
+  it("requires a Kick tunnel proof for a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-kick-tunnel");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/kick-tunnel-check.txt is missing; run npm run live:tunnel -- --out qa/kick-tunnel-check.txt after the capture stack starts"
+    );
+  });
+
+  it("flags stale Kick tunnel proof in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-stale-kick-tunnel");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(path.join(finalQaReportDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeKickTunnelCheck(path.join(finalQaReportDir, "kick-tunnel-check.txt"), { commit: "stale123" });
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      `qa/kick-tunnel-check.txt was generated for commit stale123, but current commit is ${currentCommit()}; rerun npm run live:tunnel -- --out qa/kick-tunnel-check.txt`
+    );
   });
 
   it("requires a final QA report for a strict final bundle", async () => {
@@ -712,6 +772,20 @@ async function writeVisualQaManifest(visualQaDir: string, json: unknown = create
   await mkdir(visualQaDir, { recursive: true });
   await writeFile(path.join(visualQaDir, "manifest.md"), "# Visual QA Manifest\n", "utf8");
   await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(json), "utf8");
+}
+
+async function writeKickTunnelCheck(filePath: string, { commit = currentCommit(), ready = true } = {}) {
+  await writeFile(
+    filePath,
+    [
+      `Kick tunnel: ${ready ? "ready" : "needs setup"}`,
+      "URL: https://market-bubble-tunnel.example/webhooks/kick",
+      `Repo commit: ${commit}`,
+      "Checked at: 2026-06-08T00:00:00.000Z",
+      ready ? "Kick tunnel reaches the local receiver at /webhooks/kick." : "KICK_WEBHOOK_PUBLIC_URL is not configured."
+    ].join("\n"),
+    "utf8"
+  );
 }
 
 function createVisualQaManifestJson({ commit = currentCommit() } = {}) {

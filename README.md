@@ -53,7 +53,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only. Add `--require-ready --with-proof-gate` for the final capture stack: it requires the `live:ready` artifact gate before launch, runs the live proof gate beside feed and dashboard, and keeps feed/dashboard running after proof passes or fails.
 
-`npm run live:tunnel` checks the configured `KICK_WEBHOOK_PUBLIC_URL` after the feed server is running. It expects the public HTTPS tunnel to return the Kick receiver health payload from `/webhooks/kick`, which catches dead tunnels or URLs pointed at the wrong local service before the OBS recording.
+`npm run live:tunnel -- --out qa/kick-tunnel-check.txt` checks the configured `KICK_WEBHOOK_PUBLIC_URL` after the feed server is running and saves proof for the final submission bundle. It expects the public HTTPS tunnel to return the Kick receiver health payload from `/webhooks/kick`, which catches dead tunnels or URLs pointed at the wrong local service before the OBS recording.
 
 `live:doctor`, `live:prepare`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, `--db`, and `--clips` overrides. Use these instead of hand-editing commands when a port, evidence path, or clip queue export path needs to change right before recording.
 
@@ -89,7 +89,7 @@ KICK_WEBHOOK_ENABLED=true npm run feed
 ```
 
 Expose `http://127.0.0.1:8788/webhooks/kick` through Cloudflare Tunnel, ngrok, or another public tunnel, then use that public URL in the Kick Developer app webhook settings. To have the feed server request a chat subscription on startup, set `KICK_ACCESS_TOKEN`, `KICK_BROADCASTER_USER_ID`, and `KICK_SUBSCRIBE_ON_START=true`.
-When the feed server is running, the Kick webhook path responds to `GET` and `HEAD` with a safe receiver health check. Use the `tunnel health check` command from `npm run live:prepare` to verify the public tunnel reaches the local receiver before the final recording.
+When the feed server is running, the Kick webhook path responds to `GET` and `HEAD` with a safe receiver health check. Use the `tunnel health check` command from `npm run live:prepare` to verify the public tunnel reaches the local receiver and write `qa/kick-tunnel-check.txt` before the final recording.
 
 Kick signature verification is on by default. Only set `KICK_VERIFY_SIGNATURE=false` for local smoke testing with manually posted payloads.
 
