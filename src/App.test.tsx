@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { buildObsPresetLinks } from "./domain/obsPresets";
 import { createFixtureEvent } from "./fixtures/fixtureEvents";
 
 describe("App", () => {
@@ -118,6 +119,34 @@ describe("App", () => {
       "href",
       expect.stringContaining("signal=1")
     );
+  });
+
+  it("builds OBS focus presets from connector status accounts before messages arrive", () => {
+    const links = buildObsPresetLinks([], [
+      {
+        platform: "twitch",
+        state: "live",
+        label: "EventSub",
+        sourceName: "banks",
+        eventCount: 0,
+        droppedCount: 0,
+        reconnectCount: 0
+      },
+      {
+        platform: "kick",
+        state: "live",
+        label: "Webhook",
+        sourceName: "ansem",
+        eventCount: 0,
+        droppedCount: 0,
+        reconnectCount: 0
+      }
+    ]);
+
+    expect(links.find((link) => link.title === "Twitch BANKS")?.href).toContain("sources=twitch");
+    expect(links.find((link) => link.title === "Twitch BANKS")?.href).toContain("q=banks");
+    expect(links.find((link) => link.title === "Kick ANSEM")?.href).toContain("sources=kick");
+    expect(links.find((link) => link.title === "Kick ANSEM")?.href).toContain("q=ansem");
   });
 
   it("shows selected author and source details", async () => {

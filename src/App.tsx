@@ -41,6 +41,7 @@ import {
   type UnifiedEvent,
   type UnifiedFragment
 } from "./domain/unifiedEvent";
+import { buildObsPresetLinks, type ObsPresetLink } from "./domain/obsPresets";
 import { recordingEventsToCsv, recordingExportSchema, type RecordingExport } from "./domain/recording";
 import { readinessRequirements, streamDayEnvChecklistText } from "./domain/liveSetupChecklist";
 import {
@@ -164,7 +165,10 @@ export function App() {
   );
   const sourceIdentityGroups = useMemo(() => buildSourceIdentityGroups(sourceAccountSummaries), [sourceAccountSummaries]);
   const moderationItems = useMemo(() => buildModerationItems(feedEvents), [feedEvents]);
-  const obsPresetLinks = useMemo(() => buildObsPresetLinks(sourceAccountSummaries), [sourceAccountSummaries]);
+  const obsPresetLinks = useMemo(
+    () => buildObsPresetLinks(sourceAccountSummaries, statuses),
+    [sourceAccountSummaries, statuses]
+  );
 
   useEffect(() => {
     document.body.classList.toggle("obs-body", obsMode);
@@ -842,12 +846,6 @@ type ModerationItem = {
   detail: string;
 };
 
-type ObsPresetLink = {
-  title: string;
-  detail: string;
-  href: string;
-};
-
 function buildRecordingExport(
   events: UnifiedEvent[],
   source: string,
@@ -986,88 +984,6 @@ function parseLimitParam(value: string | null) {
   }
 
   return Math.min(limit, 100);
-}
-
-function buildObsPresetLinks(accounts: SourceAccountSummary[]): ObsPresetLink[] {
-  const focusedAccountLinks = accounts.slice(0, 3).map((account) => {
-    const accountName = getAccountNameFromSourceLabel(account.label);
-    const query = accountName.replace(/^@/, "").toLowerCase();
-
-    return {
-      title: `${platformLabels[account.platform]} ${accountName}`,
-      detail: "Focused proof shot for this source account.",
-      href: buildObsPresetHref({
-        sources: [account.platform],
-        limit: 8,
-        query
-      })
-    };
-  });
-
-  return [
-    {
-      title: "All sources",
-      detail: "Full overlay for the main submission shot.",
-      href: buildObsPresetHref({
-        sources: ["twitch", "kick", "x"],
-        limit: 14
-      })
-    },
-    {
-      title: "Twitch and Kick",
-      detail: "Chat-native view without X posts.",
-      href: buildObsPresetHref({
-        sources: ["twitch", "kick"],
-        limit: 12
-      })
-    },
-    ...focusedAccountLinks,
-    {
-      title: "Signal only",
-      detail: "High-signal clip view for fast review.",
-      href: buildObsPresetHref({
-        signal: true,
-        limit: 10
-      })
-    }
-  ];
-}
-
-function buildObsPresetHref({
-  sources,
-  limit,
-  query,
-  signal
-}: {
-  sources?: SourcePlatform[];
-  limit?: number;
-  query?: string;
-  signal?: boolean;
-}) {
-  const baseUrl =
-    typeof window === "undefined"
-      ? new URL("http://127.0.0.1:5173/")
-      : new URL(`${window.location.origin}${window.location.pathname}`);
-
-  baseUrl.searchParams.set("obs", "1");
-
-  if (sources && sources.length > 0) {
-    baseUrl.searchParams.set("sources", sources.join(","));
-  }
-
-  if (limit) {
-    baseUrl.searchParams.set("limit", String(limit));
-  }
-
-  if (query) {
-    baseUrl.searchParams.set("q", query);
-  }
-
-  if (signal) {
-    baseUrl.searchParams.set("signal", "1");
-  }
-
-  return baseUrl.toString();
 }
 
 function scrollEventListToLiveEdge(list: HTMLDivElement | null, feedOrder: FeedOrder) {
