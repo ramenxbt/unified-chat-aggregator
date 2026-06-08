@@ -50,6 +50,7 @@ npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.
+Before the final strict bundle, regenerate `qa/live-run-plan.txt` without `--allow-partial`; `submission:bundle` will fail with a run-sheet issue if that file still contains partial-mode proof commands.
 
 ## 2. Kick Tunnel
 

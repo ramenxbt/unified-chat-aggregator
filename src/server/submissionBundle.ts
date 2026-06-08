@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
@@ -32,6 +32,7 @@ export type SubmissionBundleResult = {
     partialLiveRunPlan?: string;
   };
   evidence: EvidenceReport;
+  artifactIssues: string[];
 };
 
 export async function createSubmissionBundle(options: SubmissionBundleOptions): Promise<SubmissionBundleResult> {
@@ -47,6 +48,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const bundleDir = path.resolve(options.outputDir);
   const finalQaReports = await findFinalQaReports(options.finalQaReportDir ?? "qa", bundleDir);
   const liveRunPlans = await findLiveRunPlans(options.liveRunPlanDir ?? "qa", bundleDir);
+  const requireAllPlatforms = options.requireAllPlatforms ?? true;
+  const artifactIssues = await validateCopiedArtifacts(liveRunPlans, requireAllPlatforms);
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
@@ -62,7 +65,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     writeFile(files.evidenceReport, `${formatEvidenceReport(evidence)}\n`, "utf8"),
     writeFile(files.replayJson, `${JSON.stringify(recording, null, 2)}\n`, "utf8"),
     writeFile(files.replayCsv, archiveRecordingToCsv(recording), "utf8"),
-    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence, repo, externalArtifacts)}\n`, "utf8"),
+    writeFile(files.submissionNotes, `${formatSubmissionNotes(evidence, repo, externalArtifacts, artifactIssues)}\n`, "utf8"),
     writeFile(
       files.summary,
       `${JSON.stringify(
@@ -81,6 +84,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
           sourceLabels: evidence.sourceLabels,
           performance: evidence.performance,
           externalArtifacts,
+          artifactIssues,
           files
         },
         null,
@@ -93,10 +97,11 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   ]);
 
   return {
-    ok: evidence.ok,
+    ok: evidence.ok && artifactIssues.length === 0,
     outputDir: bundleDir,
     files,
-    evidence
+    evidence,
+    artifactIssues
   };
 }
 
@@ -115,8 +120,10 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
     ...(result.files.partialLiveRunPlan ? [`Partial live run plan: ${result.files.partialLiveRunPlan}`] : [])
   ];
 
-  if (result.evidence.issues.length > 0) {
-    lines.push("", "Issues:", ...result.evidence.issues.map((issue) => `  ${issue}`));
+  const issues = [...result.evidence.issues, ...result.artifactIssues];
+
+  if (issues.length > 0) {
+    lines.push("", "Issues:", ...issues.map((issue) => `  ${issue}`));
   }
 
   return lines.join("\n");
@@ -125,12 +132,14 @@ export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
 export function formatSubmissionNotes(
   evidence: EvidenceReport,
   repo = collectRepoMetadata(),
-  externalArtifacts = buildExternalArtifactChecklist()
+  externalArtifacts = buildExternalArtifactChecklist(),
+  artifactIssues: string[] = []
 ) {
+  const ready = evidence.ok && artifactIssues.length === 0;
   const lines = [
     "# Unified Chat Aggregator Submission Notes",
     "",
-    `Status: ${evidence.ok ? "ready" : "needs attention"}`,
+    `Status: ${ready ? "ready" : "needs attention"}`,
     `Session: ${evidence.sessionId}`,
     `Mode: ${evidence.mode}`,
     `Repo commit: ${repo.commit ?? "unknown"}`,
@@ -167,6 +176,10 @@ export function formatSubmissionNotes(
 
   if (evidence.issues.length > 0) {
     lines.push("", "## Issues", "", ...evidence.issues.map((issue) => `- ${issue}`));
+  }
+
+  if (artifactIssues.length > 0) {
+    lines.push("", "## Artifact Issues", "", ...artifactIssues.map((issue) => `- ${issue}`));
   }
 
   return lines.join("\n");
@@ -222,6 +235,7 @@ async function findOptionalFiles(
   candidates: Array<[sourceName: string, targetName: string, key: string]>
 ) {
   const files: Record<string, string> = {};
+  const sourceFiles: Record<string, string> = {};
   const copyTasks: Array<() => Promise<void>> = [];
 
   for (const [sourceName, targetName, key] of candidates) {
@@ -230,11 +244,31 @@ async function findOptionalFiles(
 
     if (await pathExists(sourcePath)) {
       files[key] = targetPath;
+      sourceFiles[key] = sourcePath;
       copyTasks.push(() => copyFile(sourcePath, targetPath));
     }
   }
 
-  return { files, copyTasks };
+  return { files, sourceFiles, copyTasks };
+}
+
+async function validateCopiedArtifacts(
+  liveRunPlans: Awaited<ReturnType<typeof findLiveRunPlans>>,
+  requireAllPlatforms: boolean
+) {
+  if (!requireAllPlatforms || !liveRunPlans.sourceFiles.liveRunPlan) {
+    return [];
+  }
+
+  const liveRunPlan = await readFile(liveRunPlans.sourceFiles.liveRunPlan, "utf8");
+
+  return isPartialLiveRunPlan(liveRunPlan)
+    ? ["qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"]
+    : [];
+}
+
+function isPartialLiveRunPlan(content: string) {
+  return content.includes("Platform requirement: at least one live connector") || content.includes("--allow-partial");
 }
 
 async function pathExists(filePath: string) {

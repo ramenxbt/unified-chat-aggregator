@@ -89,6 +89,42 @@ describe("submission bundle", () => {
     expect(formatSubmissionBundleResult(result)).toContain("Final QA report:");
     expect(formatSubmissionBundleResult(result)).toContain("Live run plan:");
   });
+
+  it("flags a partial live run sheet in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const outputDir = path.join(baseDir, "bundle-partial-plan");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(
+      path.join(liveRunPlanDir, "live-run-plan.txt"),
+      "Platform requirement: at least one live connector\nlive proof gate: npm run proof:gate -- --allow-partial\n",
+      "utf8"
+    );
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      liveRunPlanDir
+    });
+    const submissionNotes = await readFile(result.files.submissionNotes, "utf8");
+    const summary = JSON.parse(await readFile(result.files.summary, "utf8"));
+    const formatted = formatSubmissionBundleResult(result);
+
+    expect(result.ok).toBe(false);
+    expect(result.evidence.ok).toBe(true);
+    expect(result.artifactIssues).toEqual([
+      "qa/live-run-plan.txt was generated in partial mode; rerun live:prepare without --allow-partial for final proof"
+    ]);
+    expect(formatted).toContain("Submission bundle: needs attention");
+    expect(formatted).toContain("qa/live-run-plan.txt was generated in partial mode");
+    expect(submissionNotes).toContain("Status: needs attention");
+    expect(submissionNotes).toContain("## Artifact Issues");
+    expect(summary).toMatchObject({
+      evidenceOk: true,
+      artifactIssues: result.artifactIssues
+    });
+  });
 });
 
 async function createBundleFixture() {
