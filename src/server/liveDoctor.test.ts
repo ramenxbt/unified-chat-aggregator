@@ -77,6 +77,26 @@ describe("live doctor", () => {
     expect(formatted).toContain("Add KICK_BROADCASTER_SLUG=marketbubble before final recording");
   });
 
+  it("allows a partial smoke run with one target label warning", async () => {
+    const report = await buildLiveDoctorReport(
+      {
+        X_BEARER_TOKEN: "x-token",
+        X_FILTER_RULES: "from:marketbubble"
+      },
+      {
+        allowPartial: true,
+        checkPort: readyPortCheck,
+        checkWritableDirectory: readyDirectoryCheck
+      }
+    );
+    const formatted = formatLiveDoctorReport(report);
+
+    expect(report.ok).toBe(true);
+    expect(formatted).toContain("WARN Target source labels");
+    expect(formatted).toContain("Partial run target labels: X (@MARKETBUBBLE)");
+    expect(formatted).toContain("Do not use partial mode for final recording");
+  });
+
   it("fails when a required local port is already in use", async () => {
     const report = await buildLiveDoctorReport(completeEnv, {
       checkPort: async (label, port) => ({

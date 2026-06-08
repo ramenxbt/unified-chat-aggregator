@@ -107,6 +107,11 @@ export async function runLiveStack(env: LivePreflightEnv, options: RunLiveStackO
     return 1;
   }
 
+  if (options.requireReady && options.allowPartial) {
+    console.error("Final capture cannot use --allow-partial when --require-ready is set.");
+    return 1;
+  }
+
   if (options.requireReady && !options.withProofGate) {
     console.error("Final capture requires --with-proof-gate when --require-ready is set.");
     return 1;

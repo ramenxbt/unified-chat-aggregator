@@ -51,7 +51,7 @@ export async function buildLiveDoctorReport(
         ? "Connector environment is ready for the requested platform requirement."
         : "Run npm run preflight for missing connector credentials and setup."
     },
-    buildTargetSourceLabelCheck(plan.targetSourceLabels),
+    buildTargetSourceLabelCheck(plan.targetSourceLabels, !options.allowPartial),
     await checkPort("Feed WebSocket port", feedPort),
     await checkPort("Dashboard dev port", appPort)
   ];
@@ -173,12 +173,26 @@ function formatCheckState(state: LiveDoctorCheck["state"]) {
   return "MISS";
 }
 
-function buildTargetSourceLabelCheck(targetSourceLabels: string[]): LiveDoctorCheck {
+function buildTargetSourceLabelCheck(targetSourceLabels: string[], requireAllPlatforms: boolean): LiveDoctorCheck {
   const missingAssignments = [
     targetSourceLabels.some((label) => label.startsWith("TWITCH (")) ? null : "TWITCH_BROADCASTER_LOGIN=marketbubble",
     targetSourceLabels.some((label) => label.startsWith("KICK (")) ? null : "KICK_BROADCASTER_SLUG=marketbubble",
     targetSourceLabels.some((label) => label.startsWith("X (")) ? null : "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
   ].filter((assignment): assignment is string => Boolean(assignment));
+
+  if (!requireAllPlatforms) {
+    return targetSourceLabels.length > 0
+      ? {
+          name: "Target source labels",
+          state: "attention",
+          detail: `Partial run target labels: ${targetSourceLabels.join(", ")}. Do not use partial mode for final recording.`
+        }
+      : {
+          name: "Target source labels",
+          state: "setup",
+          detail: "Add at least one target label before partial connector smoke testing."
+        };
+  }
 
   if (missingAssignments.length > 0) {
     const currentLabels = targetSourceLabels.length > 0 ? targetSourceLabels.join(", ") : "none";
