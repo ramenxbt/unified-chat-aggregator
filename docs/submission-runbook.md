@@ -32,11 +32,12 @@ Run the strict connector check next:
 
 ```bash
 npm run preflight
-npm run live:prepare
+npm run live:prepare -- --out qa/live-run-plan.txt
 npm run live:stack -- --dry-run
 ```
 
 The strict check should say `Live preflight: ready` before the final full-platform recording.
+The saved `qa/live-run-plan.txt` file keeps the exact commands, OBS URLs, tunnel health check, evidence commands, and replay export commands available during setup.
 If you set `PROOF_MIN_EVENTS`, `PROOF_MIN_SOURCE_LABELS`, `PROOF_MAX_P95_LATENCY_MS`, `PROOF_TIMEOUT_MS`, or `PROOF_INTERVAL_MS`, use the proof-gate command printed by `npm run live:prepare` so the final wait gate matches your configured thresholds and wait window.
 Use the `OBS browser source settings` block printed by `npm run live:prepare` for the browser source dimensions, FPS, transparent background, and refresh toggles.
 If a default port, evidence path, or proof wait window is unavailable, pass the same overrides to `live:doctor`, `live:prepare`, and `live:stack`, for example `--feed-port 8899 --app-port 5260 --archive-dir data/final-sessions --db data/final.sqlite --proof-timeout-ms 300000`.
@@ -45,7 +46,7 @@ For a one-platform dry run, use:
 
 ```bash
 npm run preflight -- --allow-partial
-npm run live:prepare -- --allow-partial
+npm run live:prepare -- --allow-partial --out qa/live-run-plan.partial.txt
 ```
 
 Do not treat partial mode as final proof. It is only for connector smoke testing. If you use the printed proof, evidence, or bundle commands during a partial rehearsal, keep the included `--allow-partial` flag.

@@ -5,6 +5,10 @@ export type LiveStackCliOptions = LiveRunPlanOptions & {
   withProofGate: boolean;
 };
 
+export type LivePrepareCliOptions = LiveRunPlanOptions & {
+  outPath?: string;
+};
+
 export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
   const parsed: LiveRunPlanOptions = {
     allowPartial: args.includes("--allow-partial")
@@ -77,4 +81,19 @@ export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
     dryRun: args.includes("--dry-run"),
     withProofGate: args.includes("--with-proof-gate")
   };
+}
+
+export function parseLivePrepareCliArgs(args: string[]): LivePrepareCliOptions {
+  const parsed: LivePrepareCliOptions = parseLiveRunCliArgs(args);
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--out" || arg === "--output") {
+      parsed.outPath = args[index + 1];
+      index += 1;
+    }
+  }
+
+  return parsed;
 }

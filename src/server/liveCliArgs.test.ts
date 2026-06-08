@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLiveRunCliArgs, parseLiveStackCliArgs } from "./liveCliArgs";
+import { parseLivePrepareCliArgs, parseLiveRunCliArgs, parseLiveStackCliArgs } from "./liveCliArgs";
 
 describe("live CLI args", () => {
   it("parses live run plan overrides", () => {
@@ -46,6 +46,18 @@ describe("live CLI args", () => {
       withProofGate: true,
       databasePath: "data/live.sqlite",
       feedPort: 8789
+    });
+  });
+
+  it("parses live prepare output path aliases", () => {
+    expect(parseLivePrepareCliArgs(["--allow-partial", "--out", "qa/live-run-plan.txt"])).toEqual({
+      allowPartial: true,
+      outPath: "qa/live-run-plan.txt"
+    });
+
+    expect(parseLivePrepareCliArgs(["--output", "qa/plan.txt"])).toEqual({
+      allowPartial: false,
+      outPath: "qa/plan.txt"
     });
   });
 
