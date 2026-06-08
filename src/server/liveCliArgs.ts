@@ -44,6 +44,12 @@ export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
       continue;
     }
 
+    if (arg === "--clips" || arg === "--clip-queue") {
+      parsed.clipQueuePath = args[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (arg === "--proof-timeout-ms" || arg === "--timeout-ms") {
       assignOptionalPositiveNumber(parsed, "proofTimeoutMs", args[index + 1]);
       index += 1;

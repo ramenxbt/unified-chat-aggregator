@@ -45,7 +45,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run preflight` checks the live environment for Twitch, Kick, and X before you start the feed server. It exits non-zero until all three platforms are ready. Use `npm run preflight -- --allow-partial` when intentionally testing only one live connector.
 
-`npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, proof gate thresholds, and replay export commands. Add `--out qa/live-run-plan.txt` to save that exact run sheet for the stream setup. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only; the printed proof, evidence, and bundle commands will include `--allow-partial`.
+`npm run live:prepare` prints the same strict readiness check plus the exact final-run feed command, dashboard command, OBS URLs, Kick webhook URL, archive path, database path, proof gate thresholds, clip-aware bundle command, and replay export commands. Add `--out qa/live-run-plan.txt` to save that exact run sheet for the stream setup. Use `npm run live:prepare -- --allow-partial` for one-platform dry runs only; the printed proof, evidence, and bundle commands will include `--allow-partial`.
 
 `npm run obs:handoff -- --out qa/obs` writes `obs-browser-sources.md` and `obs-browser-sources.json` with OBS browser source names, URLs, dimensions, FPS, transparent CSS, and focused Twitch/Kick/X proof shots. Run it after choosing the same `--app-port` used by `live:prepare`.
 
@@ -53,7 +53,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run live:stack` runs the same strict doctor check, then starts the feed server and dashboard together with the planned archive, database, ports, and `VITE_FEED_WS_URL` values. Use `npm run live:stack -- --dry-run` to verify the launch plan without starting long-lived processes, or `npm run live:stack -- --allow-partial --dry-run` for one-platform smoke setup only. Add `--require-ready --with-proof-gate` for the final capture stack: it requires the `live:ready` artifact gate before launch, runs the live proof gate beside feed and dashboard, and keeps feed/dashboard running after proof passes or fails.
 
-`live:doctor`, `live:prepare`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, and `--db` overrides. Use these instead of hand-editing commands when a port or evidence path needs to change right before recording.
+`live:doctor`, `live:prepare`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, `--db`, and `--clips` overrides. Use these instead of hand-editing commands when a port, evidence path, or clip queue export path needs to change right before recording.
 
 The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
 

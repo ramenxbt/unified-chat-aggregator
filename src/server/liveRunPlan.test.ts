@@ -61,7 +61,7 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle"
+      "submission bundle: npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json"
     );
   });
 
@@ -96,8 +96,16 @@ describe("live run plan", () => {
       "evidence check: npm run evidence:check -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite'"
     );
     expect(formatted).toContain(
-      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle"
+      "submission bundle: npm run submission:bundle -- --archive-dir 'data/final sessions' --db 'data/final proof.sqlite' --out submission-bundle --clips clip-queue.json"
     );
+  });
+
+  it("uses a configured clip queue export path in the bundle command", () => {
+    const plan = buildLiveRunPlan(completeEnv, {
+      clipQueuePath: "exports/final clips.json"
+    });
+
+    expect(plan.evidence.submissionBundleCommand).toContain("--clips 'exports/final clips.json'");
   });
 
   it("surfaces missing strict requirements while still printing setup commands", () => {
