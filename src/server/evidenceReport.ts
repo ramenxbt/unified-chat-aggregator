@@ -116,6 +116,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
 
   addPlatformIssues(issues, platforms, requireAllPlatforms, "events");
   addPlatformIssues(issues, statusPlatforms, requireAllPlatforms, "connector statuses");
+  addAccountSourceLabelIssues(issues, events, requireAllPlatforms);
 
   const database = options.databasePath
     ? await readDatabaseEvidenceWithRetry(options.databasePath, manifest.sessionId)
@@ -265,6 +266,33 @@ function addPlatformIssues(
   if (requiredPlatforms.every((platform) => counts[platform] === 0)) {
     issues.push(`missing live ${label}`);
   }
+}
+
+function addAccountSourceLabelIssues(issues: string[], events: UnifiedEvent[], requireAllPlatforms: boolean) {
+  const missingPlatforms = requiredPlatforms.filter(
+    (platform) => !events.some((event) => hasAccountQualifiedEventSource(event, platform))
+  );
+
+  if (requireAllPlatforms) {
+    for (const platform of missingPlatforms) {
+      issues.push(`missing ${platform} account-qualified source label`);
+    }
+    return;
+  }
+
+  if (!events.some(hasAnyAccountQualifiedEventSource)) {
+    issues.push("missing live account-qualified source labels");
+  }
+}
+
+function hasAccountQualifiedEventSource(event: UnifiedEvent, platform: SourcePlatform) {
+  if (event.platform !== platform) return false;
+
+  return platform === "x" ? Boolean(event.authorName ?? event.sourceChannelName) : Boolean(event.sourceChannelName);
+}
+
+function hasAnyAccountQualifiedEventSource(event: UnifiedEvent) {
+  return requiredPlatforms.some((platform) => hasAccountQualifiedEventSource(event, platform));
 }
 
 function calculatePerformanceMetrics(events: UnifiedEvent[]) {

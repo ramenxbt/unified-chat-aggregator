@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createFixtureEvent, initialConnectorStatuses } from "../fixtures/fixtureEvents";
+import type { SourcePlatform } from "../domain/unifiedEvent";
 import { createFeedSessionId, FileFeedArchive } from "./feedArchive";
 import {
   buildLiveProofGateReport,
@@ -93,6 +94,27 @@ describe("live proof gate", () => {
     );
   });
 
+  it("requires account-qualified source labels for each strict platform", async () => {
+    const { archivePath } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors", {
+      stripSourceNameForPlatforms: ["kick"]
+    });
+    const report = await buildLiveProofGateReport({
+      archivePath,
+      minEvents: 3,
+      minSourceLabels: 3
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.sourceLabels).toContain("KICK (USER91)");
+    expect(report.checks).toContainEqual(
+      expect.objectContaining({
+        name: "Account source labels",
+        ok: false,
+        detail: "missing kick account-qualified labels"
+      })
+    );
+  });
+
   it("can find and watch the latest archive directory", async () => {
     const { archiveDir } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors");
     const report = await watchLiveProofGate({
@@ -141,7 +163,8 @@ describe("live proof gate", () => {
 async function createProofFixture(
   eventIndexes: number[],
   statuses = initialConnectorStatuses,
-  mode: "fixture" | "connectors" = "fixture"
+  mode: "fixture" | "connectors" = "fixture",
+  options: { stripSourceNameForPlatforms?: SourcePlatform[] } = {}
 ) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "live-proof-gate-"));
   const archiveDir = path.join(baseDir, "feed-sessions");
@@ -159,7 +182,16 @@ async function createProofFixture(
   });
 
   for (const eventIndex of eventIndexes) {
-    archive.recordEvent(createFixtureEvent(eventIndex, new Date(Date.parse(startedAt) + eventIndex * 1000)));
+    const event = createFixtureEvent(eventIndex, new Date(Date.parse(startedAt) + eventIndex * 1000));
+
+    archive.recordEvent(
+      options.stripSourceNameForPlatforms?.includes(event.platform)
+        ? {
+            ...event,
+            sourceChannelName: undefined
+          }
+        : event
+    );
   }
 
   for (const status of statuses) {

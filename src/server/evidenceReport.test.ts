@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createFixtureEvent, initialConnectorStatuses } from "../fixtures/fixtureEvents";
+import type { SourcePlatform } from "../domain/unifiedEvent";
 import { FileFeedArchive, SQLiteFeedArchive, createFeedSessionId } from "./feedArchive";
 import {
   buildEvidenceReport,
@@ -54,6 +55,21 @@ describe("evidence report", () => {
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContain("missing x events");
+  });
+
+  it("fails strict mode when a platform has no account-qualified source label", async () => {
+    const { archivePath } = await createEvidenceFixture([0, 1, 2], "connectors", {
+      stripSourceNameForPlatforms: ["kick"]
+    });
+    const report = await buildEvidenceReport({
+      archivePath
+    });
+    const formatted = formatEvidenceReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(report.sourceLabels).toContain("KICK (USER91)");
+    expect(report.issues).toContain("missing kick account-qualified source label");
+    expect(formatted).toContain("missing kick account-qualified source label");
   });
 
   it("fails strict mode when the archive is fixture-mode rehearsal proof", async () => {
@@ -147,7 +163,11 @@ describe("evidence report", () => {
   });
 });
 
-async function createEvidenceFixture(eventIndexes: number[], mode: "fixture" | "connectors" = "fixture") {
+async function createEvidenceFixture(
+  eventIndexes: number[],
+  mode: "fixture" | "connectors" = "fixture",
+  options: { stripSourceNameForPlatforms?: SourcePlatform[] } = {}
+) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "feed-evidence-"));
   const archive = new FileFeedArchive(path.join(baseDir, "feed-sessions"));
   const databasePath = path.join(baseDir, "feed.sqlite");
@@ -168,8 +188,15 @@ async function createEvidenceFixture(eventIndexes: number[], mode: "fixture" | "
 
   for (const eventIndex of eventIndexes) {
     const event = createFixtureEvent(eventIndex);
-    archive.recordEvent(event);
-    databaseArchive.recordEvent(event);
+    const archivedEvent = options.stripSourceNameForPlatforms?.includes(event.platform)
+      ? {
+          ...event,
+          sourceChannelName: undefined
+        }
+      : event;
+
+    archive.recordEvent(archivedEvent);
+    databaseArchive.recordEvent(archivedEvent);
   }
 
   for (const status of initialConnectorStatuses) {

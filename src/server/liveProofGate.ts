@@ -83,6 +83,9 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
   const performance = calculatePerformanceMetrics(events);
   const missingEventPlatforms = requiredPlatforms.filter((platform) => platformCounts[platform] === 0);
   const missingStatusPlatforms = requiredPlatforms.filter((platform) => statusPlatformCounts[platform] === 0);
+  const missingAccountLabelPlatforms = requiredPlatforms.filter(
+    (platform) => !events.some((event) => hasAccountQualifiedEventSource(event, platform))
+  );
   const checks = [
     {
       name: "Archive mode",
@@ -119,6 +122,14 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
       name: "Source labels",
       ok: sourceLabels.length >= minSourceLabels,
       detail: `${sourceLabels.length}/${minSourceLabels} source labels visible`
+    },
+    {
+      name: "Account source labels",
+      ok: requireAllPlatforms ? missingAccountLabelPlatforms.length === 0 : events.some(hasAnyAccountQualifiedEventSource),
+      detail:
+        missingAccountLabelPlatforms.length === 0
+          ? "Twitch, Kick, and X account-qualified labels visible"
+          : `missing ${missingAccountLabelPlatforms.join(", ")} account-qualified labels`
     },
     {
       name: "P95 latency",
@@ -255,6 +266,16 @@ function createPlatformCounts(): Record<SourcePlatform, number> {
     kick: 0,
     x: 0
   };
+}
+
+function hasAccountQualifiedEventSource(event: UnifiedEvent, platform: SourcePlatform) {
+  if (event.platform !== platform) return false;
+
+  return platform === "x" ? Boolean(event.authorName ?? event.sourceChannelName) : Boolean(event.sourceChannelName);
+}
+
+function hasAnyAccountQualifiedEventSource(event: UnifiedEvent) {
+  return requiredPlatforms.some((platform) => hasAccountQualifiedEventSource(event, platform));
 }
 
 function calculatePerformanceMetrics(events: UnifiedEvent[]) {
