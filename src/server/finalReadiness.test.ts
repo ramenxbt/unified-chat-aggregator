@@ -98,6 +98,23 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("Current target labels: X (@MARKETBUBBLE)");
   });
 
+  it("does not let multiple X labels mask a missing Kick source label", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(
+      {
+        ...completeEnv,
+        KICK_BROADCASTER_SLUG: undefined
+      },
+      { qaDir }
+    );
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Target source labels");
+    expect(formatted).toContain("Add KICK_BROADCASTER_SLUG=marketbubble");
+    expect(formatted).toContain("Current target labels: TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE), X (MARKET BUBBLE)");
+  });
+
   it("fails when the final run sheet is stale", async () => {
     const qaDir = await createReadyQaDir({ runSheetCommit: "stale123" });
     const report = await buildFinalReadinessReport(completeEnv, { qaDir });

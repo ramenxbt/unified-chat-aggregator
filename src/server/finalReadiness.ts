@@ -190,12 +190,13 @@ function formatLiveStackOptionArgs(options: FinalReadinessOptions) {
 }
 
 function checkTargetSourceLabels(targetSourceLabels: string[]): FinalReadinessCheck {
-  if (targetSourceLabels.length < 3) {
-    const missingAssignments = [
-      targetSourceLabels.some((label) => label.startsWith("TWITCH (")) ? null : "TWITCH_BROADCASTER_LOGIN=marketbubble",
-      targetSourceLabels.some((label) => label.startsWith("KICK (")) ? null : "KICK_BROADCASTER_SLUG=marketbubble",
-      targetSourceLabels.some((label) => label.startsWith("X (")) ? null : "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
-    ].filter((assignment): assignment is string => Boolean(assignment));
+  const missingAssignments = [
+    targetSourceLabels.some((label) => label.startsWith("TWITCH (")) ? null : "TWITCH_BROADCASTER_LOGIN=marketbubble",
+    targetSourceLabels.some((label) => label.startsWith("KICK (")) ? null : "KICK_BROADCASTER_SLUG=marketbubble",
+    targetSourceLabels.some((label) => label.startsWith("X (")) ? null : "X_FILTER_RULES=from:marketbubble,Market Bubble,marketbubble"
+  ].filter((assignment): assignment is string => Boolean(assignment));
+
+  if (missingAssignments.length > 0) {
     const currentLabels = targetSourceLabels.length > 0 ? targetSourceLabels.join(", ") : "none";
 
     return {
