@@ -87,6 +87,9 @@ type SQLiteDatabase = {
   close(): void;
 };
 
+const databaseRetryTimeoutMs = 10_000;
+const databaseRetryIntervalMs = 250;
+
 export async function buildEvidenceReport(options: EvidenceReportOptions): Promise<EvidenceReport> {
   const archivePath = await resolveArchivePath(options);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
@@ -114,7 +117,9 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
   addPlatformIssues(issues, platforms, requireAllPlatforms, "events");
   addPlatformIssues(issues, statusPlatforms, requireAllPlatforms, "connector statuses");
 
-  const database = options.databasePath ? await readDatabaseEvidence(options.databasePath, manifest.sessionId) : undefined;
+  const database = options.databasePath
+    ? await readDatabaseEvidenceWithRetry(options.databasePath, manifest.sessionId)
+    : undefined;
 
   if (database) {
     if (!database.sessionFound) {
@@ -296,6 +301,26 @@ function formatNumber(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+async function readDatabaseEvidenceWithRetry(databasePath: string, sessionId: string) {
+  const deadline = Date.now() + databaseRetryTimeoutMs;
+  let lastLockError: unknown;
+
+  while (Date.now() < deadline) {
+    try {
+      return await readDatabaseEvidence(databasePath, sessionId);
+    } catch (error) {
+      if (!isSQLiteLockError(error)) {
+        throw error;
+      }
+
+      lastLockError = error;
+      await delay(databaseRetryIntervalMs);
+    }
+  }
+
+  throw lastLockError instanceof Error ? lastLockError : new Error(`Database stayed locked: ${databasePath}`);
+}
+
 async function readDatabaseEvidence(databasePath: string, sessionId: string) {
   const db = await openSQLiteDatabase(databasePath);
 
@@ -331,6 +356,20 @@ function readCount(db: SQLiteDatabase, sql: string, ...values: SQLiteValue[]) {
   const row = db.prepare(sql).get(...values) as { count: number } | undefined;
 
   return Number(row?.count ?? 0);
+}
+
+function isSQLiteLockError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.message.toLowerCase().includes("database is locked") ||
+      ("code" in error && error.code === "ERR_SQLITE_ERROR" && "errcode" in error && error.errcode === 5))
+  );
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function openSQLiteDatabase(databasePath: string) {

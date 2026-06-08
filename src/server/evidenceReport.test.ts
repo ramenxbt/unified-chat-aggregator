@@ -81,6 +81,39 @@ describe("evidence report", () => {
     expect(report.ok).toBe(true);
     expect(report.archivePath).toBe(archivePath);
   });
+
+  it("retries when the evidence database is temporarily locked", async () => {
+    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2], "connectors");
+    const sqliteModuleName = "node:sqlite";
+    const { DatabaseSync } = await import(sqliteModuleName);
+    const lock = new DatabaseSync(databasePath);
+    let released = false;
+
+    lock.exec("begin exclusive");
+
+    const releaseTimer = setTimeout(() => {
+      lock.exec("commit");
+      lock.close();
+      released = true;
+    }, 300);
+
+    try {
+      const report = await buildEvidenceReport({
+        archivePath,
+        databasePath
+      });
+
+      expect(report.ok).toBe(true);
+      expect(report.database?.eventCount).toBe(3);
+      expect(released).toBe(true);
+    } finally {
+      clearTimeout(releaseTimer);
+      if (!released) {
+        lock.exec("commit");
+        lock.close();
+      }
+    }
+  });
 });
 
 async function createEvidenceFixture(eventIndexes: number[], mode: "fixture" | "connectors" = "fixture") {
