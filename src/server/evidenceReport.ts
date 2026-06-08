@@ -98,6 +98,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
   const statuses = await readArchiveStatuses(archivePath, manifest);
   const platforms = countEventPlatforms(events);
   const statusPlatforms = countStatusPlatforms(statuses);
+  const latestStatusByPlatform = getLatestStatusByPlatform(statuses);
   const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))].sort();
   const performance = calculatePerformanceMetrics(events);
   const issues: string[] = [];
@@ -116,6 +117,7 @@ export async function buildEvidenceReport(options: EvidenceReportOptions): Promi
 
   addPlatformIssues(issues, platforms, requireAllPlatforms, "events");
   addPlatformIssues(issues, statusPlatforms, requireAllPlatforms, "connector statuses");
+  addLiveConnectorStateIssues(issues, latestStatusByPlatform, requireAllPlatforms);
   addAccountSourceLabelIssues(issues, events, requireAllPlatforms);
 
   const database = options.databasePath
@@ -240,6 +242,21 @@ function countStatusPlatforms(statuses: z.infer<typeof archivedStatusSchema>[]) 
   );
 }
 
+function getLatestStatusByPlatform(statuses: z.infer<typeof archivedStatusSchema>[]) {
+  return statuses.reduce(
+    (latestStatuses, status) => {
+      const currentStatus = latestStatuses[status.status.platform];
+
+      if (!currentStatus || Date.parse(status.recordedAt) >= Date.parse(currentStatus.recordedAt)) {
+        latestStatuses[status.status.platform] = status;
+      }
+
+      return latestStatuses;
+    },
+    {} as Partial<Record<SourcePlatform, z.infer<typeof archivedStatusSchema>>>
+  );
+}
+
 function createPlatformCounts(): Record<SourcePlatform, number> {
   return {
     twitch: 0,
@@ -265,6 +282,27 @@ function addPlatformIssues(
 
   if (requiredPlatforms.every((platform) => counts[platform] === 0)) {
     issues.push(`missing live ${label}`);
+  }
+}
+
+function addLiveConnectorStateIssues(
+  issues: string[],
+  latestStatusByPlatform: Partial<Record<SourcePlatform, z.infer<typeof archivedStatusSchema>>>,
+  requireAllPlatforms: boolean
+) {
+  const nonLivePlatforms = requiredPlatforms.filter(
+    (platform) => latestStatusByPlatform[platform]?.status.state !== "live"
+  );
+
+  if (requireAllPlatforms) {
+    for (const platform of nonLivePlatforms) {
+      issues.push(`latest ${platform} connector status is ${latestStatusByPlatform[platform]?.status.state ?? "missing"}`);
+    }
+    return;
+  }
+
+  if (!Object.values(latestStatusByPlatform).some((status) => status?.status.state === "live")) {
+    issues.push("missing live connector status");
   }
 }
 

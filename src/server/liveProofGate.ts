@@ -79,10 +79,14 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
   const maxP95LatencyMs = options.maxP95LatencyMs ?? 5000;
   const platformCounts = countEventPlatforms(events);
   const statusPlatformCounts = countStatusPlatforms(statuses);
+  const latestStatusByPlatform = getLatestStatusByPlatform(statuses);
   const sourceLabels = [...new Set(events.map(formatPlatformSourceLabel))].sort();
   const performance = calculatePerformanceMetrics(events);
   const missingEventPlatforms = requiredPlatforms.filter((platform) => platformCounts[platform] === 0);
   const missingStatusPlatforms = requiredPlatforms.filter((platform) => statusPlatformCounts[platform] === 0);
+  const nonLiveStatusPlatforms = requiredPlatforms.filter(
+    (platform) => latestStatusByPlatform[platform]?.status.state !== "live"
+  );
   const missingAccountLabelPlatforms = requiredPlatforms.filter(
     (platform) => !events.some((event) => hasAccountQualifiedEventSource(event, platform))
   );
@@ -117,6 +121,18 @@ export async function buildLiveProofGateReport(options: LiveProofGateOptions): P
         missingStatusPlatforms.length === 0
           ? "Twitch, Kick, and X status samples present"
           : `missing ${missingStatusPlatforms.join(", ")} status samples`
+    },
+    {
+      name: "Live connector states",
+      ok: requireAllPlatforms
+        ? nonLiveStatusPlatforms.length === 0
+        : Object.values(latestStatusByPlatform).some((status) => status?.status.state === "live"),
+      detail:
+        nonLiveStatusPlatforms.length === 0
+          ? "Twitch, Kick, and X latest statuses are live"
+          : `latest ${nonLiveStatusPlatforms
+              .map((platform) => `${platform}=${latestStatusByPlatform[platform]?.status.state ?? "missing"}`)
+              .join(", ")}`
     },
     {
       name: "Source labels",
@@ -257,6 +273,21 @@ function countStatusPlatforms(statuses: ArchivedStatus[]) {
       [platform]: statuses.filter((status) => status.status.platform === platform).length
     }),
     createPlatformCounts()
+  );
+}
+
+function getLatestStatusByPlatform(statuses: ArchivedStatus[]) {
+  return statuses.reduce(
+    (latestStatuses, status) => {
+      const currentStatus = latestStatuses[status.status.platform];
+
+      if (!currentStatus || Date.parse(status.recordedAt) >= Date.parse(currentStatus.recordedAt)) {
+        latestStatuses[status.status.platform] = status;
+      }
+
+      return latestStatuses;
+    },
+    {} as Partial<Record<SourcePlatform, ArchivedStatus>>
   );
 }
 

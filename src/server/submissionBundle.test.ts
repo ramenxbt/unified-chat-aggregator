@@ -901,7 +901,7 @@ async function createBundleFixture() {
     databaseArchive.recordEvent(event);
   }
 
-  for (const status of initialConnectorStatuses) {
+  for (const status of finalConnectorStatuses) {
     archive.recordStatus(status);
     databaseArchive.recordStatus(status);
   }
@@ -926,6 +926,11 @@ function createFinalQaReport({ commit = currentCommit(), trackedFilesClean = tru
     }
   };
 }
+
+const finalConnectorStatuses = initialConnectorStatuses.map((status) => ({
+  ...status,
+  state: "live" as const
+}));
 
 function createClipQueueExport() {
   const clips = [createFixtureEvent(0), createFixtureEvent(2)].map((event, index) => ({

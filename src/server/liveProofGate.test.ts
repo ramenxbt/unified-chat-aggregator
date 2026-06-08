@@ -14,7 +14,7 @@ import {
 
 describe("live proof gate", () => {
   it("passes when the archive has enough events, all platforms, statuses, labels, and latency", async () => {
-    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], initialConnectorStatuses, "connectors");
+    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], finalConnectorStatuses, "connectors");
     const report = await buildLiveProofGateReport({
       archivePath,
       minEvents: 6,
@@ -42,8 +42,26 @@ describe("live proof gate", () => {
     expect(formatted).toContain("PASS Event volume");
   });
 
+  it("blocks strict proof when the latest connector status is not live", async () => {
+    const { archivePath } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors");
+    const report = await buildLiveProofGateReport({
+      archivePath,
+      minEvents: 3,
+      minSourceLabels: 3
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.checks).toContainEqual(
+      expect.objectContaining({
+        name: "Live connector states",
+        ok: false,
+        detail: "latest x=degraded"
+      })
+    );
+  });
+
   it("blocks fixture-mode archives from strict final proof", async () => {
-    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], initialConnectorStatuses);
+    const { archivePath } = await createProofFixture([0, 1, 2, 3, 4, 5], finalConnectorStatuses);
     const report = await buildLiveProofGateReport({
       archivePath,
       minEvents: 6,
@@ -95,7 +113,7 @@ describe("live proof gate", () => {
   });
 
   it("requires account-qualified source labels for each strict platform", async () => {
-    const { archivePath } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors", {
+    const { archivePath } = await createProofFixture([0, 1, 2], finalConnectorStatuses, "connectors", {
       stripSourceNameForPlatforms: ["kick"]
     });
     const report = await buildLiveProofGateReport({
@@ -116,7 +134,7 @@ describe("live proof gate", () => {
   });
 
   it("can find and watch the latest archive directory", async () => {
-    const { archiveDir } = await createProofFixture([0, 1, 2], initialConnectorStatuses, "connectors");
+    const { archiveDir } = await createProofFixture([0, 1, 2], finalConnectorStatuses, "connectors");
     const report = await watchLiveProofGate({
       archiveDir,
       minEvents: 3,
@@ -159,6 +177,11 @@ describe("live proof gate", () => {
     });
   });
 });
+
+const finalConnectorStatuses = initialConnectorStatuses.map((status) => ({
+  ...status,
+  state: "live" as const
+}));
 
 async function createProofFixture(
   eventIndexes: number[],

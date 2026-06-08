@@ -168,7 +168,7 @@ async function createFinalizerFixture() {
     databaseArchive.recordEvent(event);
   }
 
-  for (const status of initialConnectorStatuses) {
+  for (const status of finalConnectorStatuses) {
     archive.recordStatus(status);
     databaseArchive.recordStatus(status);
   }
@@ -331,3 +331,8 @@ function createClipQueueExport() {
 function currentCommit() {
   return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 }
+
+const finalConnectorStatuses = initialConnectorStatuses.map((status) => ({
+  ...status,
+  state: "live" as const
+}));

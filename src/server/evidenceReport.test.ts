@@ -14,7 +14,9 @@ import {
 
 describe("evidence report", () => {
   it("validates archive and database evidence for all platforms", async () => {
-    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2, 6], "connectors");
+    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2, 6], "connectors", {
+      statuses: finalConnectorStatuses
+    });
     const report = await buildEvidenceReport({
       archivePath,
       databasePath
@@ -48,7 +50,9 @@ describe("evidence report", () => {
   });
 
   it("fails strict mode when a platform is missing", async () => {
-    const { archivePath } = await createEvidenceFixture([0, 2], "connectors");
+    const { archivePath } = await createEvidenceFixture([0, 2], "connectors", {
+      statuses: finalConnectorStatuses
+    });
     const report = await buildEvidenceReport({
       archivePath
     });
@@ -59,6 +63,7 @@ describe("evidence report", () => {
 
   it("fails strict mode when a platform has no account-qualified source label", async () => {
     const { archivePath } = await createEvidenceFixture([0, 1, 2], "connectors", {
+      statuses: finalConnectorStatuses,
       stripSourceNameForPlatforms: ["kick"]
     });
     const report = await buildEvidenceReport({
@@ -73,7 +78,9 @@ describe("evidence report", () => {
   });
 
   it("fails strict mode when the archive is fixture-mode rehearsal proof", async () => {
-    const { archivePath } = await createEvidenceFixture([0, 1, 2, 6]);
+    const { archivePath } = await createEvidenceFixture([0, 1, 2, 6], "fixture", {
+      statuses: finalConnectorStatuses
+    });
     const report = await buildEvidenceReport({
       archivePath
     });
@@ -83,7 +90,9 @@ describe("evidence report", () => {
   });
 
   it("supports partial evidence checks for smoke runs", async () => {
-    const { archivePath } = await createEvidenceFixture([5]);
+    const { archivePath } = await createEvidenceFixture([5], "fixture", {
+      statuses: finalConnectorStatuses
+    });
     const report = await buildEvidenceReport({
       archivePath,
       requireAllPlatforms: false
@@ -94,7 +103,9 @@ describe("evidence report", () => {
   });
 
   it("can check the latest session in an archive directory", async () => {
-    const { archiveDir, archivePath } = await createEvidenceFixture([0, 1, 2], "connectors");
+    const { archiveDir, archivePath } = await createEvidenceFixture([0, 1, 2], "connectors", {
+      statuses: finalConnectorStatuses
+    });
     const report = await buildEvidenceReport({
       archiveDir
     });
@@ -129,8 +140,22 @@ describe("evidence report", () => {
     expect(await readFile(outputPath, "utf8")).toBe("Evidence check: ready\n");
   });
 
+  it("fails strict mode when a latest connector status is not live", async () => {
+    const { archivePath } = await createEvidenceFixture([0, 1, 2], "connectors");
+    const report = await buildEvidenceReport({
+      archivePath
+    });
+    const formatted = formatEvidenceReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContain("latest x connector status is degraded");
+    expect(formatted).toContain("latest x connector status is degraded");
+  });
+
   it("retries when the evidence database is temporarily locked", async () => {
-    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2], "connectors");
+    const { archivePath, databasePath } = await createEvidenceFixture([0, 1, 2], "connectors", {
+      statuses: finalConnectorStatuses
+    });
     const sqliteModuleName = "node:sqlite";
     const { DatabaseSync } = await import(sqliteModuleName);
     const lock = new DatabaseSync(databasePath);
@@ -166,7 +191,7 @@ describe("evidence report", () => {
 async function createEvidenceFixture(
   eventIndexes: number[],
   mode: "fixture" | "connectors" = "fixture",
-  options: { stripSourceNameForPlatforms?: SourcePlatform[] } = {}
+  options: { statuses?: typeof initialConnectorStatuses; stripSourceNameForPlatforms?: SourcePlatform[] } = {}
 ) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "feed-evidence-"));
   const archive = new FileFeedArchive(path.join(baseDir, "feed-sessions"));
@@ -199,7 +224,7 @@ async function createEvidenceFixture(
     databaseArchive.recordEvent(archivedEvent);
   }
 
-  for (const status of initialConnectorStatuses) {
+  for (const status of options.statuses ?? initialConnectorStatuses) {
     archive.recordStatus(status);
     databaseArchive.recordStatus(status);
   }
@@ -213,3 +238,8 @@ async function createEvidenceFixture(
     databasePath
   };
 }
+
+const finalConnectorStatuses = initialConnectorStatuses.map((status) => ({
+  ...status,
+  state: "live" as const
+}));
