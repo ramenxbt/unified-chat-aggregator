@@ -70,6 +70,16 @@ const requiredFinalReadinessChecks = [
   "OBS handoff"
 ];
 
+const requiredFinalReadinessCommandChecks: Array<[label: string, pattern: RegExp]> = [
+  ["live prepare", /npm run live:prepare --/],
+  ["OBS handoff", /npm run obs:handoff --/],
+  ["Kick tunnel check", /npm run live:tunnel -- --out/],
+  ["proof gate", /npm run proof:gate --/],
+  ["submission finalize", /npm run submission:finalize --/],
+  ["submission bundle", /npm run submission:bundle --/],
+  ["final capture stack", /npm run live:stack --[^\n]*--require-ready[^\n]*--with-proof-gate/]
+];
+
 type ClipQueueSummary = {
   clipCount: number;
   sourceLabels: string[];
@@ -627,6 +637,16 @@ async function validateFinalReadinessReport(
   for (const checkName of requiredFinalReadinessChecks) {
     if (!content.includes(`PASS ${checkName}:`)) {
       issues.push(`${reportPath} is missing PASS ${checkName}; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+    }
+  }
+
+  if (!content.includes("Required final commands:")) {
+    issues.push(`${reportPath} is missing Required final commands; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
+  }
+
+  for (const [label, pattern] of requiredFinalReadinessCommandChecks) {
+    if (!pattern.test(content)) {
+      issues.push(`${reportPath} is missing final command ${label}; rerun npm run live:ready -- --out ${shellQuote(reportPath)}`);
     }
   }
 

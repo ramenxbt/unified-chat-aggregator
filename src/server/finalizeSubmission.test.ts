@@ -228,7 +228,17 @@ function createFinalReadinessProof() {
     "  PASS Final QA report: qa/final-report.json passed for the current commit.",
     "  PASS Visual QA manifest: qa/visual has current captures.",
     "  PASS Final live run sheet: qa/live-run-plan.txt is strict and current.",
-    "  PASS OBS handoff: qa/obs has browser source presets."
+    "  PASS OBS handoff: qa/obs has browser source presets.",
+    "",
+    "Required final commands:",
+    "  npm run qa:final",
+    "  npm run live:prepare -- --out qa/live-run-plan.txt",
+    "  npm run obs:handoff -- --app-port 5173 --out qa/obs",
+    "  npm run live:tunnel -- --out qa/kick-tunnel-check.txt",
+    "  npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000",
+    "  npm run submission:finalize -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt",
+    "  npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle --clips clip-queue.json --qa-dir qa --kick-tunnel-check qa/kick-tunnel-check.txt",
+    "  npm run live:stack -- --require-ready --with-proof-gate"
   ].join("\n");
 }
 

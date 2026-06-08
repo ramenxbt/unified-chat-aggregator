@@ -356,6 +356,36 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a final readiness proof without the required final commands", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-thin-readiness-commands");
+    await mkdir(qaDir, { recursive: true });
+    await writeEvidenceCheckProof(path.join(qaDir, "evidence-check.txt"));
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"), { withCommands: false });
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing Required final commands; rerun npm run live:ready -- --out qa/final-readiness.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing final command final capture stack; rerun npm run live:ready -- --out qa/final-readiness.txt"
+    );
+  });
+
   it("requires saved evidence proof for a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const qaDir = path.join(baseDir, "qa");
@@ -1052,7 +1082,10 @@ async function writeVisualQaManifest(visualQaDir: string, json: unknown = create
   await writeFile(path.join(visualQaDir, "manifest.json"), JSON.stringify(json), "utf8");
 }
 
-async function writeFinalReadinessProof(filePath: string, { commit = currentCommit(), ready = true, withChecks = true } = {}) {
+async function writeFinalReadinessProof(
+  filePath: string,
+  { commit = currentCommit(), ready = true, withChecks = true, withCommands = true } = {}
+) {
   await writeFile(
     filePath,
     [
@@ -1069,6 +1102,20 @@ async function writeFinalReadinessProof(filePath: string, { commit = currentComm
             "  PASS Visual QA manifest: qa/visual/manifest.json is current.",
             "  PASS Final live run sheet: qa/live-run-plan.txt is current.",
             "  PASS OBS handoff: qa/obs/obs-browser-sources.json matches the final run sheet."
+          ]
+        : []),
+      ...(withCommands
+        ? [
+            "",
+            "Required final commands:",
+            "  npm run qa:final",
+            "  npm run live:prepare -- --out qa/live-run-plan.txt",
+            "  npm run obs:handoff -- --app-port 5173 --out qa/obs",
+            "  npm run live:tunnel -- --out qa/kick-tunnel-check.txt",
+            `  ${defaultProofGateCommand()}`,
+            `  ${defaultSubmissionFinalizeCommand()}`,
+            `  ${defaultSubmissionBundleCommand()}`,
+            "  npm run live:stack -- --require-ready --with-proof-gate"
           ]
         : [])
     ].join("\n"),
