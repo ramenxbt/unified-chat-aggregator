@@ -341,6 +341,8 @@ async function validateLiveRunPlan(
   const commit = extractLiveRunPlanCommit(liveRunPlan);
   const expectedObsAllSourcesUrl = extractLiveRunPlanObsAllSourcesUrl(liveRunPlan);
   const expectedProofGateCommand = extractLiveRunPlanProofGateCommand(liveRunPlan);
+  const expectedEvidenceCheckCommand = extractLiveRunPlanEvidenceCheckCommand(liveRunPlan);
+  const expectedSubmissionBundleCommand = extractLiveRunPlanSubmissionBundleCommand(liveRunPlan);
 
   if (isPartialLiveRunPlan(liveRunPlan)) {
     issues.push(
@@ -364,6 +366,14 @@ async function validateLiveRunPlan(
     issues.push("qa/live-run-plan.txt is missing the live proof gate command; rerun live:prepare -- --out qa/live-run-plan.txt");
   }
 
+  if (!expectedEvidenceCheckCommand) {
+    issues.push("qa/live-run-plan.txt is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
+  if (!expectedSubmissionBundleCommand) {
+    issues.push("qa/live-run-plan.txt is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt");
+  }
+
   return {
     issues,
     expectedObsAllSourcesUrl
@@ -380,6 +390,14 @@ function extractLiveRunPlanObsAllSourcesUrl(content: string) {
 
 function extractLiveRunPlanProofGateCommand(content: string) {
   return content.match(/^\s*live proof gate:\s*(.+)$/m)?.[1];
+}
+
+function extractLiveRunPlanEvidenceCheckCommand(content: string) {
+  return content.match(/^\s*evidence check:\s*(.+)$/m)?.[1];
+}
+
+function extractLiveRunPlanSubmissionBundleCommand(content: string) {
+  return content.match(/^\s*submission bundle:\s*(.+)$/m)?.[1];
 }
 
 function isPartialLiveRunPlan(content: string) {

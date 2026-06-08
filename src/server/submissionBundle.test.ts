@@ -275,6 +275,38 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a live run sheet without evidence packaging commands in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-evidence-commands");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(liveRunPlanDir, "live-run-plan.txt"),
+      createLiveRunPlan("Live preflight: ready\n", currentCommit(), undefined, defaultProofGateCommand(), null, null),
+      "utf8"
+    );
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: liveRunPlanDir,
+      liveRunPlanDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+  });
+
   it("flags a dirty-worktree final QA report in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
@@ -471,7 +503,9 @@ function createLiveRunPlan(
   body = "Live preflight: ready\n",
   commit = currentCommit(),
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
-  proofGateCommand: string | null = defaultProofGateCommand()
+  proofGateCommand: string | null = defaultProofGateCommand(),
+  evidenceCheckCommand: string | null = defaultEvidenceCheckCommand(),
+  submissionBundleCommand: string | null = defaultSubmissionBundleCommand()
 ) {
   const lines = [
     "Live run sheet:",
@@ -489,11 +523,29 @@ function createLiveRunPlan(
     lines.push("", "Evidence outputs:", `  live proof gate: ${proofGateCommand}`);
   }
 
+  if (evidenceCheckCommand) {
+    if (!proofGateCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  evidence check: ${evidenceCheckCommand}`);
+  }
+
+  if (submissionBundleCommand) {
+    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  submission bundle: ${submissionBundleCommand}`);
+  }
+
   return lines.join("\n");
 }
 
 function defaultProofGateCommand() {
   return "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
+}
+
+function defaultEvidenceCheckCommand() {
+  return "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
+}
+
+function defaultSubmissionBundleCommand() {
+  return "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle";
 }
 
 async function writeObsHandoff(obsHandoffDir: string, json: unknown = createObsHandoffJson()) {

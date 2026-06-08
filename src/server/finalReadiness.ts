@@ -41,7 +41,11 @@ export async function buildFinalReadinessReport(
     path.join(qaDir, "live-run-plan.txt"),
     repo.commit,
     plan.urls.obsAllSources,
-    plan.evidence.proofGateCommand
+    {
+      proofGate: plan.evidence.proofGateCommand,
+      evidenceCheck: plan.evidence.evidenceCheckCommand,
+      submissionBundle: plan.evidence.submissionBundleCommand
+    }
   );
   const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl, repo.commit);
   const checks = [
@@ -132,13 +136,15 @@ async function checkLiveRunPlan(
   runSheetPath: string,
   currentCommit: string | null,
   currentObsAllSourcesUrl: string,
-  currentProofGateCommand: string
+  currentEvidenceCommands: { proofGate: string; evidenceCheck: string; submissionBundle: string }
 ): Promise<LiveRunPlanReadinessCheck> {
   try {
     const content = await readFile(runSheetPath, "utf8");
     const commit = content.match(/^commit:\s*(\S+)/m)?.[1] ?? null;
     const expectedObsAllSourcesUrl = content.match(/^\s*OBS all sources:\s*(\S+)/m)?.[1];
-    const expectedProofGateCommand = content.match(/^\s*live proof gate:\s*(.+)$/m)?.[1];
+    const expectedProofGateCommand = extractRunSheetCommand(content, "live proof gate");
+    const expectedEvidenceCheckCommand = extractRunSheetCommand(content, "evidence check");
+    const expectedSubmissionBundleCommand = extractRunSheetCommand(content, "submission bundle");
 
     if (content.includes("--allow-partial") || content.includes("Platform requirement: at least one live connector")) {
       return {
@@ -190,11 +196,47 @@ async function checkLiveRunPlan(
       };
     }
 
-    if (expectedProofGateCommand !== currentProofGateCommand) {
+    if (expectedProofGateCommand !== currentEvidenceCommands.proofGate) {
       return {
         name: "Final live run sheet",
         state: "setup",
         detail: `${runSheetPath} proof gate command does not match current live:ready thresholds.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (!expectedEvidenceCheckCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the evidence check command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (expectedEvidenceCheckCommand !== currentEvidenceCommands.evidenceCheck) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} evidence check command does not match current live:ready evidence paths.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (!expectedSubmissionBundleCommand) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the submission bundle command; rerun live:prepare -- --out qa/live-run-plan.txt.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
+    if (expectedSubmissionBundleCommand !== currentEvidenceCommands.submissionBundle) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} submission bundle command does not match current live:ready evidence paths.`,
         expectedObsAllSourcesUrl
       };
     }
@@ -212,6 +254,14 @@ async function checkLiveRunPlan(
       detail: `${runSheetPath} is missing; run npm run live:prepare -- --out qa/live-run-plan.txt.`
     };
   }
+}
+
+function extractRunSheetCommand(content: string, label: string) {
+  return content.match(new RegExp(`^\\s*${escapeRegExp(label)}:\\s*(.+)$`, "m"))?.[1];
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function checkObsHandoff(

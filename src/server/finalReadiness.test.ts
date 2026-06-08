@@ -25,6 +25,9 @@ const completeEnv: LivePreflightEnv = {
 
 const defaultProofGateCommand =
   "npm run proof:gate -- --archive-dir data/feed-sessions --watch --min-events 25 --min-source-labels 3 --max-p95-latency-ms 5000 --timeout-ms 120000 --interval-ms 1000";
+const defaultEvidenceCheckCommand = "npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite";
+const defaultSubmissionBundleCommand =
+  "npm run submission:bundle -- --archive-dir data/feed-sessions --db data/feed.sqlite --out submission-bundle";
 
 describe("final recording readiness", () => {
   it("passes when strict connectors and final artifacts are current", async () => {
@@ -121,6 +124,26 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("proof gate command does not match current live:ready thresholds");
   });
 
+  it("fails when the final run sheet is missing evidence packaging commands", async () => {
+    const qaDir = await createReadyQaDir({ evidenceCheckCommand: null, submissionBundleCommand: null });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("is missing the evidence check command");
+  });
+
+  it("fails when the final run sheet evidence commands do not match current paths", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir, databasePath: "data/final.sqlite" });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("evidence check command does not match current live:ready evidence paths");
+  });
+
   it("fails when OBS handoff URLs do not match the final run sheet", async () => {
     const qaDir = await createReadyQaDir({
       obsAllSourcesUrl: "http://127.0.0.1:5260/?obs=1&sources=twitch,kick,x&limit=14"
@@ -148,6 +171,8 @@ async function createReadyQaDir({
   obsAllSourcesUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   obsHandoffUrl = "http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14",
   proofGateCommand = defaultProofGateCommand,
+  evidenceCheckCommand = defaultEvidenceCheckCommand,
+  submissionBundleCommand = defaultSubmissionBundleCommand,
   obsHandoffCommit = currentCommit(),
   runSheetCommit = currentCommit(),
   withObsHandoff = true
@@ -155,6 +180,8 @@ async function createReadyQaDir({
   obsAllSourcesUrl?: string | null;
   obsHandoffUrl?: string;
   proofGateCommand?: string | null;
+  evidenceCheckCommand?: string | null;
+  submissionBundleCommand?: string | null;
   obsHandoffCommit?: string;
   runSheetCommit?: string;
   withObsHandoff?: boolean;
@@ -162,7 +189,11 @@ async function createReadyQaDir({
   const qaDir = await mkdtemp(path.join(os.tmpdir(), "final-readiness-"));
 
   await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
-  await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(runSheetCommit, obsAllSourcesUrl, proofGateCommand), "utf8");
+  await writeFile(
+    path.join(qaDir, "live-run-plan.txt"),
+    createLiveRunPlan(runSheetCommit, obsAllSourcesUrl, proofGateCommand, evidenceCheckCommand, submissionBundleCommand),
+    "utf8"
+  );
 
   if (withObsHandoff) {
     await writeObsHandoff(path.join(qaDir, "obs"), obsHandoffCommit, obsHandoffUrl);
@@ -181,7 +212,13 @@ function createFinalQaReport() {
   };
 }
 
-function createLiveRunPlan(commit: string, obsAllSourcesUrl: string | null, proofGateCommand: string | null) {
+function createLiveRunPlan(
+  commit: string,
+  obsAllSourcesUrl: string | null,
+  proofGateCommand: string | null,
+  evidenceCheckCommand: string | null,
+  submissionBundleCommand: string | null
+) {
   const lines = [
     "Live run sheet:",
     "generated at: 2026-06-08T00:00:00.000Z",
@@ -197,6 +234,16 @@ function createLiveRunPlan(commit: string, obsAllSourcesUrl: string | null, proo
 
   if (proofGateCommand) {
     lines.push("", "Evidence outputs:", `  live proof gate: ${proofGateCommand}`);
+  }
+
+  if (evidenceCheckCommand) {
+    if (!proofGateCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  evidence check: ${evidenceCheckCommand}`);
+  }
+
+  if (submissionBundleCommand) {
+    if (!proofGateCommand && !evidenceCheckCommand) lines.push("", "Evidence outputs:");
+    lines.push(`  submission bundle: ${submissionBundleCommand}`);
   }
 
   return lines.join("\n");
