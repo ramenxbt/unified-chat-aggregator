@@ -43,7 +43,7 @@ The app should support a clean recording workflow:
 
 1. Open the dashboard.
 2. Start recording.
-3. Toggle submission mode to hide operator rails.
+3. Use the OBS route at `/?obs=1` for the clean capture layout without operator rails.
 4. Let the live or fixture feed run.
 5. Export recording JSON for proof/replay.
 6. Capture a screen recording for the challenge submission.

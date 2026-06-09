@@ -96,6 +96,7 @@ npm run build
 
 ## Docs
 
+- [User Guide](docs/user-guide.md) for the full walkthrough: every control, going live, and OBS setup
 - [Operations Reference](docs/operations.md) for every live-run, proof, and archive command
 - [Submission Runbook](docs/submission-runbook.md) for the stream-day checklist
 - [Architecture Plan](docs/architecture-plan.md)
