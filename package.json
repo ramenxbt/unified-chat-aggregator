@@ -18,6 +18,7 @@
     "proof:gate": "tsx src/server/liveProofGate.ts",
     "submission:bundle": "tsx src/server/submissionBundle.ts",
     "submission:finalize": "tsx src/server/finalizeSubmission.ts",
+    "ui:handoff": "tsx scripts/createUiHandoff.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "qa:rehearsal": "tsx scripts/rehearseLiveStack.ts",

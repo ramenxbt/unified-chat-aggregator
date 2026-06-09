@@ -191,3 +191,9 @@ The connector rehearsal runs the real feed server against local Twitch EventSub,
 - [Storage Schema](docs/storage-schema.sql)
 - [Submission Runbook](docs/submission-runbook.md)
 - [Winning Strategy](docs/winning-strategy.md)
+
+Generate a current UI polish packet with repo metadata, target files, required test commands, visual proof paths, and live-only blockers:
+
+```bash
+npm run ui:handoff
+```
