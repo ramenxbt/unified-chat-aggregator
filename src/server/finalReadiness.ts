@@ -552,6 +552,15 @@ async function checkLiveRunPlan(
       };
     }
 
+    if (!content.includes("Proof signal checklist:")) {
+      return {
+        name: "Final live run sheet",
+        state: "setup",
+        detail: `${runSheetPath} is missing the proof signal checklist; rerun live:prepare -- --out ${shellQuote(runSheetPath)}.`,
+        expectedObsAllSourcesUrl
+      };
+    }
+
     return {
       name: "Final live run sheet",
       state: "ready",

@@ -350,6 +350,16 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("is missing the evidence check command");
   });
 
+  it("fails when the final run sheet is missing the proof signal checklist", async () => {
+    const qaDir = await createReadyQaDir({ includeProofSignalChecklist: false });
+    const report = await buildFinalReadinessReport(completeEnv, { qaDir });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Final live run sheet");
+    expect(formatted).toContain("is missing the proof signal checklist");
+  });
+
   it("fails when the final run sheet evidence commands do not match current paths", async () => {
     const qaDir = await createReadyQaDir({
       feedCommand: "FEED_SERVER_PORT=8787 FEED_DB_PATH=data/final.sqlite FEED_ARCHIVE_DIR=data/feed-sessions npm run feed"
@@ -398,6 +408,7 @@ async function createReadyQaDir({
   obsHandoffCommit = currentCommit(),
   visualQaCommit = currentCommit(),
   runSheetCommit = currentCommit(),
+  includeProofSignalChecklist = true,
   withObsHandoff = true,
   withVisualQaManifest = true
 }: {
@@ -412,6 +423,7 @@ async function createReadyQaDir({
   obsHandoffCommit?: string;
   visualQaCommit?: string;
   runSheetCommit?: string;
+  includeProofSignalChecklist?: boolean;
   withObsHandoff?: boolean;
   withVisualQaManifest?: boolean;
 } = {}) {
@@ -434,7 +446,8 @@ async function createReadyQaDir({
       proofGateCommand,
       resolvedEvidenceCheckCommand,
       resolvedSubmissionFinalizeCommand,
-      resolvedSubmissionBundleCommand
+      resolvedSubmissionBundleCommand,
+      { includeProofSignalChecklist }
     ),
     "utf8"
   );
@@ -498,8 +511,10 @@ function createLiveRunPlan(
   proofGateCommand: string | null,
   evidenceCheckCommand: string | null,
   submissionFinalizeCommand: string | null,
-  submissionBundleCommand: string | null
+  submissionBundleCommand: string | null,
+  options: { includeProofSignalChecklist?: boolean } = {}
 ) {
+  const includeProofSignalChecklist = options.includeProofSignalChecklist ?? true;
   const lines = [
     "Live run sheet:",
     "generated at: 2026-06-08T00:00:00.000Z",
@@ -513,6 +528,17 @@ function createLiveRunPlan(
     lines.push("", "Final run commands:");
     if (feedCommand) lines.push(`  feed: ${feedCommand}`);
     if (dashboardCommand) lines.push(`  dashboard: ${dashboardCommand}`);
+  }
+
+  if (includeProofSignalChecklist) {
+    lines.push(
+      "",
+      "Proof signal checklist:",
+      "  wait for at least 25 archived events and 3 source labels before final recording",
+      "  confirm one Twitch chat event from the target channel",
+      "  confirm one Kick chat event through the public webhook tunnel",
+      "  confirm one X event matching X_FILTER_RULES or X_SPACES_QUERY"
+    );
   }
 
   if (obsAllSourcesUrl) {
