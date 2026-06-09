@@ -10,6 +10,7 @@ import { resolveArchivePath } from "./feedArchiveLookup";
 import { clipItemSchema } from "../domain/clipQueue";
 import { formatPlatformSourceLabel } from "../domain/unifiedEvent";
 import { readOptionalArgValue } from "./liveCliArgs";
+import { checkCurrentRepoHygiene, checkFinalQaFreshness } from "./finalQaFreshness";
 import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type SubmissionBundleOptions = {
@@ -583,14 +584,31 @@ async function validateFinalQaReport(
       issues.push(`${reportPath} status is ${report.status ?? "unknown"}; rerun npm run qa:final and resolve failures`);
     }
 
-    if (report.repo?.commit && repo.commit && report.repo.commit !== repo.commit) {
+    if (report.repo?.trackedFilesClean !== true) {
+      issues.push(`${reportPath} was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final`);
+    }
+
+    const freshness = repo.commit ? checkFinalQaFreshness(report.repo?.commit, repo.commit, runGit) : null;
+
+    if (freshness?.state === "unknown") {
       issues.push(
-        `${reportPath} was generated for commit ${report.repo.commit}, but current commit is ${repo.commit}; rerun npm run qa:final`
+        `${reportPath} was generated for commit ${report.repo?.commit ?? "unknown"}, but current commit is ${repo.commit}; rerun npm run qa:final`
       );
     }
 
-    if (report.repo?.trackedFilesClean !== true) {
-      issues.push(`${reportPath} was generated with dirty tracked files; commit or revert changes, then rerun npm run qa:final`);
+    if (freshness?.state === "stale") {
+      const changedFiles = freshness.changedFiles.slice(0, 3).join(", ");
+      issues.push(
+        `${reportPath} was generated for commit ${report.repo?.commit ?? "unknown"}, but final-QA-relevant files changed before current commit ${repo.commit}: ${changedFiles}; rerun npm run qa:final`
+      );
+    }
+
+    if (freshness?.state === "unchanged") {
+      const hygiene = checkCurrentRepoHygiene();
+
+      if (!hygiene.ok) {
+        issues.push(`${reportPath} is older than the current commit and current repo hygiene failed: ${hygiene.issues.join("; ")}`);
+      }
     }
   } catch {
     issues.push(`${reportPath} could not be parsed; rerun npm run qa:final before creating the final bundle`);

@@ -28,10 +28,13 @@ const fixtureValues = new Set([
   "",
   "access-token",
   "file-client",
+  "kick-access-live-123",
   "kick-token",
   "token-value",
   "tw-client",
   "tw-token",
+  "twitch-access-live-123",
+  "x-bearer-live-123",
   "x-token",
   "your-token-here"
 ]);
@@ -110,9 +113,9 @@ function findSecretIssues(filePath: string, lineNumber: number, line: string): F
 }
 
 function extractAssignedValue(line: string, key: string) {
-  const assignmentMatch = line.match(new RegExp(`\\b${key}\\s*=\\s*([^\\s#]+)`));
+  const assignmentMatch = line.match(new RegExp(`\\b${key}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^"'\\s#,\\)\\]]+))`));
   const objectMatch = line.match(new RegExp(`\\b${key}\\s*:\\s*["']([^"']*)["']`));
-  const value = assignmentMatch?.[1] ?? objectMatch?.[1];
+  const value = assignmentMatch?.[1] ?? assignmentMatch?.[2] ?? assignmentMatch?.[3] ?? objectMatch?.[1];
 
   if (value === undefined) {
     return null;

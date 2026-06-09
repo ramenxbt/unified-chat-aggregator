@@ -7,6 +7,7 @@ import { parseLiveRunCliArgs, readOptionalArgValue } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import { formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
+import { checkCurrentRepoHygiene, checkFinalQaFreshness } from "./finalQaFreshness";
 import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type FinalReadinessCheck = {
@@ -232,7 +233,17 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
       };
     }
 
-    if (currentCommit && report.repo?.commit !== currentCommit) {
+    if (report.repo?.trackedFilesClean !== true) {
+      return {
+        name: "Final QA report",
+        state: "setup",
+        detail: `${reportPath} was generated with dirty tracked files.`
+      };
+    }
+
+    const freshness = currentCommit ? checkFinalQaFreshness(report.repo?.commit, currentCommit, runGit) : null;
+
+    if (freshness?.state === "unknown") {
       return {
         name: "Final QA report",
         state: "setup",
@@ -240,11 +251,31 @@ async function checkFinalQaReport(reportPath: string, currentCommit: string | nu
       };
     }
 
-    if (report.repo?.trackedFilesClean !== true) {
+    if (freshness?.state === "stale") {
+      const changedFiles = freshness.changedFiles.slice(0, 3).join(", ");
+
       return {
         name: "Final QA report",
         state: "setup",
-        detail: `${reportPath} was generated with dirty tracked files.`
+        detail: `${reportPath} was generated for commit ${report.repo?.commit ?? "unknown"}, but final-QA-relevant files changed before current commit ${currentCommit}: ${changedFiles}.`
+      };
+    }
+
+    if (freshness?.state === "unchanged") {
+      const hygiene = checkCurrentRepoHygiene();
+
+      if (!hygiene.ok) {
+        return {
+          name: "Final QA report",
+          state: "setup",
+          detail: `Current repo hygiene changed after ${reportPath}: ${hygiene.issues.join("; ")}.`
+        };
+      }
+
+      return {
+        name: "Final QA report",
+        state: "ready",
+        detail: `${reportPath} passed for ${report.repo?.commit}; no final-QA-relevant files changed since.`
       };
     }
 
