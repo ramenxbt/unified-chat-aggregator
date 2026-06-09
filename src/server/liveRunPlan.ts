@@ -160,6 +160,12 @@ export function formatLiveRunPlan(plan: LiveRunPlan): string {
       ? plan.targetSourceLabels.map((label) => `  ${label}`)
       : ["  not configured"]),
     "",
+    "Proof signal checklist:",
+    `  wait for at least ${plan.proofGate.minEvents} archived events and ${plan.proofGate.minSourceLabels} source labels before final recording`,
+    "  confirm one Twitch chat event from the target channel",
+    "  confirm one Kick chat event through the public webhook tunnel",
+    "  confirm one X event matching X_FILTER_RULES or X_SPACES_QUERY",
+    "",
     "Open:",
     `  dashboard: ${plan.urls.dashboard}`,
     `  OBS all sources: ${plan.urls.obsAllSources}`,

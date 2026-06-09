@@ -48,6 +48,11 @@ describe("live run plan", () => {
     expect(formatted).toContain("TWITCH (MARKETBUBBLE)");
     expect(formatted).toContain("X (@MARKETBUBBLE)");
     expect(formatted).toContain("X (MARKET BUBBLE)");
+    expect(formatted).toContain("Proof signal checklist:");
+    expect(formatted).toContain("wait for at least 25 archived events and 3 source labels before final recording");
+    expect(formatted).toContain("confirm one Twitch chat event from the target channel");
+    expect(formatted).toContain("confirm one Kick chat event through the public webhook tunnel");
+    expect(formatted).toContain("confirm one X event matching X_FILTER_RULES or X_SPACES_QUERY");
     expect(formatted).toContain("http://127.0.0.1:5173/?obs=1&sources=twitch,kick,x&limit=14");
     expect(formatted).toContain("tunnel health check: npm run live:tunnel -- --out qa/kick-tunnel-check.txt");
     expect(plan.obs).toMatchObject({
