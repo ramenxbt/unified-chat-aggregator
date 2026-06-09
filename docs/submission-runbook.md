@@ -193,7 +193,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Final UI handoff checked against `docs/final-ui-handoff.md`.
 - Connector diagnostics showing Twitch, Kick, and X readiness.
 - Passing `qa/kick-tunnel-check.txt` from `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` after the capture stack starts.
-- Passing `qa/final-readiness.txt` from `npm run live:ready -- --out qa/final-readiness.txt` before opening OBS.
+- Passing `qa/final-readiness.txt` from `npm run live:ready -- --out qa/final-readiness.txt` before opening OBS, including `PASS Current repo state`.
 - Passing `qa/evidence-check.txt` from `npm run evidence:check -- --archive-dir data/feed-sessions --db data/feed.sqlite --out qa/evidence-check.txt`, including throughput and latency metrics.
 - `submission-bundle/` containing `evidence-report.txt`, `replay.json`, `replay.csv`, `submission-notes.md`, `summary.json`, and copied run/QA reports when `qa/live-run-plan.txt` or `qa/final-report.*` exists.
 - `submission-bundle/` containing copied final readiness proof from `qa/final-readiness.txt`.

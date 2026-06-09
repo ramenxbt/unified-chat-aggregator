@@ -71,6 +71,7 @@ const clipQueueExportSchema = z.object({
 });
 
 const requiredFinalReadinessChecks = [
+  "Current repo state",
   "Strict connector preflight",
   "Target source labels",
   "Final QA report",

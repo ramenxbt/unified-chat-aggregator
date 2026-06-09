@@ -252,6 +252,7 @@ function createFinalReadinessProof() {
     "Checked at: 2026-06-08T16:00:00.000Z",
     "",
     "Checks:",
+    "  PASS Current repo state: No dirty tracked files.",
     "  PASS Strict connector preflight: Twitch, Kick, and X are ready for a connector-mode capture.",
     "  PASS Target source labels: KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)",
     "  PASS Final QA report: qa/final-report.json passed for the current commit.",

@@ -356,6 +356,33 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a final readiness proof from before the current repo state gate", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const qaDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(qaDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-old-readiness");
+    await mkdir(qaDir, { recursive: true });
+    await writeEvidenceCheckProof(path.join(qaDir, "evidence-check.txt"));
+    await writeFile(path.join(qaDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFinalReadinessProof(path.join(qaDir, "final-readiness.txt"), { withCurrentRepoState: false });
+    await writeFile(path.join(qaDir, "live-run-plan.txt"), createLiveRunPlan(), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+    await writeVisualQaManifest(path.join(qaDir, "visual"));
+    await writeKickTunnelCheck(path.join(qaDir, "kick-tunnel-check.txt"));
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      qaDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/final-readiness.txt is missing PASS Current repo state; rerun npm run live:ready -- --out qa/final-readiness.txt"
+    );
+  });
+
   it("flags a final readiness proof without the required final commands", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const qaDir = path.join(baseDir, "qa");
@@ -1110,7 +1137,7 @@ async function writeVisualQaManifest(visualQaDir: string, json: unknown = create
 
 async function writeFinalReadinessProof(
   filePath: string,
-  { commit = currentCommit(), ready = true, withChecks = true, withCommands = true } = {}
+  { commit = currentCommit(), ready = true, withChecks = true, withCommands = true, withCurrentRepoState = true } = {}
 ) {
   await writeFile(
     filePath,
@@ -1122,6 +1149,7 @@ async function writeFinalReadinessProof(
         ? [
             "",
             "Checks:",
+            ...(withCurrentRepoState ? ["  PASS Current repo state: No dirty tracked files."] : []),
             "  PASS Strict connector preflight: Twitch, Kick, and X are ready for a connector-mode capture.",
             "  PASS Target source labels: KICK (MARKETBUBBLE), TWITCH (MARKETBUBBLE), X (@MARKETBUBBLE)",
             "  PASS Final QA report: qa/final-report.json is current and passed.",
