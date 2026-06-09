@@ -11,7 +11,7 @@ export type FinalizeSubmissionResult = {
   bundle: Awaited<ReturnType<typeof createSubmissionBundle>>;
 };
 
-export async function finalizeSubmission(args: string[] = []): Promise<FinalizeSubmissionResult> {
+export async function finalizeSubmission(args: string[] = [], options: { requireCleanRepo?: boolean } = {}): Promise<FinalizeSubmissionResult> {
   const parsed = parseFinalizeSubmissionCliArgs(args);
 
   if (!parsed.archivePath && !parsed.archiveDir) {
@@ -46,7 +46,8 @@ export async function finalizeSubmission(args: string[] = []): Promise<FinalizeS
     obsHandoffDir: parsed.obsHandoffDir,
     visualQaDir: parsed.visualQaDir,
     kickTunnelCheckPath: parsed.kickTunnelCheckPath,
-    clipQueuePath: parsed.clipQueuePath
+    clipQueuePath: parsed.clipQueuePath,
+    requireCleanRepo: options.requireCleanRepo
   });
 
   return {
@@ -181,7 +182,7 @@ export function parseFinalizeSubmissionCliArgs(args: string[]): ParsedFinalizeAr
 
 async function runCli() {
   try {
-    const result = await finalizeSubmission(process.argv.slice(2));
+    const result = await finalizeSubmission(process.argv.slice(2), { requireCleanRepo: true });
     console.log(result.evidenceOutput);
     console.log(`\nWrote evidence proof: ${result.evidenceOutputPath}`);
     console.log(`\n${formatSubmissionBundleResult(result.bundle)}`);

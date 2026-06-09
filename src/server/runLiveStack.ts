@@ -26,6 +26,7 @@ export type LiveStackLaunchPlan = {
 
 type RunLiveStackOptions = LiveDoctorOptions & {
   dryRun?: boolean;
+  requireCleanRepo?: boolean;
   obsHandoffDir?: string;
   qaDir?: string;
   requireReady?: boolean;
@@ -229,6 +230,9 @@ async function runCli() {
   loadLocalEnv();
 
   const options = parseLiveStackCliArgs(process.argv.slice(2));
+  if (options.requireReady) {
+    options.requireCleanRepo = true;
+  }
   const exitCode = await runLiveStack(process.env, options);
 
   process.exitCode = exitCode;

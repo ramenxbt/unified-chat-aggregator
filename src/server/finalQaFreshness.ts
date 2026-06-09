@@ -32,6 +32,7 @@ export type RepoHygieneSnapshot =
 
 type RunGit = (args: string[]) => string | null;
 type ScanRepoHygiene = () => Array<{ filePath: string; lineNumber: number; message: string }>;
+export type ReadCurrentTrackedChanges = () => string[];
 
 const finalQaRelevantMatchers: Array<(filePath: string) => boolean> = [
   (filePath) => filePath === "index.html",
@@ -107,6 +108,17 @@ export function checkCurrentRepoHygiene(scanRepoHygiene: ScanRepoHygiene = scanT
     ok: false,
     issues: findings.slice(0, 3).map((finding) => `${finding.filePath}:${finding.lineNumber} ${finding.message}`)
   };
+}
+
+export function readCurrentTrackedChanges(runGit: RunGit = defaultRunGit) {
+  const status = runGit(["status", "--short", "--untracked-files=no"]);
+
+  return status === null
+    ? ["unknown"]
+    : status
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
 }
 
 export function isFinalQaRelevantFile(filePath: string) {

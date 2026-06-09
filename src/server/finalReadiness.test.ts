@@ -58,6 +58,33 @@ describe("final recording readiness", () => {
     expect(formatted).toContain("--require-ready --with-proof-gate");
   });
 
+  it("can require a clean tracked worktree before final recording", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(completeEnv, {
+      qaDir,
+      requireCleanRepo: true,
+      currentTrackedChanges: () => []
+    });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(true);
+    expect(formatted).toContain("PASS Current repo state: No dirty tracked files.");
+  });
+
+  it("fails final recording readiness when tracked files are dirty", async () => {
+    const qaDir = await createReadyQaDir();
+    const report = await buildFinalReadinessReport(completeEnv, {
+      qaDir,
+      requireCleanRepo: true,
+      currentTrackedChanges: () => ["M src/App.tsx"]
+    });
+    const formatted = formatFinalReadinessReport(report);
+
+    expect(report.ok).toBe(false);
+    expect(formatted).toContain("MISS Current repo state");
+    expect(formatted).toContain("Commit or stash tracked changes before final recording: M src/App.tsx.");
+  });
+
   it("fails when strict connector credentials are missing", async () => {
     const qaDir = await createReadyQaDir();
     const report = await buildFinalReadinessReport(

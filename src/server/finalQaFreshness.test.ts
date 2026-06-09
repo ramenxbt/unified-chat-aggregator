@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCurrentRepoHygiene, checkFinalQaFreshness, isFinalQaRelevantFile } from "./finalQaFreshness";
+import { checkCurrentRepoHygiene, checkFinalQaFreshness, isFinalQaRelevantFile, readCurrentTrackedChanges } from "./finalQaFreshness";
 
 describe("final QA freshness", () => {
   it("treats docs-only changes as reusable", () => {
@@ -57,5 +57,11 @@ describe("final QA freshness", () => {
       ok: false,
       issues: ["README.md:12 issue one", "src/App.tsx:24 issue two"]
     });
+  });
+
+  it("reads tracked working tree changes without untracked files", () => {
+    expect(readCurrentTrackedChanges(() => " M src/App.tsx\nA  src/server/new.ts\n")).toEqual(["M src/App.tsx", "A  src/server/new.ts"]);
+    expect(readCurrentTrackedChanges(() => "")).toEqual([]);
+    expect(readCurrentTrackedChanges(() => null)).toEqual(["unknown"]);
   });
 });

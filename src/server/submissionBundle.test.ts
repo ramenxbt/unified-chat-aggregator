@@ -745,6 +745,32 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags dirty current tracked files in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const finalQaReportDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(finalQaReportDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-dirty-current-repo");
+    await mkdir(finalQaReportDir, { recursive: true });
+    await writeFile(path.join(finalQaReportDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir,
+      liveRunPlanDir: finalQaReportDir,
+      obsHandoffDir,
+      requireCleanRepo: true,
+      currentTrackedChanges: () => ["M src/App.tsx"]
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "Current tracked files are dirty; commit or stash before creating the final bundle: M src/App.tsx"
+    );
+  });
+
   it("requires OBS handoff files for a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");

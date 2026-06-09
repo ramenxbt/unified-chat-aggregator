@@ -4,6 +4,7 @@ export type LiveStackCliOptions = LiveRunPlanOptions & {
   dryRun: boolean;
   obsHandoffDir?: string;
   qaDir?: string;
+  requireCleanRepo?: boolean;
   requireReady: boolean;
   visualQaDir?: string;
   withProofGate: boolean;

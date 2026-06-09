@@ -7,7 +7,7 @@ import { parseLiveRunCliArgs, readOptionalArgValue } from "./liveCliArgs";
 import { buildLiveRunPlan, type LiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import { formatLivePreflightReport, type LivePreflightEnv } from "./livePreflight";
-import { checkCurrentRepoHygiene, checkFinalQaFreshness } from "./finalQaFreshness";
+import { checkCurrentRepoHygiene, checkFinalQaFreshness, readCurrentTrackedChanges, type ReadCurrentTrackedChanges } from "./finalQaFreshness";
 import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type FinalReadinessCheck = {
@@ -37,8 +37,10 @@ export type FinalReadinessReport = {
 };
 
 export type FinalReadinessOptions = LiveRunPlanOptions & {
+  currentTrackedChanges?: ReadCurrentTrackedChanges;
   qaDir?: string;
   obsHandoffDir?: string;
+  requireCleanRepo?: boolean;
   visualQaDir?: string;
 };
 
@@ -77,6 +79,7 @@ export async function buildFinalReadinessReport(
   );
   const obsHandoffCheck = await checkObsHandoff(obsHandoffDir, liveRunPlanCheck.expectedObsAllSourcesUrl, repo.commit);
   const checks = [
+    ...(options.requireCleanRepo ? [checkCurrentRepoState(options.currentTrackedChanges)] : []),
     {
       name: "Strict connector preflight",
       state: plan.ok ? "ready" : "setup",
@@ -98,6 +101,24 @@ export async function buildFinalReadinessReport(
     plan,
     repo,
     requiredCommands: buildRequiredCommands(plan, options, qaDir, obsHandoffDir)
+  };
+}
+
+function checkCurrentRepoState(readTrackedChanges: ReadCurrentTrackedChanges = readCurrentTrackedChanges): FinalReadinessCheck {
+  const trackedChanges = readTrackedChanges();
+
+  if (trackedChanges.length > 0) {
+    return {
+      name: "Current repo state",
+      state: "setup",
+      detail: `Commit or stash tracked changes before final recording: ${trackedChanges.slice(0, 3).join(", ")}.`
+    };
+  }
+
+  return {
+    name: "Current repo state",
+    state: "ready",
+    detail: "No dirty tracked files."
   };
 }
 
@@ -711,7 +732,10 @@ async function runCli() {
   loadLocalEnv();
 
   const options = parseFinalReadinessCliArgs(process.argv.slice(2));
-  const report = await buildFinalReadinessReport(process.env, options);
+  const report = await buildFinalReadinessReport(process.env, {
+    ...options,
+    requireCleanRepo: true
+  });
   const output = formatFinalReadinessReport(report);
 
   console.log(output);

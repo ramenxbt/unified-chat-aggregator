@@ -10,7 +10,12 @@ import { resolveArchivePath } from "./feedArchiveLookup";
 import { clipItemSchema } from "../domain/clipQueue";
 import { formatPlatformSourceLabel } from "../domain/unifiedEvent";
 import { readOptionalArgValue } from "./liveCliArgs";
-import { checkCurrentRepoHygiene, checkFinalQaFreshness } from "./finalQaFreshness";
+import {
+  checkCurrentRepoHygiene,
+  checkFinalQaFreshness,
+  readCurrentTrackedChanges,
+  type ReadCurrentTrackedChanges
+} from "./finalQaFreshness";
 import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type SubmissionBundleOptions = {
@@ -27,6 +32,8 @@ export type SubmissionBundleOptions = {
   visualQaDir?: string;
   kickTunnelCheckPath?: string;
   clipQueuePath?: string;
+  currentTrackedChanges?: ReadCurrentTrackedChanges;
+  requireCleanRepo?: boolean;
 };
 
 export type SubmissionBundleResult = {
@@ -111,6 +118,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   const clipQueueValidation = await validateClipQueue(clipQueue);
   const requireAllPlatforms = options.requireAllPlatforms ?? true;
   const artifactIssues = [
+    ...(requireAllPlatforms && options.requireCleanRepo ? validateCurrentRepoState(options.currentTrackedChanges) : []),
     ...(await validateCopiedArtifacts(
       evidenceCheckReport,
       finalQaReports,
@@ -194,6 +202,14 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     evidence,
     artifactIssues
   };
+}
+
+function validateCurrentRepoState(readTrackedChanges: ReadCurrentTrackedChanges = readCurrentTrackedChanges) {
+  const trackedChanges = readTrackedChanges();
+
+  return trackedChanges.length > 0
+    ? [`Current tracked files are dirty; commit or stash before creating the final bundle: ${trackedChanges.slice(0, 3).join(", ")}`]
+    : [];
 }
 
 export function formatSubmissionBundleResult(result: SubmissionBundleResult) {
@@ -989,7 +1005,8 @@ async function runCli() {
     obsHandoffDir: args.obsHandoffDir,
     visualQaDir: args.visualQaDir,
     kickTunnelCheckPath: args.kickTunnelCheckPath,
-    clipQueuePath: args.clipQueuePath
+    clipQueuePath: args.clipQueuePath,
+    requireCleanRepo: true
   });
 
   console.log(formatSubmissionBundleResult(result));
