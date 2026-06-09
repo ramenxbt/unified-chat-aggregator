@@ -9,6 +9,7 @@ import { buildEvidenceReport, formatEvidenceReport, type EvidenceReport } from "
 import { resolveArchivePath } from "./feedArchiveLookup";
 import { clipItemSchema } from "../domain/clipQueue";
 import { formatPlatformSourceLabel } from "../domain/unifiedEvent";
+import { readOptionalArgValue } from "./liveCliArgs";
 import { checkVisualQaFreshness } from "./visualQaFreshness";
 
 export type SubmissionBundleOptions = {
@@ -1005,62 +1006,92 @@ function parseArgs(args: string[]): ParsedArgs {
     const arg = args[index];
 
     if (arg === "--archive") {
-      parsed.archivePath = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archivePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--archive-dir") {
-      parsed.archiveDir = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archiveDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--db") {
-      parsed.databasePath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.databasePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--out") {
-      parsed.outputDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outputDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--qa-dir") {
-      parsed.qaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.qaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--evidence-check" || arg === "--evidence-out") {
-      parsed.evidenceCheckPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.evidenceCheckPath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--obs-handoff-dir") {
-      parsed.obsHandoffDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.obsHandoffDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--visual-qa-dir") {
-      parsed.visualQaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.visualQaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--kick-tunnel-check") {
-      parsed.kickTunnelCheckPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.kickTunnelCheckPath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--clips") {
-      parsed.clipQueuePath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.clipQueuePath = value;
+        index += 1;
+      }
       continue;
     }
 

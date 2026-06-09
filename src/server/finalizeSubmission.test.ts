@@ -46,6 +46,35 @@ describe("submission finalizer", () => {
     });
   });
 
+  it("does not consume the next flag when a finalization option value is omitted", () => {
+    expect(
+      parseFinalizeSubmissionCliArgs([
+        "--archive-dir",
+        "--db",
+        "data/feed.sqlite",
+        "--out",
+        "--qa-dir",
+        "qa",
+        "--evidence-out",
+        "--clips",
+        "clip-queue.json",
+        "--obs-handoff-dir",
+        "--visual-qa-dir",
+        "qa/visual",
+        "--kick-tunnel-check",
+        "--allow-partial"
+      ])
+    ).toEqual({
+      archivePath: null,
+      archiveDir: null,
+      databasePath: "data/feed.sqlite",
+      qaDir: "qa",
+      clipQueuePath: "clip-queue.json",
+      visualQaDir: "qa/visual",
+      allowPartial: true
+    });
+  });
+
   it("writes evidence proof and builds a strict submission bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createFinalizerFixture();
     const qaDir = path.join(baseDir, "qa");

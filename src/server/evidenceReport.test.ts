@@ -131,6 +131,15 @@ describe("evidence report", () => {
     });
   });
 
+  it("does not consume the next flag when an evidence option value is omitted", () => {
+    expect(parseEvidenceReportCliArgs(["--archive-dir", "--db", "data/feed.sqlite", "--out", "--allow-partial"])).toEqual({
+      archivePath: null,
+      archiveDir: null,
+      databasePath: "data/feed.sqlite",
+      allowPartial: true
+    });
+  });
+
   it("writes formatted evidence proof to disk", async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), "feed-evidence-output-"));
     const outputPath = path.join(tempDir, "qa", "evidence-check.txt");

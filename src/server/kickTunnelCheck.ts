@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadLocalEnv } from "./loadLocalEnv";
+import { readOptionalArgValue } from "./liveCliArgs";
 import type { LivePreflightEnv } from "./livePreflight";
 
 export type KickTunnelCheck = {
@@ -181,17 +182,23 @@ function parseArgs(args: string[]) {
     const arg = args[index];
 
     if (arg === "--out" || arg === "--output") {
-      parsed.outputPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outputPath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--timeout-ms") {
-      const timeoutMs = Number(args[index + 1]);
-      if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
-        parsed.timeoutMs = timeoutMs;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        const timeoutMs = Number(value);
+        if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+          parsed.timeoutMs = timeoutMs;
+        }
+        index += 1;
       }
-      index += 1;
       continue;
     }
   }

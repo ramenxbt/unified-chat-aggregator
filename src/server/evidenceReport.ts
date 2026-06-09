@@ -11,6 +11,7 @@ import {
   type UnifiedEvent
 } from "../domain/unifiedEvent";
 import { resolveArchivePath } from "./feedArchiveLookup";
+import { readOptionalArgValue } from "./liveCliArgs";
 
 const archiveManifestSchema = z.object({
   sessionId: z.string(),
@@ -499,26 +500,38 @@ export function parseEvidenceReportCliArgs(args: string[]): ParsedArgs {
     const arg = args[index];
 
     if (arg === "--archive") {
-      parsed.archivePath = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archivePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--archive-dir") {
-      parsed.archiveDir = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archiveDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--db") {
-      parsed.databasePath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.databasePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--out" || arg === "--output") {
-      parsed.outputPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outputPath = value;
+        index += 1;
+      }
       continue;
     }
 

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { recordingEventsToCsv, recordingExportSchema, type RecordingExport } from "../domain/recording";
 import { unifiedEventSchema } from "../domain/unifiedEvent";
 import { resolveArchivePath } from "./feedArchiveLookup";
+import { readOptionalArgValue } from "./liveCliArgs";
 
 const archiveManifestSchema = z.object({
   sessionId: z.string(),
@@ -90,20 +91,29 @@ function parseArgs(args: string[]): ParsedArgs {
     const arg = args[index];
 
     if (arg === "--format") {
-      parsed.format = parseFormat(args[index + 1]);
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.format = parseFormat(value);
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--archive-dir") {
-      parsed.archiveDir = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archiveDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--out") {
-      parsed.outPath = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outPath = value;
+        index += 1;
+      }
       continue;
     }
 

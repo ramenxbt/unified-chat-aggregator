@@ -2,6 +2,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { buildEvidenceReport, formatEvidenceReport, writeEvidenceReportProof } from "./evidenceReport";
+import { readOptionalArgValue } from "./liveCliArgs";
 import { createSubmissionBundle, formatSubmissionBundleResult } from "./submissionBundle";
 
 export type FinalizeSubmissionResult = {
@@ -80,62 +81,92 @@ export function parseFinalizeSubmissionCliArgs(args: string[]): ParsedFinalizeAr
     const arg = args[index];
 
     if (arg === "--archive") {
-      parsed.archivePath = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archivePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--archive-dir") {
-      parsed.archiveDir = args[index + 1] ?? null;
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.archiveDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--db" || arg === "--database-path") {
-      parsed.databasePath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.databasePath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--out") {
-      parsed.outputDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.outputDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--qa-dir") {
-      parsed.qaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.qaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--evidence-out") {
-      parsed.evidenceOutputPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.evidenceOutputPath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--obs-handoff-dir") {
-      parsed.obsHandoffDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.obsHandoffDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--visual-qa-dir") {
-      parsed.visualQaDir = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.visualQaDir = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--kick-tunnel-check") {
-      parsed.kickTunnelCheckPath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.kickTunnelCheckPath = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg === "--clips") {
-      parsed.clipQueuePath = args[index + 1];
-      index += 1;
+      const value = readOptionalArgValue(args, index);
+      if (value !== undefined) {
+        parsed.clipQueuePath = value;
+        index += 1;
+      }
       continue;
     }
 
