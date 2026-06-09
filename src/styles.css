@@ -1544,6 +1544,113 @@ button {
   color: var(--soft);
 }
 
+/* ---- Finish: selection, focus, hover, scroll ---- */
+
+::selection {
+  background: rgba(229, 196, 107, 0.26);
+  color: #fff;
+}
+
+/* Keyboard focus rings for operators navigating without a pointer. Inset so the
+   ring is never clipped by overflow:hidden containers (clip/session cards) and
+   never overlaps neighbors. Inherits the row's platform --accent when present. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, var(--gold)), transparent 28%);
+}
+
+/* The search field shows its focus on the wrapper, not the bare input. */
+.search-box:focus-within {
+  border-color: color-mix(in srgb, var(--gold), transparent 54%);
+  box-shadow: 0 0 0 3px rgba(229, 196, 107, 0.12);
+}
+
+.search-box input:focus-visible {
+  box-shadow: none;
+}
+
+/* Smooth the remaining interactive surfaces to match the easing already used by
+   source/mode/icon/account controls, so every hover feels uniform. */
+.event-row,
+.review-item,
+.inline-action,
+.clip-select,
+.clip-remove,
+.session-load,
+.session-delete,
+.mini-copy-button,
+.live-button,
+.order-button {
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+
+/* The feed-order and jump-live controls had no resting hover affordance. */
+.live-button:not(:disabled):hover,
+.order-button:not(:disabled):hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+/* Thin, dark scrollbars in the scrolling regions; default chrome looks foreign
+   against the panel. Tracks stay transparent so the OBS overlay is unaffected. */
+.event-list,
+.detail-rail,
+.proof-strip,
+.feed-toolbar,
+.setup-checklist pre,
+.raw-block code {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.event-list::-webkit-scrollbar,
+.detail-rail::-webkit-scrollbar,
+.proof-strip::-webkit-scrollbar,
+.feed-toolbar::-webkit-scrollbar,
+.setup-checklist pre::-webkit-scrollbar,
+.raw-block code::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.event-list::-webkit-scrollbar-track,
+.detail-rail::-webkit-scrollbar-track,
+.proof-strip::-webkit-scrollbar-track,
+.feed-toolbar::-webkit-scrollbar-track,
+.setup-checklist pre::-webkit-scrollbar-track,
+.raw-block code::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.event-list::-webkit-scrollbar-thumb,
+.detail-rail::-webkit-scrollbar-thumb,
+.proof-strip::-webkit-scrollbar-thumb,
+.feed-toolbar::-webkit-scrollbar-thumb,
+.setup-checklist pre::-webkit-scrollbar-thumb,
+.raw-block code::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.14);
+  background-clip: padding-box;
+}
+
+.event-list::-webkit-scrollbar-thumb:hover,
+.detail-rail::-webkit-scrollbar-thumb:hover,
+.proof-strip::-webkit-scrollbar-thumb:hover,
+.feed-toolbar::-webkit-scrollbar-thumb:hover,
+.setup-checklist pre::-webkit-scrollbar-thumb:hover,
+.raw-block code::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.26);
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 248px minmax(0, 1fr);
@@ -1654,5 +1761,17 @@ button {
 
   .signal-score {
     display: none;
+  }
+}
+
+/* Respect operators who prefer reduced motion: keep state changes instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }
