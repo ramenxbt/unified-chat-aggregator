@@ -120,8 +120,11 @@ export class LiveFeedRuntime {
       clearInterval(this.heartbeatInterval);
     }
 
-    await Promise.all(this.connectors.map((connector) => connector.stop()));
+    // Close the archive before stopping connectors. Connector stop() emits
+    // "stopped" health samples; archiving them would leave the session's
+    // latest statuses non-live, which strict evidence proof rejects.
     await this.options.archive?.stop(new Date().toISOString());
+    await Promise.all(this.connectors.map((connector) => connector.stop()));
 
     await new Promise<void>((resolve, reject) => {
       this.wss.close((error) => {
