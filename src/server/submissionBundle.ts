@@ -754,6 +754,10 @@ async function validateLiveRunPlan(
     issues.push(`${runSheetPath} is missing the submission bundle command; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
   }
 
+  if (!liveRunPlan.includes("Proof signal checklist:")) {
+    issues.push(`${runSheetPath} is missing the proof signal checklist; rerun live:prepare -- --out ${shellQuote(runSheetPath)}`);
+  }
+
   return {
     issues,
     expectedObsAllSourcesUrl

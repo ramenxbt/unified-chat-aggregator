@@ -748,6 +748,46 @@ describe("submission bundle", () => {
     );
   });
 
+  it("flags a live run sheet without the proof signal checklist in a strict final bundle", async () => {
+    const { archiveDir, databasePath, baseDir } = await createBundleFixture();
+    const liveRunPlanDir = path.join(baseDir, "qa");
+    const obsHandoffDir = path.join(liveRunPlanDir, "obs");
+    const outputDir = path.join(baseDir, "bundle-missing-proof-signal-checklist");
+    await mkdir(liveRunPlanDir, { recursive: true });
+    await writeFile(path.join(liveRunPlanDir, "final-report.json"), JSON.stringify(createFinalQaReport()), "utf8");
+    await writeFile(
+      path.join(liveRunPlanDir, "live-run-plan.txt"),
+      createLiveRunPlan(
+        "Live preflight: ready\n",
+        currentCommit(),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { includeProofSignalChecklist: false }
+      ),
+      "utf8"
+    );
+    await writeObsHandoff(obsHandoffDir);
+
+    const result = await createSubmissionBundle({
+      archiveDir,
+      databasePath,
+      outputDir,
+      finalQaReportDir: liveRunPlanDir,
+      liveRunPlanDir,
+      obsHandoffDir
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.artifactIssues).toContain(
+      "qa/live-run-plan.txt is missing the proof signal checklist; rerun live:prepare -- --out qa/live-run-plan.txt"
+    );
+  });
+
   it("flags a dirty-worktree final QA report in a strict final bundle", async () => {
     const { archiveDir, databasePath, baseDir } = await createBundleFixture();
     const finalQaReportDir = path.join(baseDir, "qa");
@@ -1055,8 +1095,10 @@ function createLiveRunPlan(
   submissionBundleCommand: string | null = defaultSubmissionBundleCommand(),
   feedCommand: string | null = defaultFeedCommand(),
   dashboardCommand: string | null = defaultDashboardCommand(),
-  submissionFinalizeCommand: string | null = defaultSubmissionFinalizeCommand()
+  submissionFinalizeCommand: string | null = defaultSubmissionFinalizeCommand(),
+  options: { includeProofSignalChecklist?: boolean } = {}
 ) {
+  const includeProofSignalChecklist = options.includeProofSignalChecklist ?? true;
   const lines = [
     "Live run sheet:",
     "generated at: 2026-06-08T00:00:00.000Z",
@@ -1073,6 +1115,17 @@ function createLiveRunPlan(
     lines.push("", "Final run commands:");
     if (feedCommand) lines.push(`  feed: ${feedCommand}`);
     if (dashboardCommand) lines.push(`  dashboard: ${dashboardCommand}`);
+  }
+
+  if (includeProofSignalChecklist) {
+    lines.push(
+      "",
+      "Proof signal checklist:",
+      "  wait for at least 25 archived events and 3 source labels before final recording",
+      "  confirm one Twitch chat event from the target channel",
+      "  confirm one Kick chat event through the public webhook tunnel",
+      "  confirm one X event matching X_FILTER_RULES or X_SPACES_QUERY"
+    );
   }
 
   if (proofGateCommand) {
