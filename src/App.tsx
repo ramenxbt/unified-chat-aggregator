@@ -54,6 +54,7 @@ import {
 } from "./domain/sessionArchive";
 import { readClipQueue, writeClipQueue, type ClipItem } from "./domain/clipQueue";
 import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
+import { PlatformGlyph } from "./PlatformGlyph";
 
 const platforms: SourcePlatform[] = ["twitch", "kick", "x"];
 
@@ -62,6 +63,16 @@ const platformAccent: Record<SourcePlatform, string> = {
   kick: "#67e85f",
   x: "#e8ecef"
 };
+
+type InspectorTab = "proof" | "inspect" | "sources" | "clips" | "setup";
+
+const inspectorTabs: Array<{ key: InspectorTab; label: string }> = [
+  { key: "proof", label: "Status" },
+  { key: "inspect", label: "Details" },
+  { key: "sources", label: "Accounts" },
+  { key: "clips", label: "Clips" },
+  { key: "setup", label: "Setup" }
+];
 
 export function App() {
   const [viewPreset] = useState(readViewPreset);
@@ -74,6 +85,7 @@ export function App() {
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [clipQueue, setClipQueue] = useState(() => readClipQueue());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("proof");
   const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
   const [sourceAccountFilter, setSourceAccountFilter] = useState<FeedEntityFilter | null>(null);
   const [feedOrder, setFeedOrder] = useState<FeedOrder>("newest");
@@ -279,6 +291,7 @@ export function App() {
 
   function selectClipEvent(clip: ClipItem) {
     setSelectedEventId(clip.event.id);
+    setInspectorTab("inspect");
     setPinnedToLive(false);
   }
 
@@ -444,6 +457,7 @@ export function App() {
     setAuthorFilter(null);
     setSourceAccountFilter(null);
     setSelectedEventId(item.event.id);
+    setInspectorTab("inspect");
     setPinnedToLive(false);
   }
 
@@ -479,13 +493,16 @@ export function App() {
                   style={{ "--accent": platformAccent[platform] } as CSSProperties}
                   type="button"
                 >
-                  <span className="source-dot" />
+                  <span className="source-glyph">
+                    <PlatformGlyph platform={platform} size={15} />
+                  </span>
                   <span className="source-label-stack">
                     <strong>{sourceControl.label}</strong>
                     <small>
                       {sourceState} / {sourceControl.detail}
                     </small>
                   </span>
+                  <span className="source-switch" aria-hidden="true" />
                 </button>
               );
             })}
@@ -501,7 +518,10 @@ export function App() {
             type="button"
           >
             <Zap size={15} />
-            <span>Signal mode</span>
+            <span className="mode-label-stack">
+              <span>Signal mode</span>
+              <small>Show only high-signal messages</small>
+            </span>
           </button>
           <button
             className="mode-toggle"
@@ -510,16 +530,16 @@ export function App() {
             type="button"
           >
             <Maximize2 size={15} />
-            <span>Submission mode</span>
+            <span className="mode-label-stack">
+              <span>Submission mode</span>
+              <small>Hide controls for a clean recording</small>
+            </span>
           </button>
         </section>
 
-        <section className="rail-section metrics-grid">
-          <Metric label="Events" value={totalEvents} />
-          <Metric label="Signals" value={signalCount} />
-          <Metric label="Sources" value={activeSources} />
-          <Metric label="Buffer" value="250" />
-        </section>
+        <p className="rail-stats">
+          {totalEvents} events / {signalCount} signals / {activeSources} of {platforms.length} sources
+        </p>
       </aside>
 
       <section className="feed-panel" aria-label="Unified feed">
@@ -536,16 +556,27 @@ export function App() {
               <input
                 aria-label="Search feed"
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search author, channel, keyword"
+                placeholder="Search messages, people, channels"
                 type="search"
                 value={query}
               />
             </label>
-            <button className="icon-button" onClick={() => setPaused(!paused)} type="button">
+            <button
+              className="icon-button"
+              onClick={() => setPaused(!paused)}
+              title={paused ? "Resume" : "Pause"}
+              type="button"
+            >
               {paused ? <Play size={17} /> : <Pause size={17} />}
               <span>{paused ? "Resume" : "Pause"}</span>
             </button>
-            <button className="icon-button" data-active={recording} onClick={toggleRecording} type="button">
+            <button
+              className="icon-button"
+              data-active={recording}
+              onClick={toggleRecording}
+              title={recording ? "Stop recording" : "Record"}
+              type="button"
+            >
               {recording ? <Square size={15} /> : <Video size={17} />}
               <span>{recording ? "Stop" : "Record"}</span>
             </button>
@@ -556,6 +587,7 @@ export function App() {
               onClick={() => {
                 if (selectedEvent) toggleClipEvent(selectedEvent);
               }}
+              title="Clip the selected message"
               type="button"
             >
               {selectedEvent && clipQueue.some((clip) => clip.event.id === selectedEvent.id) ? (
@@ -565,7 +597,12 @@ export function App() {
               )}
               <span>Clip</span>
             </button>
-            <button className="icon-button" onClick={clearFeed} type="button">
+            <button
+              className="icon-button"
+              onClick={clearFeed}
+              title={importedReplay ? "Exit replay" : "Clear feed"}
+              type="button"
+            >
               <Trash2 size={17} />
               <span>{importedReplay ? "Exit replay" : "Clear"}</span>
             </button>
@@ -591,12 +628,10 @@ export function App() {
             <span>{pinnedToLive ? "Live" : "Jump live"}</span>
           </button>
           <span>{paused ? "Paused" : "Streaming"}</span>
-          <span>{effectiveTransportState}</span>
           <span>{recordedEvents.length} recorded</span>
           <span>{clipQueue.length} clips</span>
           {sourceAccountFilter ? <span>Source: {sourceAccountFilter.label}</span> : null}
           {authorFilter ? <span>Author: {authorFilter.label}</span> : null}
-          <span>{feedOrder === "newest" ? "Live at top" : "Live at bottom"}</span>
         </div>
 
         <div
@@ -611,7 +646,10 @@ export function App() {
               <EventRow
                 event={event}
                 key={event.id}
-                onSelect={() => setSelectedEventId(event.id)}
+                onSelect={() => {
+                  setSelectedEventId(event.id);
+                  setInspectorTab("inspect");
+                }}
                 query={query}
                 selected={event.id === selectedEvent?.id}
                 clipped={clipQueue.some((clip) => clip.event.id === event.id)}
@@ -633,11 +671,97 @@ export function App() {
           </div>
         </section>
 
-        <section className="detail-section">
-          <SectionTitle icon={<AlertTriangle size={15} />} title="Review queue" />
-          <ModerationQueue items={moderationItems} onReview={reviewModerationItem} />
-        </section>
+        <nav className="inspector-tabs" aria-label="Diagnostics sections">
+          {inspectorTabs.map((tab) => (
+            <button
+              className="inspector-tab"
+              data-active={inspectorTab === tab.key}
+              key={tab.key}
+              onClick={() => setInspectorTab(tab.key)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
+        {inspectorTab === "proof" ? (
+          <>
+            <section className="detail-section">
+              <SectionTitle icon={<Activity size={15} />} title="Performance" />
+              <PerformancePanel summary={performanceSummary} />
+            </section>
+
+            <section className="detail-section">
+              <SectionTitle icon={<CheckCircle2 size={15} />} title="Submission checklist" />
+              <SubmissionChecklistPanel items={submissionChecklistItems} />
+            </section>
+
+            <section className="detail-section">
+              <SectionTitle icon={<AlertTriangle size={15} />} title="Review queue" />
+              <ModerationQueue items={moderationItems} onReview={reviewModerationItem} />
+            </section>
+          </>
+        ) : null}
+
+        {inspectorTab === "inspect" ? (
+          <>
+            <section className="detail-section selected-event">
+              <SectionTitle icon={<UserRound size={15} />} title="Author" />
+              {selectedAuthorProfile ? (
+                <AuthorDetail
+                  activeAuthorFilter={authorFilter}
+                  activeSourceAccountFilter={sourceAccountFilter}
+                  onToggleAuthorFilter={toggleAuthorFilter}
+                  onToggleSourceAccountFilter={toggleSourceAccountFilter}
+                  profile={selectedAuthorProfile}
+                />
+              ) : (
+                <EmptyDetail />
+              )}
+            </section>
+
+            <section className="detail-section selected-event">
+              <SectionTitle icon={<Activity size={15} />} title="Selected event" />
+              {selectedEvent ? <EventDetail event={selectedEvent} /> : <EmptyDetail />}
+            </section>
+          </>
+        ) : null}
+
+        {inspectorTab === "sources" ? (
+          <>
+            <section className="detail-section">
+              <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
+              <SourceAccountsPanel
+                accounts={sourceAccountSummaries}
+                activeFilter={sourceAccountFilter}
+                onToggle={toggleSourceAccountSummaryFilter}
+              />
+            </section>
+
+            <section className="detail-section">
+              <SectionTitle icon={<Target size={15} />} title="Identities" />
+              <SourceIdentitiesPanel groups={sourceIdentityGroups} onFocus={focusSourceIdentity} />
+            </section>
+          </>
+        ) : null}
+
+        {inspectorTab === "setup" ? (
+          <>
+            <section className="detail-section">
+              <SectionTitle icon={<CheckCircle2 size={15} />} title="Readiness" />
+              <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
+            </section>
+
+            <section className="detail-section">
+              <SectionTitle icon={<Link2 size={15} />} title="OBS presets" />
+              <ObsPresetLinks links={obsPresetLinks} />
+            </section>
+          </>
+        ) : null}
+
+        {inspectorTab === "clips" ? (
+          <>
         <section className="detail-section">
           <SectionTitle icon={<BookmarkCheck size={15} />} title="Clip queue" />
           <ClipQueuePanel
@@ -646,60 +770,6 @@ export function App() {
             onRemove={(eventId) => setClipQueue((currentClips) => currentClips.filter((clip) => clip.event.id !== eventId))}
             onSelect={selectClipEvent}
           />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<Activity size={15} />} title="Performance" />
-          <PerformancePanel summary={performanceSummary} />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<CheckCircle2 size={15} />} title="Submission checklist" />
-          <SubmissionChecklistPanel items={submissionChecklistItems} />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<AtSign size={15} />} title="Accounts" />
-          <SourceAccountsPanel
-            accounts={sourceAccountSummaries}
-            activeFilter={sourceAccountFilter}
-            onToggle={toggleSourceAccountSummaryFilter}
-          />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<Target size={15} />} title="Identities" />
-          <SourceIdentitiesPanel groups={sourceIdentityGroups} onFocus={focusSourceIdentity} />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<CheckCircle2 size={15} />} title="Readiness" />
-          <ReadinessPanel items={readinessItems} transportState={effectiveTransportState} />
-        </section>
-
-        <section className="detail-section">
-          <SectionTitle icon={<Link2 size={15} />} title="OBS presets" />
-          <ObsPresetLinks links={obsPresetLinks} />
-        </section>
-
-        <section className="detail-section selected-event">
-          <SectionTitle icon={<UserRound size={15} />} title="Author" />
-          {selectedAuthorProfile ? (
-            <AuthorDetail
-              activeAuthorFilter={authorFilter}
-              activeSourceAccountFilter={sourceAccountFilter}
-              onToggleAuthorFilter={toggleAuthorFilter}
-              onToggleSourceAccountFilter={toggleSourceAccountFilter}
-              profile={selectedAuthorProfile}
-            />
-          ) : (
-            <EmptyDetail />
-          )}
-        </section>
-
-        <section className="detail-section selected-event">
-          <SectionTitle icon={<Activity size={15} />} title="Selected event" />
-          {selectedEvent ? <EventDetail event={selectedEvent} /> : <EmptyDetail />}
         </section>
 
         <section className="detail-section">
@@ -754,6 +824,8 @@ export function App() {
           {importError ? <p className="detail-error">{importError}</p> : null}
           {replayLinkStatus ? <p className="detail-note">{replayLinkStatus}</p> : null}
         </section>
+          </>
+        ) : null}
       </aside>
     </main>
   );
@@ -1041,7 +1113,6 @@ function EventRow({
   const signalScore = scoreEventSignal(event);
   const platformSourceLabel = formatPlatformSourceLabel(event);
   const sourceContext = formatSourceContext(event);
-  const isChatPlatform = event.platform !== "x";
   const timestamp = new Intl.DateTimeFormat("en", {
     hour: "2-digit",
     minute: "2-digit",
@@ -1059,49 +1130,34 @@ function EventRow({
       title={`${platformSourceLabel} / ${formatAuthor(event)} / ${timestamp}`}
       type="button"
     >
-      <span className="platform-label" title={platformSourceLabel}>
-        {platformSourceLabel}
+      <span className="row-spine" aria-hidden="true" />
+      <span className="row-glyph" title={platformLabels[event.platform]}>
+        <PlatformGlyph platform={event.platform} />
       </span>
-      {isChatPlatform ? (
-        <span className="native-event-body native-chat-body">
-          <span className="native-chat-line">
-            <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
-              {formatAuthor(event)}
-            </span>
-            {event.badges.length > 0 ? (
-              <span className="badge-strip badge-strip-inline">
-                {event.badges.map((badge) => (
-                  <span className="native-badge" key={`${badge.type}-${badge.label}`}>
-                    {badge.label}
-                  </span>
-                ))}
-              </span>
-            ) : null}
-            <EventText event={event} query={query} />
+      <span className="native-event-body">
+        <span className="native-chat-line">
+          <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
+            {formatAuthor(event)}
           </span>
-          <span className="native-event-meta">
-            <span className="event-source event-source-account" title={platformSourceLabel}>
-              {platformSourceLabel}
+          {event.badges.length > 0 ? (
+            <span className="badge-strip badge-strip-inline">
+              {event.badges.map((badge) => (
+                <span className="native-badge" key={`${badge.type}-${badge.label}`}>
+                  {badge.label}
+                </span>
+              ))}
             </span>
-            <span className="event-source event-source-context">{sourceContext}</span>
-            <span className="event-time">{timestamp}</span>
-          </span>
-        </span>
-      ) : (
-        <span className="native-event-body native-post-body">
-          <span className="native-event-head">
-            <span className="event-author" style={{ color: event.authorColor ?? "var(--text)" }}>
-              {formatAuthor(event)}
-            </span>
-            <span className="event-source event-source-account" title={platformSourceLabel}>
-              {platformSourceLabel}
-            </span>
-            <span className="event-source event-source-context">{sourceContext}</span>
-            <span className="event-time">{timestamp}</span>
-          </span>
+          ) : null}
           <EventText event={event} query={query} />
         </span>
-      )}
+        <span className="native-event-meta">
+          <span className="event-source event-source-account" title={platformSourceLabel}>
+            {platformSourceLabel}
+          </span>
+          {sourceContext ? <span className="event-source event-source-context">{sourceContext}</span> : null}
+          <span className="event-time">{timestamp}</span>
+        </span>
+      </span>
       <span className="signal-score">{clipped ? "CLIP" : signalScore > 0 ? signalScore : ""}</span>
     </button>
   );
@@ -1134,10 +1190,14 @@ function EventFragment({ fragment, query }: { fragment: UnifiedFragment; query: 
 
 function ConnectorCard({ status }: { status: ConnectorStatus }) {
   return (
-    <div className="connector-card" data-state={status.state}>
+    <div
+      className="connector-card"
+      data-state={status.state}
+      style={{ "--accent": platformAccent[status.platform] } as CSSProperties}
+    >
       <div className="connector-heading">
         <span className="connector-name">
-          <Circle size={9} fill="currentColor" />
+          <PlatformGlyph platform={status.platform} size={12} />
           {platformLabels[status.platform]}
         </span>
         <span>{status.state.replace("_", " ")}</span>
@@ -1146,10 +1206,9 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
         <span>{status.label}</span>
         <span>{status.sourceName}</span>
       </div>
-      <div className="connector-stats">
-        <Metric label="events" value={status.eventCount} />
-        <Metric label="drops" value={status.droppedCount} />
-        <Metric label="latency" value={status.latencyMs ? `${Math.round(status.latencyMs)}ms` : "n/a"} />
+      <div className="connector-line">
+        {status.eventCount} events / {status.droppedCount} drops /{" "}
+        {status.latencyMs ? `${Math.round(status.latencyMs)}ms` : "n/a"}
       </div>
     </div>
   );
@@ -1604,8 +1663,8 @@ function EmptyState() {
   return (
     <div className="empty-state">
       <Ban size={22} />
-      <strong>No events visible</strong>
-      <span>Adjust source filters or search.</span>
+      <strong>No messages to show</strong>
+      <span>Turn a source back on or clear your search.</span>
     </div>
   );
 }
@@ -1613,7 +1672,7 @@ function EmptyState() {
 function EmptyDetail() {
   return (
     <div className="empty-detail">
-      <span>Select an event.</span>
+      <span>Click a message in the feed to see details here.</span>
     </div>
   );
 }

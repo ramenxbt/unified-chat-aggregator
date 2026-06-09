@@ -20,10 +20,13 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
   await page.locator(".topbar-actions .icon-button").nth(0).click();
 
   await expect(page.getByText("Paused")).toBeVisible();
+
+  await page.getByRole("button", { name: "Setup", exact: true }).click();
+
   await expect(page.getByText("Readiness")).toBeVisible();
   await expect(page.getByText("OBS presets")).toBeVisible();
-  await expect(page.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute("href", /obs=1/);
-  await expect(page.getByRole("link", { name: /ansem twitch/i })).toHaveAttribute("href", /q=ansem/);
+  await expect(page.getByRole("link", { name: /twitch ansem/i })).toHaveAttribute("href", /obs=1/);
+  await expect(page.getByRole("link", { name: /twitch ansem/i })).toHaveAttribute("href", /q=ansem/);
   await expect(page.getByText("TWITCH_CLIENT_ID", { exact: true })).toBeVisible();
   await expect(page.getByText("KICK_WEBHOOK_ENABLED=true", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Stream-day env checklist")).toContainText("TWITCH_CLIENT_ID=");
@@ -35,10 +38,13 @@ test("fixture dashboard exposes account-labeled unified chat controls", async ({
   );
   await expect(page.getByText("X_BEARER_TOKEN", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Clip", exact: true }).click();
+  await page.getByRole("button", { name: "Clip the selected message" }).click();
 
   await expect(page.getByLabel("Run proof")).toContainText("Clips");
   await expect(page.getByLabel("Run proof")).toContainText("1");
+
+  await page.getByRole("button", { name: "Clips", exact: true }).click();
+
   await expect(page.getByText("1 marked")).toBeVisible();
   await expect(page.getByRole("button", { name: "Export clip queue JSON" })).toBeEnabled();
 });
@@ -52,6 +58,9 @@ test("recording and local replay workflows are browser-ready", async ({ page }) 
 
   await expect(page.getByText("24 recorded")).toBeVisible();
   await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Clips", exact: true }).click();
+
   await expect(page.getByRole("button", { name: "Export recording JSON" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Export recording CSV" })).toBeEnabled();
 
@@ -62,7 +71,7 @@ test("recording and local replay workflows are browser-ready", async ({ page }) 
   await page.locator(".session-load").first().click();
 
   await expect(page.getByText("Replay: Fixture stream - 24 events")).toBeVisible();
-  await expect(page.locator(".feed-toolbar").getByText("replay", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Run proof")).toContainText("Transportreplay");
 });
 
 test("OBS route opens as a clean transparent browser source", async ({ page }) => {

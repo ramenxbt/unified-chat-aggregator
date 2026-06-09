@@ -55,8 +55,10 @@ describe("App", () => {
     expect(screen.getByText("Paused")).toBeInTheDocument();
   });
 
-  it("shows live readiness guidance while fixture mode is active", () => {
+  it("shows live readiness guidance while fixture mode is active", async () => {
     render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: /^setup$/i }));
 
     expect(screen.getByText("Readiness")).toBeInTheDocument();
     expect(screen.getByText(/fixture mode active/i)).toBeInTheDocument();
@@ -95,8 +97,10 @@ describe("App", () => {
     expect(screen.getByText("24 events captured in the active recording.")).toBeInTheDocument();
   });
 
-  it("shows ready-to-open OBS preset links", () => {
+  it("shows ready-to-open OBS preset links", async () => {
     render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: /^setup$/i }));
 
     expect(screen.getByText("OBS presets")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /all sources/i })).toHaveAttribute(
@@ -164,7 +168,9 @@ describe("App", () => {
     render(<App />);
     const feed = screen.getByRole("log");
 
-    expect(screen.getByText("Accounts")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^accounts$/i }));
+
+    expect(screen.getAllByText("Accounts").length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getByRole("button", { name: /filter source account twitch \(ansem\)/i }));
 
@@ -181,6 +187,8 @@ describe("App", () => {
   it("groups matching source accounts into a focusable identity", async () => {
     render(<App />);
     const feed = screen.getByRole("log");
+
+    await userEvent.click(screen.getByRole("button", { name: /^accounts$/i }));
 
     expect(screen.getByText("Identities")).toBeInTheDocument();
     expect(screen.getAllByText("ANSEM").length).toBeGreaterThan(0);
@@ -242,6 +250,7 @@ describe("App", () => {
     render(<App />);
     const feed = screen.getByRole("log");
 
+    await userEvent.click(screen.getByRole("button", { name: /^accounts$/i }));
     await userEvent.click(screen.getByRole("button", { name: /filter source account x \(@user1337\)/i }));
 
     expect(screen.getByText("Source: X (@USER1337)")).toBeInTheDocument();
@@ -274,12 +283,17 @@ describe("App", () => {
 
     expect(screen.getByText("24 recorded")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /stop/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
+
     expect(screen.getByRole("button", { name: /export recording json/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /export recording csv/i })).toBeEnabled();
   });
 
   it("marks selected events in a submission clip queue", async () => {
     render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
 
     expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips0");
     expect(screen.getByText("No clipped moments yet.")).toBeInTheDocument();
@@ -311,6 +325,9 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByLabelText("Run proof")).toHaveTextContent("Clips1");
+
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
+
     expect(screen.getByText("1 marked")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /export clip queue json/i })).toBeEnabled();
   });
@@ -325,6 +342,7 @@ describe("App", () => {
 
     render(<App />);
 
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
     await userEvent.click(screen.getByRole("button", { name: /copy replay link/i }));
 
     expect(writeText).toHaveBeenCalledOnce();
@@ -372,7 +390,7 @@ describe("App", () => {
   it("switches to oldest-first order and jumps to the bottom live edge", async () => {
     render(<App />);
     const feed = screen.getByRole("log");
-    const firstLabel = () => feed.querySelector(".platform-label")?.textContent;
+    const firstLabel = () => feed.querySelector(".event-source-account")?.textContent;
 
     Object.defineProperty(feed, "scrollHeight", {
       configurable: true,
@@ -423,6 +441,8 @@ describe("App", () => {
       "market-bubble-feed.json",
       { type: "application/json" }
     );
+    await user.click(screen.getByRole("button", { name: /^clips$/i }));
+
     const importInput = document.querySelector<HTMLInputElement>('input[type="file"]');
 
     expect(importInput).not.toBeNull();
@@ -432,14 +452,14 @@ describe("App", () => {
     expect(screen.getByText("Replay: market-bubble-feed.json")).toBeInTheDocument();
     expect(screen.getByText("1 imported events from Live feed server.")).toBeInTheDocument();
     expect(screen.getByRole("log")).toHaveTextContent("Ansem is cooking again");
-    expect(screen.getAllByText("replay").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Transportreplay");
 
     await user.click(screen.getByRole("button", { name: /exit replay/i }));
 
     expect(screen.getByText("Fixture stream")).toBeInTheDocument();
   });
 
-  it("loads a replay from a shared URL hash", () => {
+  it("loads a replay from a shared URL hash", async () => {
     const replayEvent = createFixtureEvent(2, new Date("2026-06-04T18:00:00.000Z"));
     const recording = {
       exportedAt: "2026-06-04T18:00:02.000Z",
@@ -457,6 +477,9 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("Replay: shared replay link")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
+
     expect(screen.getByText("1 imported events from Shared proof clip.")).toBeInTheDocument();
     expect(screen.getByRole("log")).toHaveTextContent("Ansem is cooking again");
   });
@@ -464,6 +487,8 @@ describe("App", () => {
   it("saves the current buffer to local sessions and loads it as replay", async () => {
     render(<App />);
     const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /^clips$/i }));
 
     expect(screen.getByText("0 saved sessions. New saves keep the latest 12 sessions.")).toBeInTheDocument();
 
@@ -474,7 +499,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /^fixture stream - 24 events/i }));
 
     expect(screen.getByText("Replay: Fixture stream - 24 events")).toBeInTheDocument();
-    expect(screen.getAllByText("replay").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Run proof")).toHaveTextContent("Transportreplay");
 
     await user.click(screen.getByRole("button", { name: /delete fixture stream - 24 events/i }));
 
@@ -498,7 +523,7 @@ describe("App", () => {
 
     expect(screen.getByLabelText(/search feed/i)).toHaveValue("ansem");
     expect(screen.getByText("3 visible")).toBeInTheDocument();
-    expect(feed.querySelectorAll(".platform-label")).toHaveLength(3);
+    expect(feed.querySelectorAll(".event-source-account")).toHaveLength(3);
     expect(feed).toHaveTextContent("TWITCH (ANSEM)");
     expect(feed).not.toHaveTextContent("KICK (MARKETBUBBLE)");
     expect(feed).not.toHaveTextContent("X (@USER1337)");
