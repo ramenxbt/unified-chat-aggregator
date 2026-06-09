@@ -71,6 +71,10 @@ Below them, five tabs:
 
 **Save your buffer.** `Save current buffer` in the Clips tab keeps the session in local storage (latest 12). Load any saved session back as a replay with one click.
 
+**Mark a moment with a note.** Type into the note bar at the bottom of the feed and press Enter. The note appears in the timeline as a gold row at its exact time, survives a reload, and exports as JSON from the Clips tab. Notes are local only; they never post to any platform. Use them for marks like "raid started here" or "clip the next 30 seconds".
+
+**Watch the pace.** The toolbar shows live messages per minute, and the Status tab adds events per second, p95 latency, and average latency.
+
 ## Going live with real chat
 
 Copy the template and fill in only the platforms you need. Any platform without credentials stays in demo mode, so a partial setup still runs.
@@ -174,6 +178,16 @@ Change the URL parameters to shape the shot:
 - `sources` picks platforms, `q` pre-fills the search, `signal` shows only high-signal messages, and `limit` caps visible rows.
 - The same links are ready to copy in the dashboard's **Setup tab** under OBS presets.
 - To generate a full OBS setup file with every preset and these exact settings, run `npm run obs:handoff -- --out qa/obs` and open `qa/obs/obs-browser-sources.md`.
+
+### Run the full dashboard as an OBS dock
+
+The overlay is for viewers. For yourself, you can pin the whole interactive dashboard inside OBS:
+
+1. In OBS: **View, Docks, Custom Browser Docks**.
+2. Dock name: `Market Bubble Feed`. URL: `http://127.0.0.1:5173/`.
+3. Click Apply. The dashboard appears as a dock you can drag next to your scenes and audio mixer.
+
+The layout adapts to the dock's width automatically. You get the live feed, search, pause, clip, notes, and connector health inside OBS while you stream, with no extra window to alt-tab to.
 
 ## Troubleshooting
 

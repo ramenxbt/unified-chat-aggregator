@@ -105,6 +105,8 @@ The `Review queue` flags held, deleted, or spam-risk messages when those signals
 
 The `Clip queue` lets the operator mark selected messages during the stream. Marked clips preserve the full normalized event, source-account label, and clip timestamp, stay visible in the run-proof strip, survive a browser refresh through local storage, and can be exported as a separate JSON file for choosing the best submission moments after the recording.
 
+Operator notes work alongside clips: the note bar at the bottom of the feed adds a local gold-marked row at the current time, searches like any message, persists through reloads, and exports as `market-bubble-notes` JSON from the Clips tab. Notes never post to any platform.
+
 The Status tab includes a `Performance` panel with current buffer throughput, average latency, p95 latency, and latest event freshness for visible proof during the recording, plus a `Submission checklist` that tracks whether the current run has live WebSocket transport, Twitch/Kick/X coverage, account-qualified source labels, active recording proof, and visible performance metrics before the final capture.
 
 The feed panel includes a compact `Run proof` strip for dashboard, submission, and OBS captures. It keeps transport state, platform coverage, account-label count, p95 latency, recording count, and clip count visible even when operator rails are hidden.

@@ -20,9 +20,10 @@ Streaming to Twitch, Kick, and X at the same time means three chats in three win
 - Search across messages, authors, accounts, and platforms
 - One-click source toggles and a signal-only mode for high-value messages
 - Clip queue to mark the best moments, with reload-safe persistence and JSON export
+- Operator notes that mark moments in the timeline, reload-safe and exportable
 - Recording with JSON/CSV export, replay import, and shareable replay links
-- OBS browser-source overlay mode with a transparent background
-- Connector health, latency, and throughput proof built into the UI
+- OBS browser-source overlay mode with a transparent background, plus a dock-ready responsive layout
+- Connector health, live messages per minute, latency, and throughput proof built into the UI
 - Server-side session archives (JSONL and SQLite) that survive browser reloads
 
 ## Quick start
