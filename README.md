@@ -27,12 +27,16 @@ Streaming to Twitch, Kick, and X at the same time means three chats in three win
 
 ## Quick start
 
+You need [Node.js](https://nodejs.org) 20.19 or newer (npm comes with it) and [Git](https://git-scm.com). Check with `node -v` and `git --version`.
+
 ```bash
+git clone https://github.com/ramenxbt/unified-chat-aggregator.git
+cd unified-chat-aggregator
 npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`. The dashboard starts in demo mode with realistic fixture events, so you can explore everything without any credentials.
+Then open `http://127.0.0.1:5173/` in your browser. The dashboard starts in demo mode with realistic fixture events, so you can explore everything without any accounts or credentials.
 
 ## Going live
 

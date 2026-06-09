@@ -10,12 +10,23 @@ It merges Twitch chat, Kick chat, and X posts into one live feed. Every message 
 
 ## Start it in 60 seconds
 
+Before anything else you need two tools installed:
+
+- [Node.js](https://nodejs.org) version 20.19 or newer. Installing Node also installs `npm`. Check with `node -v`.
+- [Git](https://git-scm.com), to download the project. Check with `git --version`.
+
+Then open a terminal and run these four commands, one at a time:
+
 ```bash
+git clone https://github.com/ramenxbt/unified-chat-aggregator.git
+cd unified-chat-aggregator
 npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`. The app starts in demo mode with realistic sample messages, so every feature below works immediately with no accounts and no credentials.
+What each one does: `git clone` downloads the project to your computer, `cd` moves into the project folder, `npm install` downloads the dependencies (one-time, takes a minute), and `npm run dev` starts the app.
+
+When the terminal prints a local address, open `http://127.0.0.1:5173/` in your browser. The app starts in demo mode with realistic sample messages, so every feature below works immediately with no accounts and no credentials. To stop the app, press `Ctrl+C` in the terminal. Next time, you only need `npm run dev`.
 
 ## The screen, piece by piece
 
