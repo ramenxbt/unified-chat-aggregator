@@ -21,6 +21,7 @@ import {
   Shield,
   Shuffle,
   Square,
+  StickyNote,
   Target,
   Trash2,
   Upload,
@@ -52,6 +53,7 @@ import {
   type SavedSession
 } from "./domain/sessionArchive";
 import { readClipQueue, writeClipQueue, type ClipItem } from "./domain/clipQueue";
+import { createOperatorNote, readOperatorNotes, writeOperatorNotes, type OperatorNote } from "./domain/operatorNotes";
 import { useUnifiedFeed } from "./hooks/useUnifiedFeed";
 import { PlatformGlyph } from "./PlatformGlyph";
 
@@ -62,6 +64,10 @@ const platformAccent: Record<SourcePlatform, string> = {
   kick: "#67e85f",
   x: "#e8ecef"
 };
+
+type TimelineItem =
+  | { kind: "event"; event: UnifiedEvent; time: number }
+  | { kind: "note"; note: OperatorNote; time: number };
 
 type InspectorTab = "proof" | "inspect" | "sources" | "clips" | "setup";
 
@@ -83,6 +89,8 @@ export function App() {
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [clipQueue, setClipQueue] = useState(() => readClipQueue());
+  const [operatorNotes, setOperatorNotes] = useState(() => readOperatorNotes());
+  const [noteDraft, setNoteDraft] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("proof");
   const [authorFilter, setAuthorFilter] = useState<FeedEntityFilter | null>(null);
@@ -141,6 +149,18 @@ export function App() {
     [displayedEvents, selectedEventId]
   );
 
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const matchingNotes = obsMode
+      ? []
+      : operatorNotes.filter((note) => !normalizedQuery || note.text.toLowerCase().includes(normalizedQuery));
+
+    return [
+      ...displayedEvents.map((event) => ({ kind: "event" as const, event, time: Date.parse(event.occurredAt) })),
+      ...matchingNotes.map((note) => ({ kind: "note" as const, note, time: Date.parse(note.notedAt) }))
+    ].sort((left, right) => (feedOrder === "newest" ? right.time - left.time : left.time - right.time));
+  }, [displayedEvents, feedOrder, obsMode, operatorNotes, query]);
+
   const totalEvents = feedEvents.length;
   const signalCount = feedEvents.filter(isSignalEvent).length;
   const activeSources = platforms.filter((platform) => platformFilter[platform]).length;
@@ -192,6 +212,10 @@ export function App() {
   useEffect(() => {
     writeClipQueue(clipQueue);
   }, [clipQueue]);
+
+  useEffect(() => {
+    writeOperatorNotes(operatorNotes);
+  }, [operatorNotes]);
 
   useEffect(() => {
     const recording = readReplayLinkRecording();
@@ -270,6 +294,31 @@ export function App() {
     };
 
     downloadBlob(JSON.stringify(payload, null, 2), "application/json", "json", "market-bubble-clips");
+  }
+
+  function addOperatorNote() {
+    const text = noteDraft.trim();
+
+    if (!text) return;
+
+    setOperatorNotes((currentNotes) => [createOperatorNote(text), ...currentNotes]);
+    setNoteDraft("");
+  }
+
+  function removeOperatorNote(noteId: string) {
+    setOperatorNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId));
+  }
+
+  function exportOperatorNotes() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: effectiveTransportLabel,
+      transportState: effectiveTransportState,
+      noteCount: operatorNotes.length,
+      notes: operatorNotes
+    };
+
+    downloadBlob(JSON.stringify(payload, null, 2), "application/json", "json", "market-bubble-notes");
   }
 
   function toggleClipEvent(event: UnifiedEvent) {
@@ -615,8 +664,10 @@ export function App() {
             <span>{pinnedToLive ? "Live" : "Jump live"}</span>
           </button>
           <span>{paused ? "Paused" : "Streaming"}</span>
+          <span>{performanceSummary.eventsPerMinute}/min</span>
           <span>{recordedEvents.length} recorded</span>
           <span>{clipQueue.length} clips</span>
+          {operatorNotes.length > 0 ? <span>{operatorNotes.length} notes</span> : null}
           {sourceAccountFilter ? <span>Source: {sourceAccountFilter.label}</span> : null}
           {authorFilter ? <span>Author: {authorFilter.label}</span> : null}
         </div>
@@ -628,24 +679,50 @@ export function App() {
           role="log"
           aria-live={paused ? "off" : "polite"}
         >
-          {displayedEvents.length > 0 ? (
-            displayedEvents.map((event) => (
-              <EventRow
-                event={event}
-                key={event.id}
-                onSelect={() => {
-                  setSelectedEventId(event.id);
-                  setInspectorTab("inspect");
-                }}
-                query={query}
-                selected={event.id === selectedEvent?.id}
-                clipped={clipQueue.some((clip) => clip.event.id === event.id)}
-              />
-            ))
+          {timelineItems.length > 0 ? (
+            timelineItems.map((item) =>
+              item.kind === "event" ? (
+                <EventRow
+                  event={item.event}
+                  key={item.event.id}
+                  onSelect={() => {
+                    setSelectedEventId(item.event.id);
+                    setInspectorTab("inspect");
+                  }}
+                  query={query}
+                  selected={item.event.id === selectedEvent?.id}
+                  clipped={clipQueue.some((clip) => clip.event.id === item.event.id)}
+                />
+              ) : (
+                <NoteRow key={item.note.id} note={item.note} onRemove={() => removeOperatorNote(item.note.id)} />
+              )
+            )
           ) : (
             <EmptyState />
           )}
         </div>
+
+        {!obsMode ? (
+          <form
+            className="note-composer"
+            onSubmit={(event) => {
+              event.preventDefault();
+              addOperatorNote();
+            }}
+          >
+            <StickyNote size={15} />
+            <input
+              aria-label="Add operator note"
+              onChange={(event) => setNoteDraft(event.target.value)}
+              placeholder="Type a note to mark this moment in the timeline"
+              type="text"
+              value={noteDraft}
+            />
+            <button className="inline-action" disabled={!noteDraft.trim()} type="submit">
+              Note
+            </button>
+          </form>
+        ) : null}
       </section>
 
       <aside className="detail-rail" aria-label="Diagnostics">
@@ -800,6 +877,14 @@ export function App() {
           <button className="wide-button" disabled={clipQueue.length === 0} onClick={exportClipQueue} type="button">
             Export clip queue JSON
           </button>
+          <button
+            className="wide-button"
+            disabled={operatorNotes.length === 0}
+            onClick={exportOperatorNotes}
+            type="button"
+          >
+            Export notes JSON
+          </button>
           <button className="wide-button" disabled={feedEvents.length === 0} onClick={() => void copyReplayLink()} type="button">
             Copy replay link
           </button>
@@ -844,6 +929,7 @@ type PerformanceSummary = {
   eventCount: number;
   durationSeconds: number;
   eventsPerSecond: number;
+  eventsPerMinute: number;
   averageLatencyMs: number;
   p95LatencyMs: number;
   freshestAgeSeconds: number;
@@ -1150,6 +1236,42 @@ function EventRow({
   );
 }
 
+function NoteRow({ note, onRemove }: { note: OperatorNote; onRemove: () => void }) {
+  const timestamp = new Intl.DateTimeFormat("en", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date(note.notedAt));
+
+  return (
+    <div className="event-row note-row">
+      <span className="row-spine" aria-hidden="true" />
+      <span className="row-glyph" title="Operator note">
+        <StickyNote size={13} />
+      </span>
+      <span className="native-event-body">
+        <span className="native-chat-line">
+          <span className="event-author">Operator note</span>
+          <span className="event-text">{note.text}</span>
+        </span>
+        <span className="native-event-meta">
+          <span className="event-source">local timeline mark</span>
+          <span className="event-time">{timestamp}</span>
+        </span>
+      </span>
+      <button
+        aria-label={`Remove note ${note.text}`}
+        className="note-remove"
+        onClick={onRemove}
+        title="Remove note"
+        type="button"
+      >
+        <Trash2 size={13} />
+      </button>
+    </div>
+  );
+}
+
 function EventText({ event, query }: { event: UnifiedEvent; query: string }) {
   const fallbackFragment: UnifiedFragment = { type: "text", text: event.text ?? event.kind };
   const fragments = event.fragments.length > 0 ? event.fragments : [fallbackFragment];
@@ -1204,8 +1326,9 @@ function ConnectorCard({ status }: { status: ConnectorStatus }) {
 function PerformancePanel({ summary }: { summary: PerformanceSummary }) {
   return (
     <div className="performance-panel">
-      <div className="connector-stats">
+      <div className="performance-stats">
         <Metric label="events/s" value={formatThroughput(summary.eventsPerSecond)} />
+        <Metric label="per min" value={summary.eventsPerMinute} />
         <Metric label="p95" value={formatLatency(summary.p95LatencyMs)} />
         <Metric label="avg" value={formatLatency(summary.averageLatencyMs)} />
       </div>
@@ -1874,6 +1997,8 @@ function buildPerformanceSummary(events: UnifiedEvent[]): PerformanceSummary {
   const oldestReceivedAt = receivedTimes.length > 0 ? Math.min(...receivedTimes) : newestReceivedAt;
   const durationSeconds = Math.max(0, (newestReceivedAt - oldestReceivedAt) / 1000);
   const eventsPerSecond = durationSeconds > 0 ? events.length / durationSeconds : events.length;
+  const lastMinuteStart = Date.now() - 60_000;
+  const eventsPerMinute = receivedTimes.filter((time) => time >= lastMinuteStart).length;
   const averageLatencyMs =
     latencies.length > 0 ? latencies.reduce((total, latency) => total + latency, 0) / latencies.length : 0;
 
@@ -1881,6 +2006,7 @@ function buildPerformanceSummary(events: UnifiedEvent[]): PerformanceSummary {
     eventCount: events.length,
     durationSeconds,
     eventsPerSecond,
+    eventsPerMinute,
     averageLatencyMs,
     p95LatencyMs: percentile(latencies, 0.95),
     freshestAgeSeconds: Math.max(0, (Date.now() - newestReceivedAt) / 1000)

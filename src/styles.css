@@ -312,10 +312,35 @@ button {
 
 .feed-panel {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   min-width: 0;
   height: 100vh;
   min-height: 100vh;
+}
+
+.note-composer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  border-top: 1px solid var(--border);
+  padding: 0 20px;
+  color: var(--muted);
+  background: rgba(8, 9, 8, 0.78);
+}
+
+.note-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 13px;
+}
+
+.note-composer input::placeholder {
+  color: #707870;
 }
 
 .topbar {
@@ -591,6 +616,39 @@ button {
 .event-row[data-clipped="true"] .signal-score {
   color: var(--gold);
   font-weight: 760;
+}
+
+.note-row {
+  --accent: var(--gold);
+  align-items: center;
+  border-color: rgba(229, 196, 107, 0.28);
+  background: linear-gradient(90deg, rgba(229, 196, 107, 0.06), rgba(255, 255, 255, 0.018));
+  cursor: default;
+}
+
+.note-row .event-author {
+  color: var(--gold);
+}
+
+.note-remove {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  justify-self: end;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.note-remove:hover {
+  color: var(--gold);
+  background: rgba(229, 196, 107, 0.12);
 }
 
 .event-time,
@@ -1312,6 +1370,20 @@ button {
   font-size: 11px !important;
   font-weight: 720;
   text-transform: uppercase;
+}
+
+.performance-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.performance-stats .metric {
+  padding: 8px;
+}
+
+.performance-stats .metric strong {
+  font-size: 13px;
 }
 
 .author-stats {

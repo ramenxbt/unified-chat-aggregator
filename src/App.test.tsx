@@ -350,6 +350,33 @@ describe("App", () => {
     expect(screen.getByText("24 event replay link copied.")).toBeInTheDocument();
   });
 
+  it("adds, persists, and removes operator notes in the timeline", async () => {
+    const { unmount } = render(<App />);
+
+    await userEvent.type(screen.getByLabelText("Add operator note"), "clip the breakout call");
+    await userEvent.click(screen.getByRole("button", { name: /^note$/i }));
+
+    expect(screen.getByRole("log")).toHaveTextContent("Operator note");
+    expect(screen.getByRole("log")).toHaveTextContent("clip the breakout call");
+    expect(screen.getByText("1 notes")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add operator note")).toHaveValue("");
+
+    unmount();
+    render(<App />);
+
+    expect(screen.getByRole("log")).toHaveTextContent("clip the breakout call");
+
+    await userEvent.click(screen.getByRole("button", { name: /^clips$/i }));
+
+    expect(screen.getByRole("button", { name: /export notes json/i })).toBeEnabled();
+
+    await userEvent.click(screen.getByRole("button", { name: /remove note clip the breakout call/i }));
+
+    expect(screen.getByRole("log")).not.toHaveTextContent("clip the breakout call");
+    expect(screen.queryByText("1 notes")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /export notes json/i })).toBeDisabled();
+  });
+
   it("keeps the operator layout active outside the OBS route", () => {
     const { container } = render(<App />);
     const appShell = container.querySelector(".app-shell");
