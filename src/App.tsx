@@ -14,7 +14,6 @@ import {
   FolderOpen,
   Gauge,
   Link2,
-  Maximize2,
   Pause,
   Play,
   Radio,
@@ -80,7 +79,7 @@ export function App() {
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>(viewPreset.platformFilter);
   const [query, setQuery] = useState(viewPreset.query);
   const [signalOnly, setSignalOnly] = useState(viewPreset.signalOnly);
-  const [submissionMode, setSubmissionMode] = useState(obsMode);
+  const [submissionMode] = useState(obsMode);
   const [recording, setRecording] = useState(false);
   const [recordedEvents, setRecordedEvents] = useState<UnifiedEvent[]>([]);
   const [clipQueue, setClipQueue] = useState(() => readClipQueue());
@@ -470,7 +469,7 @@ export function App() {
     >
       <aside className="source-rail" aria-label="Source controls">
         <div className="brand-block">
-          <div className="brand-mark">MB</div>
+          <img alt="Market Bubble" className="brand-mark" src="/market-bubble.png" />
           <div>
             <h1>Market Bubble Feed</h1>
             <p>Unified live stream</p>
@@ -521,18 +520,6 @@ export function App() {
             <span className="mode-label-stack">
               <span>Signal mode</span>
               <small>Show only high-signal messages</small>
-            </span>
-          </button>
-          <button
-            className="mode-toggle"
-            data-active={submissionMode}
-            onClick={() => setSubmissionMode((enabled) => !enabled)}
-            type="button"
-          >
-            <Maximize2 size={15} />
-            <span className="mode-label-stack">
-              <span>Submission mode</span>
-              <small>Hide controls for a clean recording</small>
             </span>
           </button>
         </section>

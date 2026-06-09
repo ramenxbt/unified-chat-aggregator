@@ -350,15 +350,12 @@ describe("App", () => {
     expect(screen.getByText("24 event replay link copied.")).toBeInTheDocument();
   });
 
-  it("toggles submission mode on the app shell", async () => {
+  it("keeps the operator layout active outside the OBS route", () => {
     const { container } = render(<App />);
     const appShell = container.querySelector(".app-shell");
 
     expect(appShell).toHaveAttribute("data-submission", "false");
-
-    await userEvent.click(screen.getByRole("button", { name: /submission mode/i }));
-
-    expect(appShell).toHaveAttribute("data-submission", "true");
+    expect(screen.queryByRole("button", { name: /submission mode/i })).not.toBeInTheDocument();
   });
 
   it("returns to the newest events with the live control", async () => {
