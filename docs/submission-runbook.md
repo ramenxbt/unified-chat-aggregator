@@ -26,10 +26,10 @@ npm run qa:final
 Run the local doctor first:
 
 ```bash
-npm run live:doctor
+npm run live:doctor -- --out qa/live-doctor.txt
 ```
 
-This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database/QA/bundle artifact paths.
+This checks strict connector readiness plus local blockers: feed/dashboard/Kick port availability, server archive output, and writable archive/database/QA/bundle artifact paths. The saved text report gives you setup proof without taking screenshots.
 
 Run the strict connector check next:
 

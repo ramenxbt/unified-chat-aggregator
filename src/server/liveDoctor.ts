@@ -3,7 +3,7 @@ import { createServer } from "node:net";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { parseLiveRunCliArgs } from "./liveCliArgs";
+import { parseLiveDoctorCliArgs } from "./liveCliArgs";
 import { buildLiveRunPlan, formatLiveRunPlan, type LiveRunPlanOptions } from "./liveRunPlan";
 import { loadLocalEnv } from "./loadLocalEnv";
 import type { LivePreflightEnv } from "./livePreflight";
@@ -230,9 +230,17 @@ function buildPortConflictChecks(portClaims: { label: string; port: number }[]):
 async function runCli() {
   loadLocalEnv();
 
-  const report = await buildLiveDoctorReport(process.env, parseLiveRunCliArgs(process.argv.slice(2)));
+  const cliOptions = parseLiveDoctorCliArgs(process.argv.slice(2));
+  const report = await buildLiveDoctorReport(process.env, cliOptions);
+  const formatted = formatLiveDoctorReport(report);
 
-  console.log(formatLiveDoctorReport(report));
+  console.log(formatted);
+
+  if (cliOptions.outPath) {
+    await mkdir(path.dirname(cliOptions.outPath), { recursive: true });
+    await writeFile(cliOptions.outPath, `${formatted}\n`, "utf8");
+    console.log(`Saved live doctor report to ${cliOptions.outPath}`);
+  }
 
   if (!report.ok) {
     process.exitCode = 1;

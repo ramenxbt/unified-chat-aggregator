@@ -30,7 +30,7 @@ Vite reads `VITE_*` values from `.env` for the dashboard. Server-side commands s
 Live feed server mode:
 
 ```bash
-npm run live:doctor
+npm run live:doctor -- --out qa/live-doctor.txt
 npm run qa:quick
 npm run preflight
 npm run live:prepare
@@ -42,7 +42,7 @@ VITE_FEED_WS_URL=ws://127.0.0.1:8787 npm run dev
 
 If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and `TWITCH_BOT_USER_ID` are set, `npm run feed` runs Twitch EventSub mode. If `KICK_WEBHOOK_ENABLED=true` or `KICK_WEBHOOK_PUBLIC_URL` is set, it also starts the Kick webhook receiver at `http://127.0.0.1:8788/webhooks/kick` by default. If `X_BEARER_TOKEN` is set with `X_FILTER_RULES` or `X_SPACES_QUERY`, it also runs the X filtered stream or Spaces poller. Without connector credentials it runs fixture mode.
 
-`npm run live:doctor` runs the strict connector preflight plus local recording checks for available feed/dashboard/Kick ports, enabled server archive output, and writable archive/database/QA/bundle artifact paths. It exits non-zero on stream-day blockers before you start the capture stack.
+`npm run live:doctor -- --out qa/live-doctor.txt` runs the strict connector preflight plus local recording checks for available feed/dashboard/Kick ports, enabled server archive output, and writable archive/database/QA/bundle artifact paths. It exits non-zero on stream-day blockers before you start the capture stack and can save a text setup proof without taking screenshots.
 
 `npm run qa:quick` runs the low-usage non-visual gate for active development: repository hygiene, unit/integration tests, lint, production build, connector rehearsal, and live stack rehearsal. It writes `qa/quick-report.md` and `qa/quick-report.json`. Use `npm run qa:final` only when you need the full submission evidence set, including browser workflows, stress rehearsal, and visual QA artifacts.
 
@@ -58,7 +58,7 @@ If `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN`, `TWITCH_BROADCASTER_USER_ID`, and 
 
 `npm run live:tunnel -- --out qa/kick-tunnel-check.txt` checks the configured `KICK_WEBHOOK_PUBLIC_URL` after the feed server is running and saves proof for the final submission bundle. It expects the public HTTPS tunnel to return the Kick receiver health payload from `/webhooks/kick`, which catches dead tunnels or URLs pointed at the wrong local service before the OBS recording.
 
-`live:doctor`, `live:prepare`, `live:ready`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, `--db`, `--clips`, `--qa-dir`, `--evidence-check`, and `--kick-tunnel-check` overrides. `live:ready` and `live:stack` also accept `--obs-handoff-dir` and `--visual-qa-dir` for custom final artifact folders. `live:prepare` and `live:ready` also accept `--out` for saved run sheets or readiness proof. Use these instead of hand-editing commands when a port, evidence path, clip queue export path, QA artifact folder, or tunnel proof path needs to change right before recording.
+`live:doctor`, `live:prepare`, `live:ready`, and `live:stack` accept `--feed-port`, `--app-port`, `--archive-dir`, `--db`, `--clips`, `--qa-dir`, `--evidence-check`, and `--kick-tunnel-check` overrides. `live:ready` and `live:stack` also accept `--obs-handoff-dir` and `--visual-qa-dir` for custom final artifact folders. `live:doctor`, `live:prepare`, and `live:ready` accept `--out` for saved setup, run sheet, or readiness proof. Use these instead of hand-editing commands when a port, evidence path, clip queue export path, QA artifact folder, or tunnel proof path needs to change right before recording.
 
 The feed server archives every accepted event and connector status update under `data/feed-sessions/<session-id>/` by default. Each session writes `manifest.json`, `events.jsonl`, and `statuses.jsonl`, which gives the submission run a server-side backup even if the browser reloads. Set `FEED_ARCHIVE_DIR` to change the folder or `FEED_ARCHIVE_ENABLED=false` to disable local archives.
 

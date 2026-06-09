@@ -14,6 +14,10 @@ export type LivePrepareCliOptions = LiveRunPlanOptions & {
   outPath?: string;
 };
 
+export type LiveDoctorCliOptions = LiveRunPlanOptions & {
+  outPath?: string;
+};
+
 export function parseLiveRunCliArgs(args: string[]): LiveRunPlanOptions {
   const parsed: LiveRunPlanOptions = {
     allowPartial: args.includes("--allow-partial")
@@ -150,6 +154,16 @@ export function parseLiveStackCliArgs(args: string[]): LiveStackCliOptions {
 export function parseLivePrepareCliArgs(args: string[]): LivePrepareCliOptions {
   const parsed: LivePrepareCliOptions = parseLiveRunCliArgs(args);
 
+  return parseOutputPathArg(args, parsed);
+}
+
+export function parseLiveDoctorCliArgs(args: string[]): LiveDoctorCliOptions {
+  const parsed: LiveDoctorCliOptions = parseLiveRunCliArgs(args);
+
+  return parseOutputPathArg(args, parsed);
+}
+
+function parseOutputPathArg<T extends { outPath?: string }>(args: string[], parsed: T): T {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
 

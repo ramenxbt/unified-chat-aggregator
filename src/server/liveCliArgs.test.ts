@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLivePrepareCliArgs, parseLiveRunCliArgs, parseLiveStackCliArgs } from "./liveCliArgs";
+import { parseLiveDoctorCliArgs, parseLivePrepareCliArgs, parseLiveRunCliArgs, parseLiveStackCliArgs } from "./liveCliArgs";
 
 describe("live CLI args", () => {
   it("parses live run plan overrides", () => {
@@ -81,6 +81,19 @@ describe("live CLI args", () => {
     });
   });
 
+  it("parses live doctor output path aliases", () => {
+    expect(parseLiveDoctorCliArgs(["--feed-port", "8899", "--out", "qa/live-doctor.txt"])).toEqual({
+      allowPartial: false,
+      feedPort: 8899,
+      outPath: "qa/live-doctor.txt"
+    });
+
+    expect(parseLiveDoctorCliArgs(["--output", "qa/doctor.txt"])).toEqual({
+      allowPartial: false,
+      outPath: "qa/doctor.txt"
+    });
+  });
+
   it("ignores invalid numeric overrides", () => {
     expect(
       parseLiveRunCliArgs([
@@ -131,6 +144,11 @@ describe("live CLI args", () => {
     expect(parseLivePrepareCliArgs(["--out", "--app-port", "5260"])).toEqual({
       allowPartial: false,
       appPort: 5260
+    });
+
+    expect(parseLiveDoctorCliArgs(["--out", "--feed-port", "8899"])).toEqual({
+      allowPartial: false,
+      feedPort: 8899
     });
   });
 });
