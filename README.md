@@ -7,6 +7,8 @@ One real-time feed for Twitch, Kick, and X. Watch every chat in one place, with 
 ![Vite](https://img.shields.io/badge/Vite-7-646cff)
 ![Tests](https://img.shields.io/badge/tests-vitest%20%2B%20playwright-6e9f18)
 
+[Watch the 70-second demo video](https://github.com/ramenxbt/unified-chat-aggregator/releases/download/v0.1.0/market-bubble-feed-demo.mp4)
+
 ![Dashboard](docs/images/dashboard.png)
 
 ## Why
