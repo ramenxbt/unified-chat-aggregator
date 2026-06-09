@@ -213,6 +213,18 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 
 ## Visual Polish Pass Log
 
+2026-06-09 (second pass): Full dashboard rework. Feed-first layout with a slim source
+rail and a tabbed inspector (Status, Details, Accounts, Clips, Setup) replacing the
+stacked diagnostics rail. Feed rows use official platform logo glyphs with a platform
+color spine; account labels such as TWITCH (ANSEM) stay visible on every row. Chrome
+moved to neutral monochrome so platform colors carry source identity; gold is reserved
+for clipped and marked states. Plain-language copy pass on tabs, modes, placeholders,
+and empty states. Added favicon, MIT license, README rewrite with screenshots, and
+docs/operations.md for the operator command reference. Unit tests and e2e updated to
+the new layout. Fixed session archive ordering so strict evidence proof passes after
+shutdown, and added the proof signal checklist to stale run sheet test fixtures. Full
+quick gate green: hygiene, 239 tests, lint, build, connector and live-stack rehearsals.
+
 2026-06-09: Final dashboard finish pass. Added keyboard `:focus-visible` rings that
 adopt each row's platform accent, a `:focus-within` highlight on the search field,
 themed text selection, thin dark scrollbars in the scrolling regions, uniform hover
