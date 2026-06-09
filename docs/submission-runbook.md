@@ -210,3 +210,14 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - Server archive folder with `manifest.json`, `events.jsonl`, and `statuses.jsonl`.
 - SQLite database when `FEED_DB_PATH` is enabled.
 - Final repo pushed to `ramenxbt/unified-chat-aggregator`.
+
+## Visual Polish Pass Log
+
+2026-06-09: Final dashboard finish pass. Added keyboard `:focus-visible` rings that
+adopt each row's platform accent, a `:focus-within` highlight on the search field,
+themed text selection, thin dark scrollbars in the scrolling regions, uniform hover
+easing on the feed-order, jump-live, review, clip, and session controls, and a
+`prefers-reduced-motion` guard. Changes are styling only; feed order, search,
+connector contracts, recording flow, and OBS routes are unchanged. Visual QA was
+recaptured with `npm run qa:visual` at the polish commit, so the manifest carries no
+UI-relevant changes since capture.
