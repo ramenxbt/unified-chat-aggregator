@@ -133,6 +133,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
     )),
     ...clipQueueValidation.issues
   ];
+  const bundleReady = evidence.ok && artifactIssues.length === 0;
   const files = {
     evidenceReport: path.join(bundleDir, "evidence-report.txt"),
     replayJson: path.join(bundleDir, "replay.json"),
@@ -164,6 +165,8 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
       `${JSON.stringify(
         {
           generatedAt: new Date().toISOString(),
+          ok: bundleReady,
+          status: bundleReady ? "ready" : "needs_attention",
           archivePath,
           databasePath: options.databasePath,
           repo,
@@ -197,7 +200,7 @@ export async function createSubmissionBundle(options: SubmissionBundleOptions): 
   ]);
 
   return {
-    ok: evidence.ok && artifactIssues.length === 0,
+    ok: bundleReady,
     outputDir: bundleDir,
     files,
     evidence,

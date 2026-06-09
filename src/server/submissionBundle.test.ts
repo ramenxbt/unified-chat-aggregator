@@ -107,6 +107,8 @@ describe("submission bundle", () => {
     expect(clipQueueJson.clipCount).toBe(2);
     expect(summary.archivePath).toBe(archivePath);
     expect(summary).toMatchObject({
+      ok: true,
+      status: "ready",
       evidenceOk: true,
       eventCount: 3,
       performance: {
@@ -295,6 +297,8 @@ describe("submission bundle", () => {
     expect(submissionNotes).toContain("Status: needs attention");
     expect(submissionNotes).toContain("## Artifact Issues");
     expect(summary).toMatchObject({
+      ok: false,
+      status: "needs_attention",
       evidenceOk: true,
       artifactIssues: result.artifactIssues
     });

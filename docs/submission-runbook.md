@@ -201,6 +201,7 @@ Then use `Import recording JSON` in the dashboard to load `replay.json`.
 - `submission-bundle/` containing copied OBS handoff files from `qa/obs/`.
 - `submission-bundle/` containing copied visual QA manifests from `qa/visual/`.
 - `submission-bundle/` containing copied Kick tunnel proof from `qa/kick-tunnel-check.txt`.
+- `summary.json` reviewed for `ok: true` and `status: "ready"`.
 - `submission-notes.md` reviewed for repo commit, source labels, proof metrics, and external artifacts to attach.
 - Exported recording JSON.
 - Exported recording CSV.
