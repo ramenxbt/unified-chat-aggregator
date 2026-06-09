@@ -98,6 +98,8 @@ qa/visual/obs-overlay.png
 qa/visual/manifest.md
 ```
 
+For non-UI follow-up changes after this pass, do not rerun screenshots just to refresh commit metadata. The final readiness and bundle gates can reuse an older visual manifest when Git shows no UI-relevant files changed since capture. Rerun `npm run qa:visual` after dashboard, style, fixture, route, protocol, dependency, or visual capture script changes.
+
 ## Known Live-Only Requirements
 
 These cannot be closed without real credentials and a public Kick tunnel:
